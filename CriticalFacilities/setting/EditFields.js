@@ -170,12 +170,16 @@ define(['dojo/_base/declare',
         var skipFields = ['esriFieldTypeOID', 'esriFieldTypeGlobalID'];
         array.forEach(fieldInfos, function (fieldInfo) {
           if (fieldInfo.type && skipFields.indexOf(fieldInfo.type) === -1) {
+            var defaultIsRecognizedValues = [fieldInfo.fieldName];
+            if (fieldInfo.fieldName !== fieldInfo.label) {
+              defaultIsRecognizedValues.push(fieldInfo.label);
+            }
             this._fieldsTable.addRow({
               fieldName: fieldInfo.fieldName,
               label: fieldInfo.label,
               visible: fieldInfo.visible,
               type: fieldInfo.type,
-              isRecognizedValues: fieldInfo.isRecognizedValues
+              isRecognizedValues: fieldInfo.isRecognizedValues || defaultIsRecognizedValues
             });
           }
         }, this);

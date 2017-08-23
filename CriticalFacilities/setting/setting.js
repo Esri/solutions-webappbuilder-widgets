@@ -40,11 +40,16 @@ define([
   'jimu/dijit/SymbolPicker',
   'jimu/dijit/CheckBox',
   'jimu/dijit/LayerChooserFromMapWithDropbox',
+  "jimu/dijit/Popup",
+  "jimu/dijit/LoadingShelter",
   'esri/symbols/jsonUtils',
+  "esri/request",
+  "esri/lang",
   '../locatorUtils',
   './EditablePointFeatureLayerChooserFromMap',
   './EditFields',
   './LocatorSourceSetting',
+  './StoreGeocodeResults'
 ],
   function (
     declare,
@@ -72,15 +77,18 @@ define([
     SymbolPicker,
     CheckBox,
     LayerChooserFromMapSelect,
+    Popup,
+    LoadingShelter,
     jsonUtils,
+    esriRequest,
+    esriLang,
     _utils,
     EditablePointFeatureLayerChooserFromMap,
     EditFields,
-    LocatorSourceSetting) {
+    LocatorSourceSetting,
+    StoreGeocodeResults) {
     return declare([BaseWidgetSetting, _WidgetsInTemplateMixin], {
       baseClass: 'jimu-widget-setting-critical-facilities',
-
-      //TODO need to get the fields lists for single or multi back within the LocatorSourceSetting since they need to be stored for each locator
 
       //TODO persist values and reload correctly
       //TODO disable OK when no layer is selected
@@ -88,91 +96,45 @@ define([
       //TODO figure out what's up with the css for all SimpleTable instances with the rows. I handled in some way for IS but it was not correct
       //TODO update validation logic for the validation controls for max and search dist
       //TODO disable ok if any validators are invalid
-      //TODO do like some of the other controls that use this layer chooser and have it expanded on startup when no value has been specified by the user
-      //TODO get fields from the layer selected in the layer chooser
       //TODO need to persist group/server storage stuff
+      //TODO update set server 'Set' button logic
 
       //Questions
       //TODO should we support an option for configure user to mark certain fields as required or optional?
       
-      _operLayerInfos: null,
-      _layersTable: null,
-      _arrayOfFields: null,
-      _layerInfos: [],
+      operLayerInfos: null,
+      jimuLayerInfo: null,
+      jimuLayerObject: null,
+      layerInfo: null,
 
-      startup: function () {
+      postMixInProperties: function () {
         this.inherited(arguments);
-
         this.nls = lang.mixin(this.nls, window.jimuNls.common);
+      },
 
+      postCreate: function () {
+        this.inherited(arguments);
         if (!(this.config && this.config.sources)) {
           this.config.sources = [];
         }
+      },
 
-        LayerInfos.getInstance(this.map, this.map.itemInfo)
-          .then(lang.hitch(this, function (operLayerInfos) {
-            this._operLayerInfos = operLayerInfos;
-
-            this._initUI();
-            _utils.setMap(this.map);
-            _utils.setLayerInfosObj(this._operLayerInfos);
-            _utils.setAppConfig(this.appConfig);
-            _utils.setDefaultXYFields(this.config.defaultXYFields);
-            when(_utils.getConfigInfo(this.config)).then(lang.hitch(this, function (config) {
-              if (!this.domNode) {
-                return;
-              }
-              this.setConfig(config);
-            }));
+      startup: function () {
+        this.inherited(arguments);
+        LayerInfos.getInstance(this.map, this.map.itemInfo).then(lang.hitch(this, function (infos) {
+          this.operLayerInfos = infos;
+          this._initUI();
+          _utils.setMap(this.map);
+          _utils.setLayerInfosObj(this.operLayerInfos);
+          _utils.setAppConfig(this.appConfig);
+          _utils.setDefaultXYFields(this.config.defaultXYFields);
+          when(_utils.getConfigInfo(this.config)).then(lang.hitch(this, function (config) {
+            if (!this.domNode) {
+              return;
+            }
+            this.setConfig(config);
           }));
-      },
-
-      _setDefaultXYFields: function () {
-        this.config.defaultXYFields = [{
-          "name": this.nls.xyFieldsLabelX,
-          "alias": this.nls.xyFieldsLabelX,
-          "visible": true,
-          "isRecognizedValues": [this.nls.xyFieldsLabelX, this.nls.longitude, this.nls.easting],
-          "type": "STRING"
-        }, {
-          "name": this.nls.xyFieldsLabelY,
-          "alias": this.nls.xyFieldsLabelY,
-          "visible": true,
-          "isRecognizedValues": [this.nls.xyFieldsLabelY, this.nls.latitude, this.nls.northing],
-          "type": "STRING"
-        }];
-      },
-
-      _initMaxRecords: function () {
-        var ls = this.config.layerSettings;
-        this.maxRecords.setValue((ls && ls.maxRecords && ls.maxRecords !== NaN) ? ls.maxRecords : undefined);
-      },
-
-      _initSearchRadius: function () {
-        var ls = this.config.layerSettings;
-
-        //set distance
-        this.searchDistance.setValue((ls && ls.distance && ls.distance !== NaN) ? ls.distance : 2);
-
-        //set units
-        var units = window.jimuNls.units;      
-        var validUnits = ['miles', 'kilometers', 'feet', 'meters', 'yards'];
-        var defaultUnit = (ls && ls.unit && validUnits.indexOf(ls.unit) > -1) ? ls.unit : 'feet';
-        var unitOptions = [];
-        array.forEach(validUnits, function (k) {
-          unitOptions.push({ label: units[k], value: k, selected: k === defaultUnit ? true : false});
-        });
-        this.searchUnit.addOption(unitOptions);
-      },
-
-      _initSymbolPicker: function () {
-        
-        if (this.config.layerSettings && this.config.layerSettings.symbol) {
-          //TODO any way to check this is a valid symbol?
-          this.symbolPicker.showBySymbol(jsonUtils.fromJson(this.config.layerSettings.symbol));
-        } else {
-          this.symbolPicker.showByType('marker');
-        }
+        }));
       },
 
       _initUI: function () {
@@ -218,21 +180,8 @@ define([
         this.layerChooserSelect.placeAt(this.layerTd);
         this.layerChooserSelect.startup();
         if (bindEvent) {
-          this.own(on(this.layerChooserSelect, 'selection-change', lang.hitch(this, function (l) {
-            console.log(l);
-            //TODO make sure this is the expected way to get the layer when you have more than one in the map
-            this.layer = l[0];
-          })));
+          this.own(on(this.layerChooserSelect, 'selection-change', lang.hitch(this, this._onLayerChanged)));
         }
-      },
-
-      _onLayerChanged: function () {
-        var item = this.layerChooserSelect.getSelectedItem();
-        if (!item) {
-          return;
-        }
-        var layerInfo = item.layerInfo;
-        var layer = layerInfo.layerObject;
       },
 
       _initLocationOptions: function () {
@@ -262,9 +211,9 @@ define([
         //this.enableXYField = this._initCheckBox(this.enableXYField, this.nls.enableXYField, this.editXYFields);
 
         this.xyEnabled = true;
-        this.own(on(this.editXYFields, 'click', lang.hitch(this, this._editFields)));
+        this.own(on(this.editXYFields, 'click', lang.hitch(this, this._onXYEditFieldsClick)));
 
-        this.own(on(this.editLayerFields, 'click', lang.hitch(this, this._onEditFieldsClick)));
+        this.own(on(this.editLayerFields, 'click', lang.hitch(this, this._onLayerEditFieldsClick)));
 
         //Store share results options
         this.enableStoreResults = this._initStoreResultsCheckBox(this.enableStoreResults, this.nls.enableStoreResults, this.storeResultsOptions);
@@ -276,12 +225,69 @@ define([
         this.rdoServer = this._initStoreRdo(this.rdoServer, [this.storeUrl, this.setServer, this.serverTip], "server");
       },
 
+      _initMaxRecords: function () {
+        var ls = this.config.layerSettings;
+        this.maxRecords.setValue((ls && ls.maxRecords && ls.maxRecords !== NaN) ? ls.maxRecords : undefined);
+      },
+
+      _initSearchRadius: function () {
+        var ls = this.config.layerSettings;
+
+        //set distance
+        this.searchDistance.setValue((ls && ls.distance && ls.distance !== NaN) ? ls.distance : 2);
+
+        //set units    
+        var validUnits = ['miles', 'kilometers', 'feet', 'meters', 'yards'];
+        var defaultUnit = (ls && ls.unit && validUnits.indexOf(ls.unit) > -1) ? ls.unit : 'feet';
+        var unitOptions = [];
+        array.forEach(validUnits, function (k) {
+          unitOptions.push({
+            label: window.jimuNls.units[k],
+            value: k,
+            selected: k === defaultUnit ? true : false
+          });
+        });
+        this.searchUnit.addOption(unitOptions);
+      },
+
+      _initSymbolPicker: function () {
+        
+        if (this.config.layerSettings && this.config.layerSettings.symbol) {
+          //TODO any way to check this is a valid symbol?
+          this.symbolPicker.showBySymbol(jsonUtils.fromJson(this.config.layerSettings.symbol));
+
+          //this is from filter...loook at how they persist image..I know there was a change around this area for the next release
+          //if (config.icon) {
+          //  this.imageChooser.setDefaultSelfSrc(jimuUtils.processUrlInWidgetConfig(config.icon, this.folderUrl));
+          //} else {
+          //  this._setDefaultTaskIcon();
+          //}
+        } else {
+          this.symbolPicker.showByType('marker');
+        }
+      },
+
+      _onLayerChanged: function () {
+        var item = this.layerChooserSelect.getSelectedItem();
+        if (!item) {
+          return;
+        }
+        this.jimuLayerInfo = item.layerInfo;
+        this.jimuLayerObject = item.layerInfo.layerObject;
+
+        var defaultLayerInfo = this._getDefaultLayerInfo(this.jimuLayerObject);
+        var configLayerInfo = this._getLayerInfoFromConfiguration(this.jimuLayerObject);
+
+        this.layerInfo = configLayerInfo || defaultLayerInfo;
+      },
+
       _initStoreUrl: function (node) {
         node.selectControl = new ValidationTextBox({
           required: true,
           trim: true,
           disabled: true,
-          style: "width: 100%;"
+          style: "width: 100%;",
+          placeHolder: this.nls.eg + " " + this.nls.inServerExample
         });
         node.selectControl.placeAt(node).startup();
       },
@@ -321,12 +327,6 @@ define([
         node.selectControl.placeAt(node).startup();
       },
 
-      //TODO move to locator logic as this is dependant upon each locator...this may actually just be removed
-      _toggleContainerNode: function (node, show) {
-        html.removeClass(node, show ? 'display-none' : 'display-block');
-        html.addClass(node, show ? 'display-block' : 'display-none');
-      },
-
       _getLayerDefinitionForFilterDijit: function (layer) {
         var layerDefinition = null;
 
@@ -346,17 +346,22 @@ define([
 
       _initStoreRdo: function (domNode, nodes, type) {
         domNode = new RadioButton({
-          value: type
+          _rdoType: type
         }, domNode);
         array.forEach(nodes, lang.hitch(this, function (node) {
-          this._toggleContainerNode(node, false);
+          this._toggleNode(node, false, 'display-none', 'display-block');
         }));       
         this.own(on(domNode, 'change', lang.hitch(this, function () {
           var enabled = domNode.checked;
-          this.useOrg = domNode.getValue() === "org" ? enabled : this.useOrg;
-          this.useServer = domNode.getValue() === "server" ? enabled : this.useServer;
+          if (domNode._rdoType === "org") {
+            this.useOrg = enabled;
+            this.useServer = !this.useOrg;
+          } else {
+            this.useServer = enabled;
+            this.useOrg = !this.useServer;
+          }
           array.forEach(nodes, lang.hitch(this, function (node) {
-            this._toggleContainerNode(node, enabled);
+            this._toggleNode(node, enabled, 'display-none', 'display-block');
           }));
         })));
         return domNode;
@@ -367,19 +372,12 @@ define([
           checked: false,
           label: nlsValue
         }, domNode);
-        this._toggleContainerNode(editNode, false);
+        this._toggleNode(editNode, false, 'display-none', 'display-block');
         this.own(on(domNode, 'change', lang.hitch(this, function () {
           this.storeResults = domNode.getValue();
-          this._toggleContainerNode(editNode, this.storeResults);
+          this._toggleNode(editNode, this.storeResults, 'display-none', 'display-block');
         })));
         return domNode;
-      },
-
-      _toggleDisplay: function (domNode, enable) {
-        if (domNode) {
-          html.removeClass(domNode, enable ? 'display-none' : 'display-block');
-          html.addClass(domNode, enable ? 'display-block' : 'display-none');
-        }
       },
 
       _initCheckBox: function (domNode, nlsValue, editNode) {
@@ -387,45 +385,35 @@ define([
           checked: false,
           label: nlsValue
         }, domNode);
-        this._toggleNode(editNode, false);
+        this._toggleNode(editNode, false, 'edit-fields-disabled', 'edit-fields');
         this.own(on(domNode, 'change', lang.hitch(this, function () {
           var enabled = domNode.getValue();
           this.xyEnabled = enabled;
-          this._toggleNode(editNode, enabled);
+          this._toggleNode(editNode, enabled, 'edit-fields-disabled', 'edit-fields');
         })));
         return domNode;
       },
 
-      _toggleNode: function (domNode, enable) {
+      _toggleNode: function (domNode, enable, disableClass, enableClass) {
         if (domNode) {
-          html.removeClass(domNode, enable ? 'edit-fields-disabled' : 'edit-fields');
-          html.addClass(domNode, enable ? 'edit-fields' : 'edit-fields-disabled');
+          html.removeClass(domNode, enable ? disableClass : enableClass);
+          html.addClass(domNode, enable ? enableClass : disableClass);
         }
       },
 
-      _onEditFieldsClick: function (tr) {
-        //get the stored details or default details
-        // will need to check the current layer id agaist the stored layer id
-
-        alert('need to update this...');
-
-        //if (this.layerInfo) {
-
-        //}
-
-        //var rowData = this._layersTable.getRowData(tr);
-        //if (rowData && rowData.rdoLayer) {
-        //  var editFields = new EditFields({
-        //    nls: this.nls,
-        //    _layerInfo: this._getRowConfig(tr),
-        //    type: 'fieldInfos'
-        //  });
-        //  editFields.popupEditPage();
-        //} else {
-        //  new Message({
-        //    message: this.nls.noSelectField
-        //  });
-        //}
+      _onLayerEditFieldsClick: function (tr) {
+        if (this.layerInfo) {
+          var editFields = new EditFields({
+            nls: this.nls,
+            _layerInfo: this.layerInfo,
+            type: 'fieldInfos'
+          });
+          editFields.popupEditPage();
+        } else {
+          new Message({
+            message: this.nls.noSelectField
+          });
+        }
       },
 
       setConfig: function (config) {
@@ -449,22 +437,30 @@ define([
           }
         }));
 
-        //setTimeout(lang.hitch(this, function () {
-        this.layerChooserSelect.showLayerChooser();
-        //}), 50);
+        //get the config layer if it exists
+        var layerInfo;
+        var layerSettings = this.config.layerSettings;
+        if (layerSettings && layerSettings.layerInfo && layerSettings.layerInfo.featureLayer) {
+          layerInfo = this.operLayerInfos.getLayerInfoById(this.config.layerSettings.layerInfo.featureLayer.id);
+        }
+        //if we have a config layer set it otherwise just expand the chooser
+        if (layerInfo) {
+          layerInfo.getLayerObject().then(lang.hitch(this, function (layer) {
+            this.layerChooserSelect.setSelectedLayer(layer).then(lang.hitch(this, function (success) {
+              //TODO If we need to delay the event binding could be done here rather than on load
+
+            }));
+          }));
+        } else {
+          this.layerChooserSelect.showLayerChooser();
+        }
 
         //Layer Settings
         this._initSymbolPicker();
         this._initMaxRecords();
         this._initSearchRadius();
 
-        //Location settings//
-
-        //Single/Multi field options
-        //TODO this will go away if these are not optional
-        //this.singleEnabled = this.config.singleEnabled || false;
-        //this.multiEnabled = this.config.multiEnabled || false;
-        //this._toggleContainerNode((this.singleEnabled || this.multiEnabled) ? true : false);
+        //Location settings
 
         //X/Y settings
         if (!this.config.defaultXYFields) {
@@ -481,7 +477,7 @@ define([
         //Store results settings
         this.storeResults = this.config.storeResults || false;
         this.enableStoreResults.setValue(this.storeResults); 
-        this._toggleContainerNode(this.storeResultsOptions, this.storeResults);
+        this._toggleNode(this.storeResultsOptions, this.storeResults, 'display-none', 'display-block');
 
         //if set in config use that otherwise set default to use org
         this.useOrg = (this.config.useOrg || this.config.useServer) ? this.config.useOrg : true;
@@ -489,21 +485,20 @@ define([
 
         this.useServer = (this.config.useOrg || this.config.useServer) ? this.config.useServer : false;
         this.rdoServer.set("checked", this.useServer);
+
+        if (this.config.shareGroup) {
+          this.shareSelect.selectControl.set('value', this.config.shareGroup);
+        }
       },
 
-      _getLayerInfoFromConfiguration: function (layerObject) {
+      _getLayerInfoFromConfiguration: function (layer) {
         var layerInfo = null;
-        var layerInfos = this.config.layerInfos;
-        if (layerInfos && layerInfos.length > 0) {
-          for (var i = 0; i < layerInfos.length; i++) {
-            if (layerInfos[i].featureLayer &&
-               layerInfos[i].featureLayer.id === layerObject.id) {
-              layerInfo = layerInfos[i];
-              break;
-            }
-          }
-          if (layerInfo) {
-            layerInfo.fieldInfos = this._getFieldInfos(layerObject, layerInfo);
+        var layerSettings = this.config.layerSettings;
+        if (layerSettings && layerSettings.layerInfo && layerSettings.layerInfo.featureLayer) {
+          if (layerSettings.layerInfo.featureLayer.id === layer.id) {
+            layerInfo = layerSettings.layerInfo;
+            //TODO??
+            layerInfo.fieldInfos = this._getFieldInfos(layer, layerInfo);
           }
         }
         return layerInfo;
@@ -542,7 +537,7 @@ define([
 
       _getWebmapFieldInfos: function (layerObject) {
         var fieldInfos = [];
-        var wFieldInfos = this._getFieldInfosFromWebmap(layerObject.id, this._operLayerInfos);
+        var wFieldInfos = this._getFieldInfosFromWebmap(layerObject.id, this.operLayerInfos);
         if (wFieldInfos) {
           array.forEach(wFieldInfos, function (fi) {
             if ((fi.isEditableOnLayer !== undefined && fi.isEditableOnLayer) &&
@@ -633,7 +628,7 @@ define([
       getConfig: function () {
         //Layer Settings
         this.config.layerSettings = {
-          layerID: this.layer.id,
+          layerInfo: this.layerInfo,
           symbol: this.symbolPicker.getSymbol().toJson(),
           maxRecords: this.maxRecords.getValue(),
           distance: this.searchDistance.getValue(),
@@ -687,28 +682,45 @@ define([
         this.config.useServer = this.useServer;
         this.config.storeResults = this.storeResults;
 
+        this.config.shareGroup = this.shareSelect.selectControl.value;
+
         //search radius
         return this.config;
       },
 
-      _editFields: function () {
-        if (this.xyEnabled) {
-          this._editXYFieldsTableValues(this.xyFields);
-        }
+      ///////////////////////////////////////////////////////////
+      //XY Fields
+      _setDefaultXYFields: function () {
+        this.config.defaultXYFields = [{
+          "name": this.nls.xyFieldsLabelX,
+          "alias": this.nls.xyFieldsLabelX,
+          "visible": true,
+          "isRecognizedValues": [this.nls.xyFieldsLabelX, this.nls.longitude, this.nls.easting],
+          "type": "STRING"
+        }, {
+          "name": this.nls.xyFieldsLabelY,
+          "alias": this.nls.xyFieldsLabelY,
+          "visible": true,
+          "isRecognizedValues": [this.nls.xyFieldsLabelY, this.nls.latitude, this.nls.northing],
+          "type": "STRING"
+        }];
       },
 
-      _editXYFieldsTableValues: function (fields) {
-        var editFields = new EditFields({
-          nls: this.nls,
-          type: 'locatorFields',
-          addressFields: fields || this.config.defaultXYFields,
-          popupTitle: this.nls.configureXYFields,
-          disableDisplayOption: true
-        });
-        this.own(on(editFields, 'edit-fields-popup-ok', lang.hitch(this, function () {
-          this.xyFields = editFields.fieldInfos;
-        })));
-        editFields.popupEditPage();
+      _onXYEditFieldsClick: function () {
+        //TODO remove the enabled check if it will always be enabled 
+        if (this.xyEnabled) {
+          var editFields = new EditFields({
+            nls: this.nls,
+            type: 'locatorFields',
+            addressFields: this.xyFields || this.config.defaultXYFields,
+            popupTitle: this.nls.configureXYFields,
+            disableDisplayOption: true
+          });
+          this.own(on(editFields, 'edit-fields-popup-ok', lang.hitch(this, function () {
+            this.xyFields = editFields.fieldInfos;
+          })));
+          editFields.popupEditPage();
+        }
       },
 
       _setXYFields: function (xyFields, config) {
@@ -716,7 +728,10 @@ define([
           config.xyFields.hasOwnProperty('length') && config.xyFields.length > 0;
         this.xyFields = useConfig ? config.xyFields : xyFields;
       },
+      ///////////////////////////////////////////////////////////
 
+      ///////////////////////////////////////////////////////////
+      //Locator settings
       _onAddClick: function (evt) {
         this._createNewLocatorSourceSettingFromMenuItem({}, {});
       },
@@ -878,29 +893,106 @@ define([
         });
         this._currentSourceSetting.destroy();
       },
+      ///////////////////////////////////////////////////////////
 
       _storeOptionsChanged: function () {
         console.log(this);
       },
 
       _onSetServerClick: function () {
+        this.storeGeocodeResults = new StoreGeocodeResults({
+          url: this.storeUrl.selectControl.get('value') || "",
+          nls: this.nls
+        });
+        this.shelter = new LoadingShelter({
+          hidden: true
+        });
 
+        this.storePopup = new Popup({
+          autoHeight: true,
+          content: this.storeGeocodeResults.domNode,
+          container: window.jimuConfig.layoutId,
+          width: 640,
+          buttons: [{
+            label: this.nls.ok,
+            onClick: lang.hitch(this, function () {
+              this.storePopup.close();
+              this.emit('geocode-results-popup-ok');
+              this._onSelectLocatorUrlOk()
+            })
+          }, {
+            label: this.nls.cancel,
+            classNames: ['jimu-btn-vacation'],
+            onClick: lang.hitch(this, function () {
+              this.storePopup.close();
+              this.emit('geocode-results-popup-cancel');
+            })
+          }],
+          onClose: lang.hitch(this, function () {
+            this.emit('geocode-results-popup-close');
+          })
+        });
+        this.shelter.placeAt(this.storePopup.domNode);
+        html.setStyle(this.storeGeocodeResults.domNode, 'width', '580px');//TODO
+        //html.addClass(
+        //  this.storeGeocodeResults.domNode,
+        //  'override-geocode-service-chooser-content'
+        //);
+
+        this.storeGeocodeResults.own(
+          on(this.storeGeocodeResults, 'validate-click', lang.hitch(this, function () {
+            //html.removeClass(
+            //  this.storeGeocodeResults.domNode,
+            //  'override-geocode-service-chooser-content'
+            //);
+          }))
+        );
       },
 
-      _disableOk: function () {
+      _onSelectLocatorUrlOk: function (evt) {
+        if (!(evt && evt[0] && evt[0].url && this.domNode)) {
+          return;
+        }
+        this.shelter.show();
+        var url = evt[0].url;
+        esriRequest({
+          url: url,
+          content: {
+            f: 'json'
+          },
+          handleAs: 'json',
+          callbackParamName: 'callback'
+        }).then(lang.hitch(this, function (response) {
+          this.shelter.hide();
+          if (response) {
+            this.storeUrl.selectControl.set('value', url);
+          } else {
+            new Message({
+              'message': this.nls.eg
+            });
+          }
+        }), lang.hitch(this, function (err) {
+          console.error(err);
+          this.shelter.hide();
+          new Message({
+            'message': esriLang.substitute({
+              'URL': this._getRequestUrl(url)
+            }, lang.clone(this.nls.eg))
+          });
+        }));
+      },
+
+      _updateOk: function (disable) {
         var s = query(".button-container")[0];
         var s2 = s.children[2];
         var s3 = s.children[3];
-        domStyle.set(s2, "display", "none");
-        domStyle.set(s3, "display", "inline-block");
+        domStyle.set(s2, "display", disable ? "none" : "inline-block");
+        domStyle.set(s3, "display", disable ? "inline-block" : "none");
       },
 
-      _enableOk: function () {
-        var s = query(".button-container")[0];
-        var s2 = s.children[2];
-        var s3 = s.children[3];
-        domStyle.set(s2, "display", "inline-block");
-        domStyle.set(s3, "display", "none");
+      destroy: function () {
+        this.emit('before-destroy');
+        this.inherited(arguments);
       }
     });
   });

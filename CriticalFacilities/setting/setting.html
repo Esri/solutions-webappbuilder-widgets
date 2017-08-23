@@ -1,57 +1,60 @@
-<div class="main-section">
-  <p class="hint-text-large" class="main-instruction">${nls.longInstructions}</p>
-  <div data-dojo-attach-point="tabContainer">
-    <!--=Layer Options-->
-    <div data-dojo-attach-point="layerTabNode" class="jimu-r-row">
-      <div class="instruction hintText">
-        <p>${nls.instructionLayers}</p>
+<div class="main-settings">
+  <div>
+    <p class="hint-text-large">${nls.longInstructions}</p>
+  </div>
+  <div class="main-section">
+    <div data-dojo-attach-point="tabContainer">
+      <!--=Layer Options-->
+      <div data-dojo-attach-point="layerTabNode" style="height: calc(100% - 10px);">
+        <div class="instruction hintText">
+          <p>${nls.instructionLayers}</p>
+        </div>
+        <table class="layer-table">
+          <colgroup>
+            <col width="28%"></col>
+            <col width="33%"></col>
+            <col width="39%"></col>
+          </colgroup>
+          <tbody>
+            <tr class="row-padding">
+              <td>${nls.layerOption}</td>
+              <td data-dojo-attach-point="layerTd" class="control-padding"></td>
+              <td>
+                <div data-dojo-attach-point="editLayerFields" class="edit-fields"></div>
+              </td>
+            </tr>
+            <tr class="row-padding">
+              <td>${nls.tempSymbol}</td>
+              <td data-dojo-attach-point="tempSymbol">
+                <div data-dojo-attach-point="symbolPicker" data-dojo-type="jimu/dijit/SymbolPicker" class="jimu-r-row symPick control-padding"></div>
+              </td>
+              <td class="instruction hintText">${nls.tempSymbolHint}</td>
+            </tr>
+            <tr class="row-padding">
+              <td>${nls.maxRecords}</td>
+              <td><input data-dojo-attach-point="maxRecords" class="control-padding" title="${nls.searchRadiusHint}" data-dojo-type="dijit/form/NumberTextBox" data-dojo-props="constraints:{min:0,max:99999999999}, invalidMessage:'${nls.requiresInteger}'" placeHolder="${nls.eg} 1000" /></td>
+              <td class="instruction hintText">${nls.maxRecordsHint}</td>
+            </tr>
+            <tr class="row-padding">
+              <td>${nls.searchRadius}</td>
+              <td>
+                <div style="width: 100%; ">
+                  <input data-dojo-attach-point="searchDistance" class="search-radius control-padding" title="${nls.searchRadiusHint}" data-dojo-type="dijit/form/NumberTextBox" data-dojo-props="constraints:{min:0,max:99999999999}, invalidMessage:'${nls.requiresInteger}'" placeholder="${nls.eg} 2" />
+                  <select data-dojo-attach-point="searchUnit" class="radiusSelect" data-dojo-type="dijit/form/Select"></select>
+                </div>
+              </td>
+              <td class="instruction hintText">${nls.searchRadiusHint}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-      <table class="layer-table">
-        <colgroup>
-          <col width="28%"></col>
-          <col width="33%"></col>
-          <col width="39%"></col>
-        </colgroup>
-        <tbody>
-          <tr class="row-padding">
-            <td>${nls.layerOption}</td>
-            <td data-dojo-attach-point="layerTd" class="control-padding"></td>
-            <td>
-              <div data-dojo-attach-point="editLayerFields" class="edit-fields"></div>
-            </td>
-          </tr>
-          <tr class="row-padding">
-            <td>${nls.tempSymbol}</td>
-            <td data-dojo-attach-point="tempSymbol">
-              <div data-dojo-attach-point="symbolPicker" data-dojo-type="jimu/dijit/SymbolPicker" class="jimu-r-row symPick control-padding"></div>
-            </td>
-            <td class="instruction hintText">${nls.tempSymbolHint}</td>
-          </tr>
-          <tr class="row-padding">
-            <td>${nls.maxRecords}</td>
-            <td><input data-dojo-attach-point="maxRecords" class="control-padding" title="${nls.searchRadiusHint}" data-dojo-type="dijit/form/NumberTextBox" data-dojo-props="constraints:{min:0,max:99999999999}, invalidMessage:'${nls.requiresInteger}'" placeHolder="eg. 1000"/></td>
-            <td class="instruction hintText">${nls.maxRecordsHint}</td>
-          </tr>
-          <tr class="row-padding">
-            <td>${nls.searchRadius}</td>
-            <td>
-              <div style="width: 100%; ">
-                <input data-dojo-attach-point="searchDistance" class="search-radius control-padding" title="${nls.searchRadiusHint}" data-dojo-type="dijit/form/NumberTextBox" data-dojo-props="constraints:{min:0,max:99999999999}, invalidMessage:'${nls.requiresInteger}'" placeholder="eg. 2"/>
-                <select data-dojo-attach-point="searchUnit" class="radiusSelect" data-dojo-type="dijit/form/Select"></select>
-              </div>
-            </td>
-            <td class="instruction hintText">${nls.searchRadiusHint}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
 
-    <!--Geocode Options-->
-    <div data-dojo-attach-point="geocodeTabNode" class="jimu-r-row">
+      <!--Geocode Options-->
+      <div data-dojo-attach-point="geocodeTabNode">
         <div class="instruction hintText">
           <p>${nls.instructionGeocode}</p>
         </div>
-        <div style="margin: 10px 10px 10px 10px;">
+        <div style="margin: 0px 10px 0px 10px;">
 
           <div data-dojo-attach-point="locatorOptions" style="display:block;">
             <div class="add-button" role="button">
@@ -65,7 +68,7 @@
                 <table class="xy-table" cellspacing="0">
                   <tbody>
                     <tr>
-                      <td colspan="1" style="padding-top:30px;">
+                      <td colspan="1" style="padding-top:22px;">
                         <div>
                           <div class="field-option-label" data-dojo-attach-point="enableXYField">
                             ${nls.enableXYField}
@@ -83,32 +86,22 @@
                 </table>
               </div>
               <div class="source-setting jimu-float-trailing" data-dojo-attach-point="sourceSettingNode"></div>
-              <!--<table class="xy-table" cellspacing="0">
-                <tbody>
-                  <tr>
-                    <td colspan="1" style="padding-top:30px;">
-                      <div>
-                        <div class="field-option-label" data-dojo-attach-point="enableXYField">
-                          ${nls.enableXYField}
-                        </div>
-                        <div data-dojo-attach-point="editXYFields" class="edit-fields"></div>
-                      </div>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>-->
             </div>
 
             <fieldset class="settings-field-set">
               <legend class="settings-field-set-legend">
                 ${nls.geocodeTab.storedSerachLabel}
               </legend>
-              <div class="instruction hintText">
-                <p>${nls.geocodeTab.storedSerachHint}</p>
+              <div class="jimu-r-row">
+                <div class="instruction hintText" style="width: 85%; float: left;">
+                  <p>${nls.geocodeTab.storedSerachHint}</p>
+                </div>
+                <div>
+                  <a style="float: right; padding-right: 10px;" target="_blank" href="https://developers.arcgis.com/rest/geocode/api-reference/geocode-coverage.htm" style="line-height:30px;">?</a>
+                </div>
               </div>
-
-              <div style="margin: 10px 10px 10px 10px;">
-                <div class="source-label" data-dojo-attach-point="enableStoreResults" style="float: left; width: 270px; min-height: 50px;"></div>
+              <div style="margin: 7px 10px 10px 10px;">
+                <div class="source-label" data-dojo-attach-point="enableStoreResults" style="float: left; width: 270px; min-height: 30px;"></div>
                 <div data-dojo-attach-point="storeResultsOptions" class="display-none" style="overflow: hidden; min-height: 50px;">
                   <table cellspacing="0" class="store-table">
                     <tbody>
@@ -126,7 +119,7 @@
                       <tr>
                         <td></td>
                         <td>
-                          <span class="tip display-none" data-dojo-attach-point="orgTip">${nls.xyFieldHint}</span>
+                          <span class="tip display-none" data-dojo-attach-point="orgTip">${nls.inOrganizationHint}</span>
                         </td>
                       </tr>
                       <tr style="line-height: 30px">
@@ -147,8 +140,8 @@
                       </tr>
                       <tr>
                         <td></td>
-                        <td>
-                          <span class="tip display-none" data-dojo-attach-point="serverTip">${nls.xyFieldHint}</span>
+                        <td colspan="2">
+                          <span class="tip display-none" data-dojo-attach-point="serverTip">${nls.inServerHint}</span>
                         </td>
                       </tr>
                     </tbody>
@@ -158,6 +151,7 @@
             </fieldset>
           </div>
         </div>
+      </div>
     </div>
   </div>
 </div>

@@ -29,7 +29,7 @@ define(['dojo/_base/declare',
   function (declare, _WidgetsInTemplateMixin, BaseWidget, Evented, SimpleTable, domStyle, domConstruct, query, lang, array, on, TextBox) {
     return declare([BaseWidget, _WidgetsInTemplateMixin, Evented], {
       templateString: '<div style="width: 100%; height: 100%;">' +
-        '<div class="instruction hintText">' +
+        '<div class="hintText">' +
           '<p>${nls.isRecognized}</p>' +
         '</div>' +
         '<div class="is-recognized-add-button" role="button">' +

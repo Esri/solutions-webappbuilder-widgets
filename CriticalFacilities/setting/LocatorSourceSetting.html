@@ -39,7 +39,7 @@
           <td class="second">
             <input type="text" data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="countryCode"
             data-dojo-attach-event="Blur:_onCountryCodeBlur"
-            placeHolder="${nls.countryCodeEg} USA,CHN" data-dojo-props='style:{width:"97%"}'/>
+            placeHolder="${nls.eg} USA,CHN" data-dojo-props='style:{width:"97%"}'/>
             <a class="jimu-float-trailing" target="_blank" href="https://developers.arcgis.com/rest/geocode/api-reference/geocode-coverage.htm" style="line-height:30px;">?</a>
             <span class="tip">${nls.countryCodeHint}</span>
           </td>
@@ -48,9 +48,9 @@
         <tr class="hide-country-code-row country-code-row" data-dojo-attach-point="minCandidateScoreRow">
           <td class="first">${nls.minCandidateScore}</td>
           <td class="second">
-            <input type="text" data-dojo-type="dijit/form/TextBox" data-dojo-attach-point="minCandidateScore"
+            <input type="text" data-dojo-type="dijit/form/NumberTextBox" data-dojo-attach-point="minCandidateScore"
                    data-dojo-attach-event="Blur:_onMinCandidateScoreBlur"
-                   placeHolder="${nls.countryCodeEg} 90" data-dojo-props='style:{width:"97%"}' />
+                   placeHolder="${nls.eg} 90" data-dojo-props="style:{width:'97%'}, constraints:{min:0,max:100}, invalidMessage:'${nls.requiresInteger0100}'"/>
             <span class="tip">${nls.minCandidateScoreHint}</span>
           </td>
         </tr>
@@ -100,5 +100,4 @@
   </div>
 
   <!--<div data-dojo-attach-point="shelter" data-dojo-type="jimu/dijit/LoadingShelter" data-dojo-props="hidden:true"></div>-->
-  
 </div>

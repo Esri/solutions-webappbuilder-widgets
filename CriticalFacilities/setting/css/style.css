@@ -1,7 +1,7 @@
 /*Start Main Section*/
 .jimu-widget-setting-critical-facilities {
-  margin: 0;
-  padding: 0;
+  /*margin: 0;
+  padding: 0;*/
   font-size: 15px;
 }
 
@@ -13,13 +13,18 @@
 }
 
 .jimu-widget-setting-critical-facilities .main-instruction {
-  margin-top: 10px;
-  margin-bottom: 10px;
+  /*margin-top: 10px;*/
+  /*margin-bottom: 10px;*/
 }
 
 .jimu-widget-setting-critical-facilities .instruction {
+  padding-top: 7px;
   margin-left: 10px;
-  margin-top: 10px;
+}
+
+.jimu-rtl .jimu-widget-setting-critical-facilities .instruction {
+  padding-top: 7px;
+  margin-right: 10px;
 }
 
 .jimu-widget-setting-critical-facilities .padTop20 {
@@ -541,7 +546,7 @@
   border-radius: 5px;
   font-size: 14px;
   color: #596679;
-  margin-bottom: 10px;
+  /*margin-bottom: 10px;*/
   min-width: 0px;
 }
 
@@ -602,6 +607,21 @@
 
 /*End Dojo override section*/
 /*------------------------------------------------------------------------------------------------------------*/
+
+/*Start jimu override section*/
+.jimu-widget-setting-critical-facilities .jimu-viewstack {
+  overflow: auto;
+  height: calc(100% - 85px);
+}
+
+.jimu-widget-setting-critical-facilities .jimu-tab3 {
+  overflow: hidden;
+  height: 100%;
+}
+
+/*End jimu override section*/
+/*------------------------------------------------------------------------------------------------------------*/
+
 
 /*Start sample css for layer chooser*/
 /*.jimu-widget-setting-critical-facilities {
