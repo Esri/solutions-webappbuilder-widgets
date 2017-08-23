@@ -33,12 +33,13 @@ define([
     "esri/Color",
     "esri/symbols/Font",
     "esri/symbols/TextSymbol",
+    "esri/geometry/webMercatorUtils",
 
     "xstyle/css!./GridOverlay.css"
 ], function(
     declare, lang, array,
     gridUtils, constants,
-    GraphicsLayer, Graphic, Color, Font, TextSymbol
+    GraphicsLayer, Graphic, Color, Font, TextSymbol, webMercatorUtils
 ) {
     // If Math.log10 is not supported by default in the browser, add it here
     if (!Math.log10) {
@@ -592,9 +593,11 @@ define([
               this._lineGraphics = this._lineGraphics.concat(arr);
             }, this);
             for (i = 0; i < this._lineGraphics.length; i++) {
+              this._lineGraphics[i].geometry = webMercatorUtils.project(this._lineGraphics[i].geometry, this._lineGraphicsLayer.spatialReference);
               this._lineGraphicsLayer.add(this._lineGraphics[i]);
             }
             for (i = 0; i < this._labelGraphics.length; i++) {
+              this._labelGraphics[i].geometry = webMercatorUtils.project(this._labelGraphics[i].geometry, this._lineGraphicsLayer.spatialReference);
               this._labelGraphicsLayer.add(this._labelGraphics[i]);
               var node = this._labelGraphics[i].getNode();
               if (node) {
