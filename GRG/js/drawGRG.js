@@ -59,12 +59,26 @@ define([
       case 'upperLeft':
         letterIndex = VerticalCells - 1;
         secondLetterIndex = -1;
-        labelStyle != 'numeric'?number = 0:number = (VerticalCells - 1) * HorizontalCells;       
+        if(labelStyle != 'numeric') {
+          number = 0;
+        } else {
+          number = (VerticalCells - 1) * HorizontalCells;
+          if(gridStyle == "hexagon") {
+            number = number + Math.floor(VerticalCells / 2);
+          }
+        }
         break;
       case 'upperRight':
         letterIndex = VerticalCells - 1;
         secondLetterIndex = HorizontalCells;
-        labelStyle != 'numeric'?number = HorizontalCells:number = (VerticalCells * HorizontalCells) + 1;
+        if(labelStyle != 'numeric') {
+          number = HorizontalCells + 1
+        } else {
+          number = (VerticalCells * HorizontalCells) + 1;
+          if(gridStyle == "hexagon") {
+            number = number + Math.floor(VerticalCells / 2);
+          }
+        }        
         break;
       case 'lowerRight':
         letterIndex = 0;
@@ -77,6 +91,8 @@ define([
         number = 0;
         break;              
     }
+    
+    
     
     
     // work out required off set for first point
@@ -272,7 +288,15 @@ define([
       switch (labelStartPosition) {
           case 'upperLeft':
             letterIndex = letterIndex - 1;
-            labelStyle != 'numeric'?number = 0:number = (VerticalCells - (i + 1)) * HorizontalCells;
+            if(labelStyle != 'numeric') {
+              number = 0;
+            } else { 
+              if(gridStyle == "hexagon") {
+                number = (number - (2 * hexHorizontalCells)) - 1;
+              } else {
+                number = (number - (2 * HorizontalCells));
+              }
+            }
             secondLetterIndex = -1; 
             break;
           case 'upperRight':
@@ -285,7 +309,15 @@ define([
             break;
           case 'lowerRight':
             letterIndex += 1;
-            labelStyle != 'numeric'?number = HorizontalCells + 1:number = ((i + 1) * HorizontalCells) + 1;
+            if(labelStyle != 'numeric') {
+              number = HorizontalCells + 1;
+            } else {
+              if(gridStyle == "hexagon") {
+                number = (number + (2 * hexHorizontalCells)) + 1;
+              } else {
+                number = (number + (2 * HorizontalCells));
+              }
+            }
             secondLetterIndex = HorizontalCells;
             break;
           case 'lowerLeft':
