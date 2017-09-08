@@ -1,1 +1,0 @@
-#Mature Support As of July 2017. The Coordinate Conversion widget has been moved to the Mature Support Lifecycle Phase. See the Readme.md for more details about new version of this widget using Web AppBuilder.

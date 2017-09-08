@@ -1,8 +1,0 @@
-{
-    "elevationSync": {
-        "url": "http://elevation.arcgis.com/arcgis/rest/services/Tools/ElevationSync/GPServer"
-    },
-    "losSync": {
-        "url": "http://afmcloud.esri.com/arcgis/rest/services/Analysis/LineOfSight/GPServer"
-    }
-}
