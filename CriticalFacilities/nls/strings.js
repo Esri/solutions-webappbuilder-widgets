@@ -1,30 +1,81 @@
 ﻿define({
   root: ({
-    schemaMapping: "Field Mapping",
-    locationMapping: "Location Mapping",
-    unmatched: "Un-matched Records",
-    addToMap: "Add to map",
-    submit: "Submit",
-    clear: "Clear",
-    update: "Update",
-    schemaMappingInstructions: "Please drag/drop a CSV onto the map.\nThis widget will assist with processing the CSV data when it is made avalible.",
-    loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",
-    addressFieldLabel: "Address",
-    useAddress: "Single Field Address",
-    useMultiAddress: "Multi Field Address",
-    xyFieldsLabelX: "X",
-    xyFieldsLabelY: "Y",
-    useXY: "X/Y Fields",
-    saveError: "Error saving features.",
-    noValue: "Select a Value",
-    consumesCredits: "This tool consumes credits when used with the ArcGIS Online World Geocoding Service",
-    address: "Address",
-    city: "City",
-    state: "State",
-    zip: "Zip",
-    geocodeCache: "GeocodeCache",
-    unableToFindOrCreateCache: "Unable to find or create a geocode cache.",
-    locateFeature: "Locate Feature"
+    startPage: {
+      startPageInstructions: "This widget will assist with processing and submitting data from a file to the ${0} layer in the map",
+      startPageHint: "Values within the file must be delimited by comma, tab, semi-colon, or vertical bar.",
+      dragDrop: "Please drag/drop",
+      browse: "Browse to File",
+      enterAddress: "Enter an address...",
+      or: "OR"
+    },
+    mapping: {
+      schemaMapping: "Field Mapping",
+      schemaMappingHint: "Choose fields from the file that should be brought into the layer.",
+      locationMapping: "Location Mapping",
+      locationMappingHint: "Choose the type of address or coordinate information to expect from the file.",
+    },
+    locationMapping: {
+      locationMappingPageHint: "Choose location type",
+      useAddress: "Locate using an address",
+      useAddressHint: "Data contains address values",
+      useCoordinates: "Locate using coordinates",
+      useCoordinatesHint: "Data contains X/Y coordinate values"
+    },
+    address: {
+      addressPageHint: "Choose address type",
+      singleField: "Single field",
+      singleFieldHint: "Address data is in a single field",
+      multiField: "Multiple fields",
+      multiFieldHint: "Address data is in multiple fields"
+    },
+    coordinates: {
+      coordinatesPageHint: "Choose fields that contain the coordinate data"
+    },
+    fieldMapping: {
+      fieldMappingPageHint: "Choose the source field that maps to the target field",
+      sourceField: "Matching Source Field",
+      targetField: "Target Field"
+    },
+    buttons: {
+      addToMap: "Add to Map",
+      submit: "Submit",
+      download: "Download"
+    },
+    featureToolbar: {
+      editTip: "Edit",
+      saveTip: "Save",
+      locateTip: "Locate"    
+    },
+    pageContainer: {
+      next: "Next",
+      nextTip: "Next",
+      back: "Back",
+      backTip: "Back",
+      homeTip: "Home"
+    },
+    review: {
+      matchScore: "Match Score",
+      reviewMatched: "Review Matched",
+      reviewMatchedHint: "Review Matched hint",
+      reviewMatchedPageHint: "Review Matched Page hint",
+      reviewUnMatched: "Review Un-matched",
+      reviewUnMatchedHint: "Review Un-matched hint",
+      reviewUnMatchedPageHint: "Review Un-matched Page hint",
+      reviewDuplicate: "Review Duplicate",
+      reviewDuplicateHint: "Review Duplicate hint",
+      reviewDuplicatePageHint: "Review Duplicate Page hint",
+      useGeometry: "Use geometry",
+      useValues: "Use values",
+      fromLayer: "from layer",
+      fromFile: "from file"
+    },
+    warningsAndErrors: {
+      loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",
+      saveError: "Error saving features.",
+      unableToFindOrCreateCache: "Unable to find or create a geocode cache.",
+      consumesCredits: "This tool consumes credits when used with the ArcGIS Online World Geocoding Service",
+      noValue: "Select a Value"
+    }
   }),
   "ar": 0,
   "cs": 0,

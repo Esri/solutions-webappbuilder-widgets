@@ -82,17 +82,17 @@ function (declare, _WidgetBase, _TemplatedMixin, Button, lang, array, html, domC
           }
 
           var divNode = domConstruct.create('div', {
-            className: "bottomBorder jimu-main-background"
+            className: "bottom-border jimu-main-background"
           });
 
           var titleDiv = domConstruct.create('div', {
             className: "titleDiv",
             onclick: function (evt) {
               var parent = evt.target.parentNode;
-              if (!domClass.contains(parent, "bottomBorder")) {
+              if (!domClass.contains(parent, "bottom-border")) {
                 for (var i = 0; i < 2; i++) {
                   parent = parent.parentNode;
-                  if (domClass.contains(parent, "bottomBorder")) {
+                  if (domClass.contains(parent, "bottom-border")) {
                     break;
                   }
                 }

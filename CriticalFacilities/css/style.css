@@ -32,11 +32,6 @@
   height: 100%;
 }
 
-.jimu-widget-critical-facilities .warning-instruction{
-  color: firebrick;
-  display: none;
-}
-
 .jimu-widget-critical-facilities .footer{
   position: relative;
   float: right;
@@ -285,8 +280,8 @@ background-color: none;
   white-space: nowrap;
 }
 
-.bottomBorder {
-  border-bottom: 1px solid #dcdcdc;
+.bottom-border {
+  border-bottom: 1px solid black;
 }
 
 .titleDiv:hover .image-up-highlight{
@@ -412,6 +407,31 @@ right: 0;
 }
 /*end unmatched-list*/
 
+.critical-facilities-tab-container .icon-bar {
+  width: 100%;
+  background-color: #555;
+  overflow: auto;
+}
+
+.critical-facilities-tab-container .icon-bar a {
+  float: left;
+  width: 20%;
+  text-align: center;
+  padding: 12px 0;
+  transition: all 0.3s ease;
+  color: white;
+  font-size: 36px;
+}
+
+.critical-facilities-tab-container .icon-bar a:hover {
+  background-color: #000;
+}
+
+.critical-facilities-tab-container .active {
+  background-color: #4CAF50 !important;
+}
+
+
 /*.dijitSelect {
     font-weight: 600;
     font-family: "Open Sans","Helvetica Neue",Arial,Helvetica,Verdana,sans-serif;
@@ -536,3 +556,463 @@ right: 0;
 .dijitMenuItemSelected td {
   border-color: #e0e0e0;
 }*/
+
+
+
+/*new container*/
+
+.jimu-widget-critical-facilities-ui .page-item-td {
+  /*padding: 0 40px;*/
+  cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.jimu-widget-critical-facilities-ui .float-left {
+  float: left;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .float-left {
+  float: right;
+}
+
+.jimu-widget-critical-facilities-ui .float-right {
+  float: right;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .float-right {
+  float: left;
+}
+
+.jimu-widget-critical-facilities-ui .control-row {
+  line-height: 53px;
+}
+
+.jimu-widget-critical-facilities-ui .bg-back {
+  background-image: url('../images/nav_left_black.png');
+  width: 25px;
+  height: 25px;
+  position: relative;
+  background-size: contain;
+  float: left;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .bg-back {
+  background-image: url('../images/nav_right_black.png');
+  width: 25px;
+  height: 25px;
+  position: relative;
+  background-size: contain;
+  float: right;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-widget-critical-facilities-ui .bg-home {
+  background-image: url('../images/home_black.png');
+  width: 25px;
+  height: 25px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  margin: auto;
+}
+
+.jimu-widget-critical-facilities-ui .bg-next {
+  background-image: url('../images/nav_right_black.png');
+  width: 25px;
+  height: 25px;
+  position: relative;
+  background-size: contain;
+  float: right;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .bg-next {
+  background-image: url('../images/nav_left_black.png');
+  width: 25px;
+  height: 25px;
+  position: relative;
+  background-size: contain;
+  float: left;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-left {
+  cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: left;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .page-item-td-left {
+  cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-right {
+  cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: right;
+  background-image: url('../images/icon.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .page-item-td-right {
+  cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+  text-align: left;
+  background-image: url('../images/icon.png');
+}
+
+.jimu-widget-critical-facilities-ui .jimu-tab3 .page-item-td.jimu-state-active {
+  color: #48494B;
+}
+
+.jimu-widget-critical-facilities-ui .control-node {
+  padding-bottom: 10px;
+  border-bottom: 1px solid black;
+}
+
+.jimu-widget-critical-facilities-ui .container-node {
+  padding-top: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .control-disbaled {
+  opacity: .3;
+  cursor: default;
+}
+
+
+/*.jimu-widget-critical-facilities-ui .jimu-tab3 .page-item-div {
+  position: relative;
+  width: 100%;
+  height: 36px;
+  line-height: 36px;
+  margin: 0 auto;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}*/
+
+/*.jimu-widget-critical-facilities-ui .jimu-item-selector .jimu-tab3 .page-item-div {
+  height: 30px;
+  line-height: 30px;
+}*/
+
+.jimu-widget-critical-facilities-ui .main-text {
+  font-weight: bold;
+  display: inline-block;
+}
+
+
+.jimu-widget-critical-facilities-ui .instruction {
+  color: #898989;
+  font-size: 11px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-top-10 {
+  padding-top: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-bottom-10 {
+  padding-bottom: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-left-10 {
+  padding-left: 10px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .pad-left-10 {
+  padding-right: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-left-30 {
+  padding-left: 30px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .pad-left-30 {
+  padding-right: 30px;
+}
+
+.jimu-widget-critical-facilities-ui .task-text {
+  float: left;
+  padding-left: 5px;
+  font-weight: bold;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .task-text {
+  float: right;
+  padding-right: 5px;
+  font-weight: bold;
+}
+
+.jimu-widget-critical-facilities-ui .task-row {
+  line-height: 33px;
+}
+
+.jimu-widget-critical-facilities-ui .task-instruction-row {
+  text-align: left;
+  margin: auto;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .task-instruction-row {
+  text-align: right;
+  margin: auto;
+}
+
+.jimu-widget-critical-facilities-ui .page-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  text-align: center;
+}
+
+.jimu-widget-critical-facilities-ui .next-arrow {
+  background-image: url('../images/nav_right_black.png');
+  width: 15px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  float: right;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .next-arrow {
+  background-image: url('../images/nav_left_black.png');
+  width: 15px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  float: left;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-widget-critical-facilities-ui .width-15 {
+  width: 15px;
+}
+
+.jimu-widget-critical-facilities-ui .display-none {
+  display: none;
+}
+
+/*nav dijit*/
+.jimu-widget-critical-facilities-ui .cf-page-container {
+  position: relative;
+  width: 100%;
+}
+/*end nav dijit*/
+
+/*home page*/
+.jimu-widget-critical-facilities-ui .cf-home .upload-tab-node {
+  margin-top: 20px;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .schema-map-instructions {
+  text-align: center;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .drop-or-browse {
+  display: block;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  color: #898989;
+  line-height: 20px;
+  position: relative;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .drop-or-browse:before,
+.jimu-widget-critical-facilities-ui .cf-home .drop-or-browse:after {
+  content: "";
+  display: block;
+  height: 1px;
+  width: 45%;
+  background: #eee;
+  position: absolute;
+  top: 9px;
+  left: 0;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .cf-home .drop-or-browse:before,
+.jimu-rtl .jimu-widget-critical-facilities-ui .cf-home .drop-or-browse:after {
+  content: "";
+  display: block;
+  height: 1px;
+  width: 45%;
+  background: #eee;
+  position: absolute;
+  top: 9px;
+  right: 0;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .drop-or-browse:after {
+  right: 0;
+  left: auto;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .cf-home .drop-or-browse:after {
+  right: auto;
+  left: 0;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .drop-or-browse b {
+  display: inline-block;
+  padding-right: 5px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .cf-home .drop-or-browse b {
+  display: inline-block;
+  padding-left: 5px;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .file-form {
+  display: inline-block;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .file-form label {
+  display: inline-block;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 5px;
+  margin-right: 5px;
+  min-width: 180px;
+  line-height: 20px;
+  white-space: normal;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .cf-home .file-form label {
+  display: inline-block;
+  font-size: 11px;
+  text-transform: uppercase;
+  padding: 5px;
+  margin-left: 5px;
+  min-width: 180px;
+  line-height: 20px;
+  white-space: normal;
+}
+
+.DartTheme .jimu-widget-critical-facilities-ui .cf-home .file-form label {
+  color: #15a4fa !important;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .upload-input {
+  display: none;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .warning-instruction {
+  color: firebrick;
+  display: none;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .usage-instruction {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .startpage-hint {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .cf-home .bottom {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+
+
+/*----------------------- Styles for search -------------------------*/
+
+.jimu-widget-critical-facilities-ui .cf-home .address-search {
+  display: inline-block;
+}
+
+.jimu-widget-critical-facilities-ui .esriCTSearchOuterContainer {
+  padding: 0px 0px 15px 0px;
+  clear: both;
+}
+
+.jimu-widget-critical-facilities-ui .esriCTSearchDiv {
+  float: left;
+  clear: both;
+  margin-right: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .esriCTSearchHeader {
+  margin-bottom: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .esriCTSearchDiv .arcgisSearch {
+  float: left;
+  width: 100% !important;
+  /*added to fix issue in Dart theme*/
+}
+
+.jimu-widget-critical-facilities-ui .esriCTSearchContainer {
+  width: 100%;
+  height: 35px;
+}
+
+.jimu-widget-critical-facilities-ui .arcgisSearch .searchGroup .searchInput {
+  width: 170px;
+  padding: 6px 24px 6px 12px !important;
+}
+
+.esriRtl .jimu-widget-critical-facilities-ui .arcgisSearch .searchGroup .searchInput {
+  padding: 6px 12px 6px 24px !important;
+}
+
+.jimu-widget-critical-facilities-ui .arcgisSearch .searchBtn {
+  padding: 6px;
+}
+
+.jimu-widget-critical-facilities-ui .jimu-widget-search .arcgisSearch .searchGroup .searchInputGroup .searchInput {
+  width: auto;
+}
+
+.jimu-widget-critical-facilities-ui .esriCTSearchContainer .searchClear {
+  top: 2px !important;
+  /* In Launchpad, when using the Placename search,to prevent the X to clear the search entry overwrites the search box */
+}
+
+
+/*-------------------- End of styles for search panel ---------------------*/
+
+/*end home page*/
+
+/*start page*/
+
+.jimu-widget-critical-facilities-ui .done-mark {
+  background-image: url('../images/check.png');
+  width: 15px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  float: right;
+  margin-right: 10px;
+  background-repeat: no-repeat;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .done-mark {
+  background-image: url('../images/check.png');
+  width: 15px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  float: left;
+  margin-left: 10px;
+  background-repeat: no-repeat;
+}
+
+/*end start page*/

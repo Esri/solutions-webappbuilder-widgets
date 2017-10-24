@@ -1,0 +1,39 @@
+﻿<div class="pad-left-10">
+  <table class="page-table" cellpading="0">
+    <tbody>
+      <tr class="bottom-border task-instruction-row">
+        <td colspan="3">
+          <div class="instruction pad-bottom-10">${nls.locationMapping.locationMappingPageHint}</div>
+        </td>
+      </tr>
+      <tr class="task-row task-instruction-row">
+        <td class="pad-left-10">
+          <input name="a" data-dojo-type="dijit/form/RadioButton"
+                 data-dojo-attach-point="rdoAddress"
+                 data-dojo-attach-event="onChange:_rdoAddressChanged"
+                 title="${nls.locationMapping.useAddress}" />
+          <div class="main-text">${nls.locationMapping.useAddress}</div>
+        </td>
+      </tr>
+      <tr class="bottom-border task-instruction-row">
+        <td class="pad-left-30 pad-bottom-10">
+          <span class="instruction">${nls.locationMapping.useAddressHint}</span>
+        </td>
+      </tr>
+      <tr class="task-instruction-row task-row">
+        <td class="pad-left-10">
+          <input name="a" data-dojo-type="dijit/form/RadioButton"
+                 data-dojo-attach-point="rdoCoordinates"
+                 data-dojo-attach-event="onChange:_rdoCoordinateChanged"
+                 title="${nls.locationMapping.useCoordinates}" />
+          <div class="main-text">${nls.locationMapping.useCoordinates}</div>
+        </td>
+      </tr>
+      <tr class="bottom-border task-instruction-row">
+        <td class="pad-left-30 pad-bottom-10">
+          <span class="instruction">${nls.locationMapping.useCoordinatesHint}</span>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
