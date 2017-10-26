@@ -1,0 +1,72 @@
+﻿<div class="pad-left-10">
+  <table class="page-table" cellpading="0" >
+    <tbody>
+      <tr class="bottom-border task-instruction-row">
+        <td colspan="2">
+          <div class="instruction pad-bottom-10">${nls.address.addressPageHint}</div>
+        </td>
+      </tr>
+      <tr class="task-row task-instruction-row">
+        <td colspan="2" class="pad-left-10">
+          <!--table for single field-->
+          <table class="page-table" cellpading="0">
+            <tbody>
+              <tr class="task-row task-instruction-row">
+                <td colspan="2">
+                  <input name="a" data-dojo-type="dijit/form/RadioButton"
+                         data-dojo-attach-point="rdoSingleAddress"
+                         data-dojo-attach-event="onChange:_rdoSingleAddressChanged"
+                         title="${nls.address.singleField}" />
+                  <div class="main-text">${nls.address.singleField}</div>
+                </td>
+              </tr>
+              <tr class="sub-task-hint">
+                <td colspan="2" class="pad-left-20 float-left">
+                  <span class="instruction">${nls.address.singleFieldHint}</span>
+                </td>
+              </tr>
+              <tr class="control-row bottom-border">
+                <td class="pad-left-20" >
+                  <table class="page-table" cellpading="0">
+                    <tbody data-dojo-attach-point="singleFieldTable">
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="pad-left-10">
+          <!--table for multi field-->
+          <table class="page-table" cellpading="0">
+            <tbody>
+              <tr class="task-row task-instruction-row">
+                <td colspan="2">
+                  <input name="a" data-dojo-type="dijit/form/RadioButton"
+                         data-dojo-attach-point="rdoMultiAddress"
+                         data-dojo-attach-event="onChange:_rdoMultiAddressChanged"
+                         title="${nls.address.multiField}" />
+                  <div class="main-text">${nls.address.multiField}</div>
+                </td>
+              </tr>
+              <tr class="sub-task-hint">
+                <td colspan="2" class="pad-left-20 float-left">
+                  <span class="instruction">${nls.address.multiFieldHint}</span>
+                </td>
+              </tr>
+              <tr class="control-row">
+                <td class="pad-left-20">
+                  <table class="page-table" cellpading="0">
+                    <tbody data-dojo-attach-point="multiFieldTable"></tbody>
+                  </table>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>

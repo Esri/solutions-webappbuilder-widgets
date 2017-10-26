@@ -51,6 +51,9 @@ define(['dojo/_base/declare',
       fields: [],
       xLabel: "",
       yLabel: "",
+      theme: '',
+      isDarkTheme: '',
+      styleColor: '',
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -91,6 +94,19 @@ define(['dojo/_base/declare',
             selected: typeof (f.ySelected) === 'undefined' ? false : f.ySelected
           });
         }));
+      },
+
+      setStyleColor: function (styleColor) {
+        this.styleColor = styleColor;
+      },
+
+      updateImageNodes: function () {
+        //TODO toggle white/black images
+      },
+
+      updateTheme: function (theme) {
+        this.theme = theme;
       }
+
     });
   });

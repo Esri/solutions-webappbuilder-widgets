@@ -50,6 +50,9 @@ define(['dojo/_base/declare',
       map: null,
       appConfig: null,
       config: null,
+      theme: '',
+      isDarkTheme: '',
+      styleColor: '',
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -163,7 +166,20 @@ define(['dojo/_base/declare',
 
       resetPlaceNameWidgetValues: function () {
         this.clearSearchText();
+      },
+
+      setStyleColor: function (styleColor) {
+        this.styleColor = styleColor;
+      },
+
+      updateImageNodes: function () {
+        //TODO toggle white/black images
+      },
+
+      updateTheme: function (theme) {
+        this.theme = theme;
       }
+
 
     });
   });

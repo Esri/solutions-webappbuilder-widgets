@@ -22,10 +22,8 @@ define(['dojo/_base/declare',
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
-  "dojo/text!./StartPage.html",
-  '../search',
-  'dojo/dom-construct',
-  'dojo/query'
+  "dojo/text!./LocationType.html",
+  'dijit/form/RadioButton'
 ],
   function (declare,
     lang,
@@ -35,21 +33,23 @@ define(['dojo/_base/declare',
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
     Evented,
-    template,
-    Search,
-    domConstruct,
-    query) {
+    template) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
-      baseClass: 'cf-startpage',
-      declaredClass: 'CriticalFacilities.StartPage',
+      baseClass: 'cf-location-type',
+      declaredClass: 'CriticalFacilities.LocationType',
       templateString: template,
       _started: null,
-      label: 'StartPage',
+      label: 'LocationType',
       parent: null,
       nls: null,
       map: null,
       appConfig: null,
       config: null,
+      useAddress: true,
+      useCoordinates: false,
+      theme: '',
+      isDarkTheme: '',
+      styleColor: '',
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -57,14 +57,36 @@ define(['dojo/_base/declare',
 
       postCreate: function () {
         this.inherited(arguments);
+        this.rdoAddress.set('checked', this.useAddress);
+        this.rdoCoordinates.set('checked', this.useCoordinates);
       },
 
       startup: function () {
-        console.log('StartPage startup');
+        console.log('LocationType startup');
       },
 
       onShown: function () {
-        console.log('StartPage shown');
+        console.log('LocationType shown');
+      },
+
+      _rdoAddressChanged: function (v) {
+        this.useAddress = v;
+      },
+
+      _rdoCoordinateChanged: function (v) {
+        this.useCoordinates = v;
+      },
+
+      setStyleColor: function (styleColor) {
+        this.styleColor = styleColor;
+      },
+
+      updateImageNodes: function () {
+        //TODO toggle white/black images
+      },
+
+      updateTheme: function (theme) {
+        this.theme = theme;
       }
 
     });

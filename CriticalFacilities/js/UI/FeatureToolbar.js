@@ -23,8 +23,7 @@ define(['dojo/_base/declare',
   'dojo/query',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
-  "dojo/text!./PageContainer.html",
-  'jimu/dijit/ViewStack'
+  'dojo/text!./FeatureToolbar.html'
 ],
   function (declare,
     lang,
@@ -35,33 +34,32 @@ define(['dojo/_base/declare',
     query,
     _WidgetBase,
     _TemplatedMixin,
-    template,
-    ViewStack) {
+    template) {
     return declare([_WidgetBase, _TemplatedMixin, Evented], {
       templateString: template,
-      selected: '',
-      tabs: null,
-      average: false,
 
-      'baseClass': 'jimu-tab3',
-      declaredClass: 'PageContainer',
+      'baseClass': 'cf-feature-toolbar',
+      declaredClass: 'FeatureToolbar',
+      label: "FeatureToolbar",
 
-      _currentIndex: -1,
-      _homeIndex: 0,
-      _rootIndex: 0,
-      _selectedIndex: -1,
+      parent: null,
+      nls: null,
+      map: null,
+      appConfig: null,
+      config: null,
+      feature: null,
+      layer: null,
+      theme: '',
+      isDarkTheme: '',
+      locators: [],
+      styleColor: '',
 
-      //TODO should support a collection of collections of views
-      //TODO could add optional breadcrumb??
+      constructor: function (options) {
+        lang.mixin(this, options);
+      },
 
       postCreate: function () {
         this.inherited(arguments);
-        this._initSelf();
-        if (this.selected) {
-          this.selectTab(this.selected);
-        } else if (this.views.length > 0) {
-          this._homeView();
-        }
       },
 
       startup: function () {
@@ -69,84 +67,33 @@ define(['dojo/_base/declare',
         this._started = true;
       },
 
-      selectTab: function (index) {
-        this.viewStack.switchView(index);
-
-        this._updateControl(this.backTd,
-          index === this._homeIndex ? true : index + 1 === this.views.length ? false : false);
-        this._updateControl(this.homeTd,
-          index === this._homeIndex ? true : index + 1 === this.views.length ? false : false);
-        this._updateControl(this.nextTd,
-          index === this._homeIndex ? false : index + 1 === this.views.length ? true : false);
-
-        this.emit('tabChanged', index);
+      _edit: function () {
+        alert('edit');
       },
 
-      showShelter: function () {
-        html.setStyle(this.shelter, 'display', 'block');
+      _locate: function () {
+        alert('locate');
       },
 
-      hideShelter: function () {
-        html.setStyle(this.shelter, 'display', 'none');
+      _save: function () {
+        alert('save');
       },
 
-      getSelectedIndex: function () {
-        return this._currentIndex;
+      locateFeature: function (address) {
+        //return feature from locationToAddress
       },
 
-      getSelectedTitle: function () {
-        return this.viewStack.getSelectedLabel();
+      setStyleColor: function (styleColor) {
+        this.styleColor = styleColor;
       },
 
-      _initSelf: function () {
-        this.viewStack = new ViewStack(null, this.containerNode);
-        this._initViews();
+      updateImageNodes: function () {
+        //TODO toggle white/black images
       },
 
-      _initViews: function () {
-        this.viewCount = this.views.length;
-        array.forEach(this.views, lang.hitch(this, function (view) {
-          this.viewStack.addView(view);
-        }));
-      },
-
-      _onSelect: function (title) {
-        this.selectTab(title);
-      },
-
-      _prevView: function () {
-        if ((this._currentIndex - 1) <= this._homeIndex) {
-          this._homeView();
-        } else {
-          this._currentIndex -= 1;
-          this.selectTab(this._currentIndex);
-        }
-      },
-
-      _homeView: function () {
-        this._currentIndex = this._homeIndex;
-        this.selectTab(this._currentIndex);
-      },
-
-      _nextView: function () {
-        if (this._currentIndex < this.viewCount -1) {
-          this._currentIndex += 1;
-          this.selectTab(this._currentIndex);
-        }
-      },
-
-      _getViewByIndex: function (idx) {
-        return this.views.filter(function (view) {
-          return view.index === idx;
-        });
-      },
-
-      _updateControl: function (node, disable) {
-        if (disable) {
-          html.addClass(node, 'control-disbaled');
-        } else {
-          html.removeClass(node, 'control-disbaled');
-        }
+      updateTheme: function (theme) {
+        this.theme = theme;
       }
+
     });
   });

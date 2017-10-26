@@ -1,30 +1,18 @@
-<div>
-  <div class="control-node" data-dojo-attach-point="controlNode">
-    <table data-dojo-attach-point="controlTable" class="control-table" cellpading="0">
-      <tbody>
-        <tr data-dojo-attach-point="controlTr" style="line-height:25px;">
-          <!--BACK-->
-          <td nowrap class="page-item-td-left" data-dojo-attach-point="backTd" data-dojo-attach-event="onclick:_prevView">
-            <div class="bg-back"></div>
-            <div class="page-item-div" label="Back"></div>
-          </td>
-          <!--HOME-->
-          <td nowrap class="page-item-td-center" data-dojo-attach-point="homeTd" data-dojo-attach-event="onclick:_homeView">
-            <div>
-              <div class="bg-home">
-              </div>
-            </div>
-            <div class="page-item-div"></div>
-          </td>
-          <!--NEXT-->
-          <td nowrap class="page-item-td-right" data-dojo-attach-point="nextTd" data-dojo-attach-event="onclick:_nextView">
-            <div class="bg-next"></div>
-            <div class="page-item-div" label="Next"></div>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-  <div class="container-node" data-dojo-attach-point="containerNode"></div>
-  <div class="tab-shelter" data-dojo-attach-point="shelter"></div>
+<div class="float-right">
+  <table data-dojo-attach-point="controlTable" class="control-table" cellpading="0">
+    <tbody>
+      <tr data-dojo-attach-point="controlTr" class="feature-toolbar-row">
+        <td nowrap data-dojo-attach-point="backTd" class="pad-right-15">
+          <div class="float-left bg-edit feature-toolbar-btn" data-dojo-attach-event="onclick:_edit"></div>
+        </td>
+        <td data-dojo-attach-point="homeTd" class="pad-right-15">
+          <div class="bg-locate feature-toolbar-btn" data-dojo-attach-event="onclick:_locate">
+          </div>
+        </td>
+        <td data-dojo-attach-point="nextTd">
+          <div class="float-right bg-save feature-toolbar-btn" data-dojo-attach-event="onclick:_save"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>

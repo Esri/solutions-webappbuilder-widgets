@@ -1,0 +1,2 @@
+﻿//store the attributes, geom, matched-status, any relationships with potential duplicate features, and any other misc proprs needs
+// Review, FeatureList, and Feature pages will process on FeatureItems

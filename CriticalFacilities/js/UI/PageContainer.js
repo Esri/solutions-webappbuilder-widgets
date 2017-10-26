@@ -42,6 +42,7 @@ define(['dojo/_base/declare',
       selected: '',
       tabs: null,
       average: false,
+      nls: null,
 
       'baseClass': 'jimu-tab3',
       declaredClass: 'PageContainer',
@@ -50,6 +51,18 @@ define(['dojo/_base/declare',
       _homeIndex: 0,
       _rootIndex: 0,
       _selectedIndex: -1,
+      theme: '',
+      isDarkTheme: '',
+      styleColor: '',
+
+      //Use this when jimu dijit
+      //postMixInProperties: function () {
+      //  this.nls = window.jimuNls.pageContainer;
+      //},
+      //get nls from here for now
+      constructor: function (options) {
+        lang.mixin(this, options);
+      },
 
       //TODO should support a collection of collections of views
       //TODO could add optional breadcrumb??
@@ -147,6 +160,42 @@ define(['dojo/_base/declare',
         } else {
           html.removeClass(node, 'control-disbaled');
         }
+      },
+
+      addView: function (view) {
+        //adds a new view to the viewstack
+        this.viewStack.addView(view);
+        this.viewCount = this.viewStack.length;
+      },
+
+      addViewAtIndex: function (view, idx) {
+        ////adds a new view to the viewstack at the user defined index
+        //this.viewStack.addView(view);
+
+        //this.viewCount = this.viewStack.length;
+      },
+
+      removeView: function (view) {
+        this.removeViewByIndex(view.index);
+      },
+
+      removeViewByIndex: function (idx) {
+        var view = this._getViewByIndex(idx);
+        this.viewStack.removeView(view)
+        this.viewCount = this.viewStack.length;
+      },
+
+      setStyleColor: function (styleColor) {
+        this.styleColor = styleColor;
+      },
+
+      updateImageNodes: function () {
+        //TODO toggle white/black images
+      },
+
+      updateTheme: function (theme) {
+        this.theme = theme;
       }
+
     });
   });

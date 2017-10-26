@@ -1,0 +1,65 @@
+﻿<div class="pad-left-10" style="height: 100%">
+  <table class="page-table" cellpading="0">
+    <tbody>
+      <tr class="task-instruction-row" data-dojo-attach-point="matchedHintRow">
+        <td colspan="3">
+          <div class="instruction">${nls.review.reviewMatchedPageHint}</div>
+        </td>
+      </tr>
+      <tr class="bottom-border task-row" data-dojo-attach-point="matchedControlRow">
+        <td>
+          <div class="task-text">${nls.review.reviewMatched}</div>
+        </td>
+        <td class="pad-right-15 float-right main-text">
+          <div data-dojo-attach-point="matchedCount">
+          </div>
+        </td>
+        <td class="width-15">
+          <div class="next-arrow">
+          </div>
+        </td>
+      </tr>
+
+      <tr class="pad-top-10 task-instruction-row" data-dojo-attach-point="unMatchedHintRow">
+        <td colspan="3">
+          <div class="instruction pad-top-10">${nls.review.reviewUnMatchedPageHint}</div>
+        </td>
+      </tr>
+      <tr class="bottom-border task-row" data-dojo-attach-point="unMatchedControlRow">
+        <td>
+          <div class="task-text">${nls.review.reviewUnMatched}</div>
+        </td>
+        <td class="pad-right-15 float-right main-text">
+          <div data-dojo-attach-point="unMatchedCount">
+          </div>
+        </td>
+        <td class="width-15">
+          <div class="next-arrow"></div>
+        </td>
+      </tr>
+
+      <tr class="pad-top-10 task-instruction-row" data-dojo-attach-point="duplicateHintRow">
+        <td colspan="3">
+          <div class="instruction pad-top-10">${nls.review.reviewDuplicatePageHint}</div>
+        </td>
+      </tr>
+      <tr class="bottom-border task-row" data-dojo-attach-point="duplicateControlRow">
+        <td>
+          <div class="task-text">${nls.review.reviewDuplicate}</div>
+        </td>
+        <td class="pad-right-15 float-right main-text">
+          <div data-dojo-attach-point="duplicateCount">
+          </div>
+        </td>
+        <td class="width-15">
+          <div class="next-arrow"></div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="pad-top-10">
+    <div class="jimu-btn float-right" data-dojo-attach-point="submitButton">${nls.buttons.submit}</div>
+    <div class="jimu-btn float-right margin-right-15" data-dojo-attach-point="downloadButton">${nls.buttons.download}</div>
+  </div>
+</div>

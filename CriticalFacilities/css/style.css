@@ -1,99 +1,6 @@
-.jimu-widget-critical-facilities text {
-  font-family: 'Avenir', LT;
-  font-size: 12pt;
-  font-weight: bold;
-  fill: #4A4866;    
-}
-
-.jimu-widget-critical-facilities .box-shadow{
-  box-shadow: 0 0px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
-}
-
-.jimu-widget-critical-facilities .content-container{
-  padding-top: 20px;
-  padding-bottom: 10px;
-  padding-left: 10px;
-  padding-right: 10px;
-}
-
-.jimu-widget-critical-facilities .title{
-  text-align: center;
-  font-size: 14px;
-  font-weight: bold;
-  /*color: #86909c;*/
-}
-
-.jimu-widget-critical-facilities .schema-map-body{
-  margin-bottom: 10px;
-}
-
-.jimu-widget-critical-facilities .schema-map-table{
-  width: 100%;
-  height: 100%;
-}
-
-.jimu-widget-critical-facilities .footer{
-  position: relative;
-  float: right;
-  margin-bottom: 10px;
-  margin-top: 20px;
-  width: 100%;
-}
-
-.jimu-rtl .jimu-widget-critical-facilities .footer{
-  position: relative;
-  float: left;
-  margin-bottom: 10px;
-  width: 100%;
-}
-
-.jimu-widget-critical-facilities .field-node-tr{
-  margin-top: 10px;
-}
-
-.jimu-widget-critical-facilities .field-label-node-td{
-  width: 45%;
-}
-
-.jimu-widget-critical-facilities .field-select-node{
-  font-family: 'Avenir', LT;
-  width: 100%;
-  height: 28px;
-  padding: 2px;
-  margin: 3px;
-  color: #4A4866;
-  font-family: Arial;
-  font-size: 10pt;
-  font-style: normal;
-  font-weight: bold;
-  border-color: #e0e0e0;
-}
-
-.jimu-widget-critical-facilities .field-control-node-td{
-
-}
-
-.jimu-widget-critical-facilities .location-body{
-  padding-left: 20px;
-}
-
-.jimu-rtl .jimu-widget-critical-facilities .location-body{
-  padding-right: 20px;
-}
-
-.jimu-widget-critical-facilities .btn{
-  float: right;
-  margin-left: 10px;
-}
-
 .jimu-widget-critical-facilities .disabled{
   cursor: default;
   background-color: #a0acbf;
-}
-
-.jimu-rtl .jimu-widget-critical-facilities .btn{
-  float: left;
-  margin-right: 10px;
 }
 
 .jimu-widget-critical-facilities .credit-warning{
@@ -113,456 +20,29 @@
   width: 100%;
 }
 
-/*start accordion*/
-
-.jimu-widget-critical-facilities .bottom-radius{
-  border-radius: 0 0 4px 4px;
-}
-
-.jimu-widget-critical-facilities .top-radius {
-  border-radius: 4px 4px 0 0;
-}
-
-.jimu-widget-critical-facilities .accordion-btn{
-  display:inline-block;
-  outline:0;
-  padding: 0px 16px;
-  font-size: 14px;
-  vertical-align:middle;
-  overflow:hidden;
-  text-decoration:none!important;
-  color:#fff;
-  text-align:center;
-  cursor:pointer;
-  white-space:nowrap;
-  -webkit-touch-callout:none;
-  -webkit-user-select:none;
-  -khtml-user-select:none;
-  -moz-user-select:none;
-  -ms-user-select:none;
-  user-select:none;
-  width:100%;
-  text-align:left!important;
-  border-width: 0 0 1px 0;
-  border-style: solid;
-  border-color: #fff;
-  -webkit-transition:opacity 0.25s ease-in,filter 0.25s ease-in;
-  transition:opacity .25s ease-in,filter .25s ease-in;
-  line-height: 33px;
-  text-overflow: ellipsis;
-}
-
-.jimu-widget-critical-facilities .accordion-btn:hover{
-  filter:alpha(opacity=90);
-  opacity: 0.9;
-}
-
-.jimu-widget-critical-facilities .accordion-btn:hover .image-down{
-  background-image: url(../images/fold_down.png);
-}
-
-.jimu-widget-critical-facilities .accordion-btn:hover .image-up{
-  background-image: url(../images/fold_up.png);
-}
-
-.jimu-widget-critical-facilities .image-up{
-  background-image: url(../images/nav_up.png);
-  background-size: 12px;
-}
-
-.jimu-widget-critical-facilities .image-down {
-  background-image: url(../images/nav_down.png);
-  background-size: 12px;
-}
-
-.jimu-widget-critical-facilities .expand-image {
-  background-repeat:no-repeat;
-  height: 10px;
-  width: 13px;
-  white-space: nowrap;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  float: right;
-  margin-top: 13px;
-}
-
-.jimu-rtl .jimu-widget-critical-facilities .expand-image {
-  background-repeat:no-repeat;
-  height: 10px;
-  width: 13px;
-  white-space: nowrap;
-  -webkit-touch-callout: none;
-  -webkit-user-select: none;
-  -khtml-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  float: left;
-  margin-top: 11px;
-}
-
-.jimu-widget-critical-facilities .btn-title{
-  float: left;
-}
-
-.jimu-rtl .jimu-widget-critical-facilities .btn-title{
-  float: right;
-}
-
-.jimu-widget-critical-facilities .content-show {
-  display: block;
-}
-
-.jimu-widget-critical-facilities .content-hide{
-  display: none;
-}
-
-/*end accordion*/
-
-
-/*start unmatched-list*/
-/*TODO these need stop embed prefixed command image paths need to be updated*/
-.dGridContainer{
-  position: absolute; 
-  top: 0px; 
-  bottom: 50px; 
-  width: 100%;
-}
-
-.dgrid.list {
-  margin: 0;
-  padding: 0;
-  /*height: 100%;
-  width: 100%;*/
-}
-
-.dgrid-selected {
-background-color: none;
-}
-
-.list{
-  overflow: auto;
-  width: 100%;
-}
-
-.btnContainer{
-  position: absolute; 
-  bottom: 0px; 
-  width: 100%;
-}
-
-.btnParent{
-  position: relative; 
-  text-align: center;
-  margin: 10px 0 10px 0;
-}
-
-.my-btn{
-  margin-right: 5px;
-  margin-bottom: 5px;
-  margin-top: 5px;
-  cursor:pointer;
-  min-width: 70px;
-  display:inline-block;
-  line-height: 33px;
-  font-size:14px;
-  text-align:center;
-  vertical-align:middle;
-  -webkit-border-radius:5px;
-  -moz-border-radius:5px;
-  -o-border-radius:5px;
-  -ms-border-radius:5px;
-  border-radius: 5px;
-  border: 1px solid transparent;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.bottom-border {
+.jimu-widget-critical-facilities-ui .bottom-border {
   border-bottom: 1px solid black;
 }
 
-.titleDiv:hover .image-up-highlight{
-  background-image: url(../images/fold_up.png);
-  /*background-color: #083F77;*/
-}
-
-.titleDiv:hover .image-down-highlight{
-  background-image: url(../images/fold_down.png);
-  /*background-color: #083F77;*/
-}
-
-.titleDiv {
-  cursor: pointer;
-  height: 30px;
+.jimu-widget-critical-facilities-ui .width-all {
   width: 100%;
-  line-height: 30px;
-  overflow: hidden;
 }
 
-.title {
-  height: 30px;
-  line-height: 30px;
-  overflow: hidden;
-  margin-left: 8px;
-  display: inline;
-  color: white;
+.jimu-widget-critical-facilities-ui .label-td {
+  white-space: nowrap;
 }
 
-.rowOn{
+.jimu-widget-critical-facilities-ui .feature-toolbar-btn {
+  padding: 10px;
   display: block;
 }
 
-.rowOff{
-  display: none;
+.jimu-widget-critical-facilities-ui .feature-toolbar-row {
+  line-height: 25px;
 }
-
-.upImage{
-  background-image: url(../images/nav_up.png);
-}
-
-.downImage{
-  background-image: url(../images/nav_down.png);
-}
-
-.baseImage{
-  vertical-align:middle;
-  width: 15px;
-  height: 15px;
-  background-repeat: no-repeat;
-  background-position: 50% 50%;
-  background-size: contain;
-  display: inline-block;
-  margin-left: 5px;
-  background-size: 11px 7px;
-  /*background-color: white;
-  border-radius: 50%;
-  border: 1px solid #083F77;*/
-}
-
-.fieldItemLabel{
-  position: relative;
-  margin-top: 5px;
-  margin-left: 5px;
-  color: white;
-}
-
-.fieldItemValue{
-  position: relative;
-  margin-top: 5px;
-  margin-left: 10px;
-  margin-right: 10px;
-  width: 90%;
-}
-
-.locate-btn {
-  /*display: block;*/
-  width: 15px;
-  height: 15px;
-  background-image: url(../images/locate.png);
-    vertical-align:middle;
-  /*width: 15px;
-  height: 15px;*/
-  background-repeat: no-repeat;
-  background-position: 50% 50%;
-  background-size: contain;
-  display: inline-block;
-  /*margin-left: 5px;
-  background-size: 11px 7px;*/
-}
-
-.locate-btn:hover {
-  background-image: url(../images/locate_hover.png);
-  cursor: pointer;
-}
-
-/*#grid {
-height: auto;
-}
-#grid .dgrid-scroller {
-position: relative;
-overflow-y: hidden;
-}
-#grid .dgrid-header-scroll {
-display: none;
-}
-#grid .dgrid-header {
-right: 0;
-}*/
-
-.dgrid-autoheight {
-  height: auto;
-}
-.dgrid-autoheight .dgrid-scroller {
-  position: relative;
-  overflow-y: hidden;
-}
-.dgrid-autoheight .dgrid-header-scroll {
-  display: none;
-}
-.dgrid-autoheight .dgrid-header {
-  right: 0;
-}
-/*end unmatched-list*/
-
-.critical-facilities-tab-container .icon-bar {
-  width: 100%;
-  background-color: #555;
-  overflow: auto;
-}
-
-.critical-facilities-tab-container .icon-bar a {
-  float: left;
-  width: 20%;
-  text-align: center;
-  padding: 12px 0;
-  transition: all 0.3s ease;
-  color: white;
-  font-size: 36px;
-}
-
-.critical-facilities-tab-container .icon-bar a:hover {
-  background-color: #000;
-}
-
-.critical-facilities-tab-container .active {
-  background-color: #4CAF50 !important;
-}
-
-
-/*.dijitSelect {
-    font-weight: 600;
-    font-family: "Open Sans","Helvetica Neue",Arial,Helvetica,Verdana,sans-serif;
-    text-align: center;
-    vertical-align: middle;
-    text-transform: capitalize;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    white-space: nowrap;
-    overflow: hidden;
-    padding: 0 18px;
-    margin-right: 18px;
-    border: 0 none;
-    border-radius: 3px;
-    display: inline-block;
-    color: #484848;
-    background-color: #e0e0e0;
-    border-color: #e0e0e0;
-    -ms-transition: background-color 0.2s ease-in-out 0s, opacity 0.2s ease-in-out 0s;
-    transition: background-color 0.2s ease-in-out 0s, opacity 0.2s ease-in-out 0s;
-    cursor: pointer;
-    position: relative;
-    margin-bottom: 30px;
-    padding: 0 !important;
-    border-color: #f0f0f0;
-
-        -webkit-appearance: none;
-    position: relative;
-    height: 32px;
-    border: none;
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: .01em;
-    border-collapse: separate;
-    padding: 0 39px 0 18px;
-    background: url(../images/nav_down.png) no-repeat right center #e0e0e0;
-    background-size: 30px auto;
-    width: 100%;
-    max-width: 635px;
-    color: #484848;
-    background-color: #e0e0e0;
-    -ms-transition: background-color 0.2s ease-in-out 0s, opacity 0.2s ease-in-out 0s;
-    transition: background-color 0.2s ease-in-out 0s, opacity 0.2s ease-in-out 0s;
-
-
-}
-
-.dijitSelect:focus {
-  outline: 1px dotted rgba(72,72,72,0.6);
-  outline-offset: -4px;
-}
-
-.dijitSelect:hover, .dijitSelect:focus {
-  cursor: pointer;
-  color: #484848;
-  background-color: #d3d3d3;
-}
-
-.dijitSelectFocused {
-  outline: 0;
-}
-
-.dijitSelect:active {
-  color: #373737;
-  background-color: #c7c7c7;
-}
-
-.dijitSelect .dijitButtonContents {
-    vertical-align: middle;
-    padding: 0 36px 0 18px;
-    border-width: 0px;
-}
-
-.dijitButtonContents {
-    display: table-cell;
-}
-
-.dijitStretch {
-    white-space: nowrap;
-}
-
-.dijitReset {
-    border: 0;
-    line-height: unset;
-    outline: 0 none;
-}
-
-.dijitSelect .dijitArrowButtonContainer, .dijitSelect .dijitValidationContainer {
-    display: none;
-}
-
-.dijitSelect .dijitButtonContents::after {
-    font-family: "freddicons";
-    content: "\e024";
-    font-size: 20px;
-    display: inline-block;
-    margin: 0 0 0 3px;
-    line-height: 32px;
-    font-weight: normal !important;
-    font-style: normal !important;
-    position: absolute;
-    right: 11px;
-    top: 0;
-}
-
-.dijitSelectSelected option .dijitMenuItemLabel{
-  background-color: #b1e0ec;
-}
-
-.dijitMenuItemLabel {
-  cursor: pointer;
-  font-weight:600;
-  font-size: 13px;
-  line-height: 24px;
-  padding: 12px 18px;
-}
-
-.dijitMenuItem td {
-  border-color: #e0e0e0;
-}
-
-.dijitMenuItemSelected td {
-  border-color: #e0e0e0;
-}*/
-
-
 
 /*new container*/
-
 .jimu-widget-critical-facilities-ui .page-item-td {
-  /*padding: 0 40px;*/
   cursor: pointer;
   min-width: 0;
   white-space: nowrap;
@@ -585,13 +65,13 @@ right: 0;
 }
 
 .jimu-widget-critical-facilities-ui .control-row {
-  line-height: 53px;
+  line-height: 48px;
 }
 
 .jimu-widget-critical-facilities-ui .bg-back {
   background-image: url('../images/nav_left_black.png');
-  width: 25px;
-  height: 25px;
+  width: 12px;
+  height: 20px;
   position: relative;
   background-size: contain;
   float: left;
@@ -601,8 +81,8 @@ right: 0;
 
 .jimu-rtl .jimu-widget-critical-facilities-ui .bg-back {
   background-image: url('../images/nav_right_black.png');
-  width: 25px;
-  height: 25px;
+  width: 12px;
+  height: 20px;
   position: relative;
   background-size: contain;
   float: right;
@@ -612,8 +92,8 @@ right: 0;
 
 .jimu-widget-critical-facilities-ui .bg-home {
   background-image: url('../images/home_black.png');
-  width: 25px;
-  height: 25px;
+  width: 20px;
+  height: 20px;
   position: relative;
   background-size: contain;
   background-repeat: no-repeat;
@@ -623,8 +103,8 @@ right: 0;
 
 .jimu-widget-critical-facilities-ui .bg-next {
   background-image: url('../images/nav_right_black.png');
-  width: 25px;
-  height: 25px;
+  width: 12px;
+  height: 20px;
   position: relative;
   background-size: contain;
   float: right;
@@ -634,14 +114,55 @@ right: 0;
 
 .jimu-rtl .jimu-widget-critical-facilities-ui .bg-next {
   background-image: url('../images/nav_left_black.png');
-  width: 25px;
-  height: 25px;
+  width: 12px;
+  height: 20px;
   position: relative;
   background-size: contain;
   float: left;
   background-repeat: no-repeat;
   cursor: pointer;
 }
+
+
+
+/*----------------------------------------------------------------------------s*/
+.jimu-widget-critical-facilities-ui .bg-edit {
+  background-image: url('../images/edit_black.png');
+  width: 15px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-widget-critical-facilities-ui .bg-locate {
+  background-image: url('../images/locate_black.png');
+  width: 15px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  margin: auto;
+}
+
+.jimu-widget-critical-facilities-ui .bg-locate:hover {
+  background-image: url('../images/locate_hover_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-save {
+  background-image: url('../images/save_black.png');
+  width: 15px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+/*-----------------------------------------------------------------------------s*/
+
+
 
 .jimu-widget-critical-facilities-ui .page-item-td-left {
   cursor: pointer;
@@ -691,22 +212,9 @@ right: 0;
   cursor: default;
 }
 
-
-/*.jimu-widget-critical-facilities-ui .jimu-tab3 .page-item-div {
-  position: relative;
-  width: 100%;
-  height: 36px;
-  line-height: 36px;
-  margin: 0 auto;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}*/
-
-/*.jimu-widget-critical-facilities-ui .jimu-item-selector .jimu-tab3 .page-item-div {
-  height: 30px;
-  line-height: 30px;
-}*/
+.jimu-widget-critical-facilities-ui .min-width-200 {
+  min-width: 200px;
+}
 
 .jimu-widget-critical-facilities-ui .main-text {
   font-weight: bold;
@@ -735,12 +243,70 @@ right: 0;
   padding-right: 10px;
 }
 
+.jimu-widget-critical-facilities-ui .pad-left-20 {
+  padding-left: 20px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .pad-left-20 {
+  padding-right: 20px;
+}
+
 .jimu-widget-critical-facilities-ui .pad-left-30 {
   padding-left: 30px;
 }
 
 .jimu-rtl .jimu-widget-critical-facilities-ui .pad-left-30 {
   padding-right: 30px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-right-10 {
+  padding-right: 10px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .pad-right-10 {
+  padding-left: 10px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-right-15 {
+  padding-right: 15px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .pad-right-15 {
+  padding-left: 15px;
+}
+
+.jimu-widget-critical-facilities-ui .margin-right-5 {
+  margin-right: 5px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .margin-right-5 {
+  margin-left: 5px;
+}
+
+.jimu-widget-critical-facilities-ui .margin-left-5 {
+  margin-left: 5px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .margin-left-5 {
+  margin-right: 5px;
+}
+
+.jimu-widget-critical-facilities-ui .margin-right-15 {
+  margin-right: 15px;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .margin-right-15 {
+  margin-left: 15px;
+}
+
+.jimu-widget-critical-facilities-ui .field-control {
+  min-width: 200px;
+  float: right;
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .field-control {
+  min-width: 200px;
+  float: left;
 }
 
 .jimu-widget-critical-facilities-ui .task-text {
@@ -757,6 +323,18 @@ right: 0;
 
 .jimu-widget-critical-facilities-ui .task-row {
   line-height: 33px;
+}
+
+.jimu-widget-critical-facilities-ui .radio-row {
+  line-height: 43px;
+}
+
+.jimu-widget-critical-facilities-ui .sub-task-hint {
+  text-align: left;
+  margin: auto;
+  line-height: 20px;
+  color: #898989;
+  font-size: 11px;
 }
 
 .jimu-widget-critical-facilities-ui .task-instruction-row {
@@ -804,6 +382,10 @@ right: 0;
 
 .jimu-widget-critical-facilities-ui .display-none {
   display: none;
+}
+
+.jimu-widget-critical-facilities-ui .display-table-row-group {
+  display: table-row-group;
 }
 
 /*nav dijit*/
