@@ -302,7 +302,8 @@
 
         this._pageContainer = new PageContainer({
           views: [h, sp, lt, c, add, f, r, fl, feat, duplicateFeat],
-          nls: this.nls.pageContainer
+          nls: this.nls.pageContainer,
+          appConfig: this.appConfig
         }, this.pageNavigation);
 
         this.own(on(this._pageContainer, 'tabChanged', lang.hitch(this, function (title) {
@@ -317,26 +318,26 @@
       },
 
       onAppConfigChanged: function (appConfig, reason, changedData) {
-        switch (reason) {
-          case 'themeChange':
-            this._setThemeAndColors(changedData);
-            this.destroy();
-            break;
-          case 'layoutChange':
-            this.destroy();
-            break;
-          case 'styleChange':
-            this._updateStyleColor(changedData);
-            break;
-          case 'widgetChange':
-            this.widgetChange = true;
-            this.destroy();
-            break;
-          case 'mapChange':
-            //this._clearMap();
-            this.destroy();
-            break;
-        }
+        //switch (reason) {
+        //  case 'themeChange':
+        //    this._setThemeAndColors(changedData);
+        //    this.destroy();
+        //    break;
+        //  case 'layoutChange':
+        //    this.destroy();
+        //    break;
+        //  case 'styleChange':
+        //    this._updateStyleColor(changedData);
+        //    break;
+        //  case 'widgetChange':
+        //    this.widgetChange = true;
+        //    this.destroy();
+        //    break;
+        //  case 'mapChange':
+        //    //this._clearMap();
+        //    this.destroy();
+        //    break;
+        //}
       },
 
       _updateStyleColor: function (changedData) {

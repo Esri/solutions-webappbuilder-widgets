@@ -25,6 +25,7 @@ define(['dojo/_base/declare',
   "dojo/text!./StartPage.html",
   '../search',
   'dojo/dom-construct',
+  'dojo/dom-class',
   'dojo/query'
 ],
   function (declare,
@@ -38,6 +39,7 @@ define(['dojo/_base/declare',
     template,
     Search,
     domConstruct,
+    domClass,
     query) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-startpage',
@@ -60,6 +62,8 @@ define(['dojo/_base/declare',
 
       postCreate: function () {
         this.inherited(arguments);
+        this._darkThemes = ['DartTheme', 'DashboardTheme'];
+        this.updateImageNodes();
       },
 
       startup: function () {
@@ -75,12 +79,30 @@ define(['dojo/_base/declare',
       },
 
       updateImageNodes: function () {
-        //TODO toggle white/black images
+        //toggle white/black images
+        var isDark = this._darkThemes.indexOf(this.theme) > -1;
+        var removeClass = isDark ? 'next-arrow-img' : 'next-arrow-img-white';
+        var addClass = isDark ? 'next-arrow-img-white' : 'next-arrow-img';
+        var imageNodes = query('.' + removeClass, this.domNode);
+        array.forEach(imageNodes, function (node) {
+          domClass.remove(node, removeClass);
+          domClass.add(node, addClass);
+        });
       },
 
       updateTheme: function (theme) {
         this.theme = theme;
-      }
+        this.updateImageNodes();
+      },
 
+      _locationMappingClick: function () {
+        var locationView = this.pageContainer.getViewByTitle('LocationType');
+        this.pageContainer.selectView(locationView.index);
+      },
+
+      _schemaMappingClick: function () {
+        var fieldMappingView = this.pageContainer.getViewByTitle('FieldMapping');
+        this.pageContainer.selectView(fieldMappingView.index);
+      }
     });
   });

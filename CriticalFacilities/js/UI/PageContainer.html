@@ -5,20 +5,20 @@
         <tr data-dojo-attach-point="controlTr" style="line-height:20px;">
           <!--BACK-->
           <td nowrap class="page-item-td-left" data-dojo-attach-point="backTd" data-dojo-attach-event="onclick:_prevView">
-            <div class="bg-back margin-right-5"></div>
+            <div class="float-left bg-img bg-back-img margin-right-5" data-dojo-attach-point="backImage"></div>
             <div class="page-item-div main-text" title="${nls.backTip}" label="${nls.back}">${nls.back}</div>
           </td>
           <!--HOME-->
           <td nowrap align="center" class="page-item-td-center" data-dojo-attach-point="homeTd" data-dojo-attach-event="onclick:_homeView">
             <div>
-              <div class="bg-home">
+              <div class="bg-home bg-home-img" data-dojo-attach-point="homeImage">
               </div>
             </div>
             <div class="page-item-div"></div>
           </td>
           <!--NEXT-->
           <td nowrap class="page-item-td-right" data-dojo-attach-point="nextTd" data-dojo-attach-event="onclick:_nextView">
-            <div class="bg-next margin-left-5"></div>
+            <div class="float-right bg-img bg-next-img margin-left-5" data-dojo-attach-point="nextImage"></div>
             <div class="page-item-div main-text" title="${nls.nextTip}" label="${nls.next}">${nls.next}</div>
           </td>
         </tr>

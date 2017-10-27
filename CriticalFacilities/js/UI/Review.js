@@ -24,6 +24,7 @@ define(['dojo/_base/declare',
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
   "dojo/text!./Review.html",
+  'dojo/query'
 ],
   function (declare,
     lang,
@@ -34,7 +35,8 @@ define(['dojo/_base/declare',
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
     Evented,
-    template) {
+    template,
+    query) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-review',
       declaredClass: 'CriticalFacilities.Review',
@@ -60,6 +62,8 @@ define(['dojo/_base/declare',
       postCreate: function () {
         this.inherited(arguments);
         this._initReviewRows();
+        this._darkThemes = ['DartTheme', 'DashboardTheme'];
+        this.updateImageNodes();
       },
 
       startup: function () {
@@ -96,8 +100,16 @@ define(['dojo/_base/declare',
         }
       },
 
-      _updateReviewRow: function () {
-
+      updateImageNodes: function () {
+        //toggle white/black images
+        var isDark = this._darkThemes.indexOf(this.theme) > -1;
+        var removeClass = isDark ? 'next-arrow-img' : 'next-arrow-img-white';
+        var addClass = isDark ? 'next-arrow-img-white' : 'next-arrow-img';
+        var imageNodes = query('.' + removeClass, this.domNode);
+        array.forEach(imageNodes, function (node) {
+          domClass.remove(node, removeClass);
+          domClass.add(node, addClass);
+        });
       },
 
       _download: function () {
@@ -110,10 +122,6 @@ define(['dojo/_base/declare',
 
       setStyleColor: function (styleColor) {
         this.styleColor = styleColor;
-      },
-
-      updateImageNodes: function () {
-        //TODO toggle white/black images
       },
 
       updateTheme: function (theme) {

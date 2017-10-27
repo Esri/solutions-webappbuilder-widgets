@@ -25,6 +25,7 @@ define(['dojo/_base/declare',
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
   "dojo/text!./FeatureList.html",
+  'dojo/query'
 ],
   function (declare,
     lang,
@@ -36,7 +37,8 @@ define(['dojo/_base/declare',
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
     Evented,
-    template) {
+    template,
+    query) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-feature-list',
       declaredClass: 'CriticalFacilities.FeatureList',
@@ -67,6 +69,8 @@ define(['dojo/_base/declare',
         this.inherited(arguments);
         this._initFeatureList(this.features);
         this.pageHint.innerHTML = this.hint;
+        this._darkThemes = ['DartTheme', 'DashboardTheme'];
+        this.updateImageNodes();
       },
 
       startup: function () {
@@ -96,29 +100,27 @@ define(['dojo/_base/declare',
             className: "width-15"
           }, tr);
           domConstruct.create('div', {
-            className: "next-arrow"
+            className: "next-arrow float-right next-arrow-img"
           }, tdArrow);
 
           tr.fieldInfo = f.fieldInfo;
         }));
+      },
 
-        //template rows
-        //<tr class="control-row">
-        //  <td class="pad-left-10 pad-right-10">
-        //    <div class="main-text float-left" data-dojo-attach-point="lblY">TEST</div>
-        //  </td>
-        //  <td class="width-15">
-        //    <div class="next-arrow"></div>
-        //  </td>
-        //</tr>
+      updateImageNodes: function () {
+        //toggle white/black images
+        var isDark = this._darkThemes.indexOf(this.theme) > -1;
+        var removeClass = isDark ? 'next-arrow-img' : 'next-arrow-img-white';
+        var addClass = isDark ? 'next-arrow-img-white' : 'next-arrow-img';
+        var imageNodes = query('.' + removeClass, this.domNode);
+        array.forEach(imageNodes, function (node) {
+          domClass.remove(node, removeClass);
+          domClass.add(node, addClass);
+        });
       },
 
       setStyleColor: function (styleColor) {
         this.styleColor = styleColor;
-      },
-
-      updateImageNodes: function () {
-        //TODO toggle white/black images
       },
 
       updateTheme: function (theme) {

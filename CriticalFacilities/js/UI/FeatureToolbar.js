@@ -21,6 +21,7 @@ define(['dojo/_base/declare',
   'dojo/on',
   'dojo/Evented',
   'dojo/query',
+  'dojo/dom-class',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dojo/text!./FeatureToolbar.html'
@@ -32,6 +33,7 @@ define(['dojo/_base/declare',
     on,
     Evented,
     query,
+    domClass,
     _WidgetBase,
     _TemplatedMixin,
     template) {
@@ -60,6 +62,8 @@ define(['dojo/_base/declare',
 
       postCreate: function () {
         this.inherited(arguments);
+        this._darkThemes = ['DartTheme', 'DashboardTheme'];
+        this.updateImageNodes();
       },
 
       startup: function () {
@@ -88,7 +92,21 @@ define(['dojo/_base/declare',
       },
 
       updateImageNodes: function () {
-        //TODO toggle white/black images
+        //toggle white/black images
+        var isDark = this._darkThemes.indexOf(this.theme) > -1;
+        this._updateImageNode(isDark, 'bg-edit', 'bg-edit-white');
+        this._updateImageNode(isDark, 'bg-locate', 'bg-locate-white');
+        this._updateImageNode(isDark, 'bg-save', 'bg-save-white');
+      },
+
+      _updateImageNode: function (isDark, img, imgWhite) {
+        var removeClass = isDark ? img : imgWhite;
+        var addClass = isDark ? imgWhite : img;
+        var imageNodes = query('.' + removeClass, this.domNode);
+        array.forEach(imageNodes, function (node) {
+          domClass.remove(node, removeClass);
+          domClass.add(node, addClass);
+        });
       },
 
       updateTheme: function (theme) {

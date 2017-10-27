@@ -116,7 +116,8 @@ define(['dojo/_base/declare',
           parent: this,
           config: this.config,
           appConfig: this.appConfig,
-          feature: this.feature
+          feature: this.feature,
+          theme: this.theme
         });
 
         this._featureToolbar.placeAt(this.featureToolbar);
@@ -340,10 +341,6 @@ define(['dojo/_base/declare',
 
       setStyleColor: function (styleColor) {
         this.styleColor = styleColor;
-      },
-
-      updateImageNodes: function () {
-        //TODO toggle white/black images
       },
 
       updateTheme: function (theme) {
