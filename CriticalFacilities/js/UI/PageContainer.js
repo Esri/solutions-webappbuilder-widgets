@@ -51,21 +51,26 @@ define(['dojo/_base/declare',
       'baseClass': 'jimu-tab3',
       declaredClass: 'PageContainer', //TODO need to seperate from this
 
-      //TODO...needs an internal approach to handle theme and color changes without the user needing to do anything
-      // actually...can I just listen to the theme and color changes like the widgets do
-      // that way the dijit could emit an event that views could just respond to and do their thing
-
+      //TODO need to update this to disable home when when currentIndex === altHomeIndex
       //TODO Previn asked about supporting a breadcrumb
 
-
+      views: [],
       _currentIndex: -1,
       _homeIndex: 0,
       _rootIndex: 0,
       theme: '',
       isDarkTheme: '',
       styleColor: '',
+      altHomeIndex: 0,
+      nextDisabled: false,
 
       //requires an instance of the appConfig
+      //using altHomeIndex allows the user to set an alternate home view depending upon where we are in a workflow
+
+      //views must implement a property called label that will uniquely identify the view
+      //views can implement a deferred validate function that will be called prior to actually selecting the view
+      //views can implement an altNextIndex or altBackIndex when a given view can navigate to one or more child views
+
 
       //public methods:
       //selectView
@@ -128,11 +133,9 @@ define(['dojo/_base/declare',
 
       postCreate: function () {
         this.inherited(arguments);
-        this._initSelf();
-        if (this.selected) {
-          this.selectView(this.selected);
-        } else if (this.views.length > 0) {
-          this._homeView();
+
+        if (!this.displayControllerOnStart) {
+          this.toggleController(true);
         }
 
         //use white images when in these themes...need a way to check if Dashboard is in light theme
@@ -143,6 +146,13 @@ define(['dojo/_base/declare',
       startup: function () {
         this.inherited(arguments);
         this._started = true;
+
+        this._initSelf();
+        if (this.selected) {
+          this.selectView(this.selected);
+        } else if (this.views.length > 0) {
+          this.selectView(this._homeIndex);
+        }
       },
 
       _onAppConfigChanged: function (appConfig, reason, changedData) {
@@ -170,16 +180,8 @@ define(['dojo/_base/declare',
 
       selectView: function (index) {
         this.viewStack.switchView(index);
-
-        this._updateControl(this.backTd,
-          index === this._homeIndex ? true : index + 1 === this.views.length ? false : false);
-        this._updateControl(this.homeTd,
-          index === this._homeIndex ? true : index + 1 === this.views.length ? false : false);
-        this._updateControl(this.nextTd,
-          index === this._homeIndex ? false : index + 1 === this.views.length ? true : false);
-
+        this._updateDomNodes(index);
         this._currentIndex = index;
-
         this.emit('view-changed', index);
       },
 
@@ -197,34 +199,74 @@ define(['dojo/_base/declare',
       },
 
       _initViews: function () {
-        this.viewCount = this.views.length;
-        for (var i = 0; i < this.views.length; i++) {
-          var view = this.views[i];
-          view.pageContainer = this;
-          view.index = i;
-          this.viewStack.addView(view);
-          this.emit('viewadded', view);
-        }
+        array.forEach(this.views, lang.hitch(this, function (v) {
+          this.addView(v);
+        }));
       },
 
       _prevView: function () {
-        if ((this._currentIndex - 1) <= this._homeIndex) {
-          this._homeView();
-        } else {
-          this._currentIndex -= 1;
-          this.selectView(this._currentIndex);
-        }
+        this._navView(false);
       },
 
       _homeView: function () {
-        this._currentIndex = this._homeIndex;
-        this.selectView(this._currentIndex);
+        this.selectView(this.altHomeIndex !== this._homeIndex ? this.altHomeIndex : this._homeIndex);
       },
 
       _nextView: function () {
-        if (this._currentIndex < this.viewCount -1) {
-          this._currentIndex += 1;
-          this.selectView(this._currentIndex);
+        this._navView(true);
+      },
+
+      _navView: function (isNext) {
+        //this function will first check the current page for an altBackIndex
+        // if found it will navigate to that index otherwise it will decrement the index by one and navigate
+        //altBackIndex allows the controller to navigate to the appropriate page when the appropriate "back" page
+        // is not based simply on the previous view in the list but rather some setting the user has defined
+        var title = this.getSelectedTitle();
+        var currentView = this.getViewByTitle(title);
+
+        var emitText = isNext ? 'next-view' : 'back-view';
+        var navIndex = isNext ? currentView.altNextIndex : currentView.altBackIndex;
+
+        var view;
+        //if altNextIndex or altBackIndex is defined default to those
+        // otherwise move in a forward or backward direction from the current index
+        if (typeof (navIndex) !== 'undefined') {
+          view = this.getViewByIndex(navIndex);
+        } else {
+          if (isNext) {
+            if (this._currentIndex < this.viewCount - 1) {
+              this._currentIndex += 1;
+              view = this.getViewByIndex(this._currentIndex);
+            }
+          } else {
+            if ((this._currentIndex - 1) <= this._homeIndex) {
+              view = this.getViewByIndex(this._homeIndex);
+            } else {
+              this._currentIndex -= 1;
+              view = this.getViewByIndex(this._currentIndex);
+            }
+          }
+        }
+        if (view) {
+          var viewResults = { currentView: currentView, navView: view };
+          this.emit(emitText, viewResults);
+
+          //TODO think through this logic some more...goal is to have a spot to respond to back and next up front rather than 
+          // after the event has been fired
+          //The validate function would return true or false if the navigation is supported or if we need to do something like
+          // ask a question...use case that is driving this is needing to ask if they want to clear the settings that have defined
+          // to this point when they navigate back to the start page...when we respond to the event emitted it is too late as we already see the next page before they
+          // provide the response...yes or no
+          
+          if (currentView.validate) {
+            currentView.validate(emitText, viewResults).then(lang.hitch(this, function (v) {
+              if (v) {
+                this.selectView(view.index);
+              }
+            }));
+          }else {
+            this.selectView(view.index);
+          }
         }
       },
 
@@ -237,15 +279,20 @@ define(['dojo/_base/declare',
       },
 
       getViewByIndex: function (idx) {
-        return this.views.filter(function (view) {
-          return view.index === idx;
-        });
+        if (this.views.length > idx) {
+          return this.views[idx];
+        }
       },
 
       getViewByTitle: function (title) {
-        return this.views.filter(function (view) {
-          return view.label === title;
-        });
+        for (var i = 0; i < this.views.length; i++) {
+          var view = this.views[i];
+          if (view.label === title) {
+            return view;
+            break;
+          }
+        }
+        return;
       },
 
       _updateControl: function (node, disable) {
@@ -257,17 +304,23 @@ define(['dojo/_base/declare',
       },
 
       _updateViews: function () {
+        //make sure the view index and count is current when add/remove view from stack
         this.viewCount = this.views.length;
         for (var i = 0; i < this.views.length; i++) {
+          var view = this.views[i];
           view.index = i;
         }
       },
 
       addView: function (view) {
         //adds a new view to the viewstack
+        view.pageContainer = this;
+        if (!this._containsView(view.label)) {
+          this.views.push(view);
+        }
         this.viewStack.addView(view);
         this._updateViews();
-        this.emit('viewadded', view);
+        this.emit('view-added', view);
       },
 
       addViewAtIndex: function (view, idx) {
@@ -293,6 +346,17 @@ define(['dojo/_base/declare',
         this.emit('view-removed', view);
       },
 
+      _containsView: function (title) {
+        for (var i = 0; i < this.views.length; i++) {
+          var view = this.views[i];
+          if (view.label === title) {
+            return true;
+            break;
+          }
+        }
+        return false;
+      },
+
       setStyleColor: function (styleColor) {
         this.styleColor = styleColor;
         array.forEach(this.views, lang.hitch(this, function (view) {
@@ -300,19 +364,33 @@ define(['dojo/_base/declare',
         }));
       },
 
-      //updateImageNodes: function () {
-      //  //TODO toggle white/black images
-      //  array.forEach(this.views, lang.hitch(this, function (view) {
-      //    view._updateImageNodes();
-      //  }));
-      //},
-
       updateImageNodes: function () {
         //toggle white/black images
         var isDark = this._darkThemes.indexOf(this.theme) > -1;
         this._updateImageNode(isDark, 'bg-back-img', 'bg-back-img-white');
         this._updateImageNode(isDark, 'bg-home-img', 'bg-home-img-white');
         this._updateImageNode(isDark, 'bg-next-img', 'bg-next-img-white');
+      },
+
+      _updateDomNodes: function (index) {
+        var homeIndex = this._homeIndex !== this.altHomeIndex ? this.altHomeIndex : this._homeIndex;
+
+        var backDisabled = index === this._homeIndex ? true : index + 1 === this.views.length ? false : false;
+        this._updateControl(this.backTd, backDisabled);
+        this._updateControl(this.backImage, backDisabled);
+
+        var homeDisabled = index === homeIndex ? true : index + 1 === this.views.length ? false : false;
+        this._updateControl(this.homeTd, homeDisabled);
+        this._updateControl(this.homeImage, homeDisabled);
+
+        //TODO work through this logic...its not quite right...disableing this check for nextDisabled for now...nextDisabled is so a view
+        //can flag it to prevent navigation until the user does something
+        //var nextDisabled = (index === homeIndex) && !this.nextDisabled ?
+        //  false : index + 1 === this.views.length ? true : this.nextDisabled;
+
+        var nextDisabled = (index === homeIndex) ? false : index + 1 === this.views.length ? true : false;
+        this._updateControl(this.nextTd, nextDisabled);
+        this._updateControl(this.nextImage, nextDisabled);
       },
 
       _updateImageNode: function (isDark, img, imgWhite) {
@@ -330,7 +408,18 @@ define(['dojo/_base/declare',
         array.forEach(this.views, lang.hitch(this, function (view) {
           view.theme = theme;
         }));
-      }
+      },
 
+      toggleController: function (isDisabled) {
+        if (isDisabled) {
+          if (!domClass.contains(this.controlTable, 'display-none')) {
+            domClass.add(this.controlTable, 'display-none');
+          }
+        } else {
+          if (domClass.contains(this.controlTable, 'display-none')) {
+            domClass.remove(this.controlTable, 'display-none');
+          }
+        }
+      }
     });
   });

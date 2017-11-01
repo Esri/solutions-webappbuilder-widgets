@@ -20,6 +20,8 @@ define(['dojo/_base/declare',
   'dojo/_base/array',
   'dojo/dom-construct',
   'dojo/dom-class',
+  'dojo/on',
+  'dojo/Deferred',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
@@ -34,6 +36,8 @@ define(['dojo/_base/declare',
     array,
     domConstruct,
     domClass,
+    on,
+    Deferred,
     _WidgetBase,
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
@@ -74,10 +78,54 @@ define(['dojo/_base/declare',
 
       startup: function () {
         console.log('Addresses startup');
+        this._started = true;
+        this._updateAltIndexes();
       },
 
       onShown: function () {
         console.log('Addresses shown');
+      },
+
+      validate: function (type, result) {
+        var def = new Deferred();
+        if (type === 'next-view') {
+          def.resolve(this._nextView(result));
+        } else if (type === 'back-view') {
+          def.resolve(this._backView(result));
+        }
+        return def;
+      },
+
+      _updateAltIndexes: function () {
+        if (this.pageContainer && !this._startPageView) {
+          this._startPageView = this.pageContainer.getViewByTitle('StartPage');
+          this._locationTypeView = this.pageContainer.getViewByTitle('LocationType');
+
+          if (this._startPageView && this._locationTypeView) {
+            this.altNextIndex = this._startPageView.index;
+            this.altBackIndex = this._locationTypeView.index;
+          }
+        }
+      },
+
+      _nextView: function (nextResult) {
+        //The assumption is that if they click next the definition of mapping is complete
+        //  This may need a better approach to evaluate when it is actually complete rather than just when they have clicked next
+        if (nextResult.currentView.label === this.label) {
+          this.parent._locationMappingComplete = true;
+          this.emit('location-mapping-update', true);
+        }
+        return true;
+      },
+
+      _backView: function (backResult) {
+        //The assumption is that if they click next the definition of mapping is complete
+        //  This may need a better approach to evaluate when it is actually complete rather than just when they have clicked next
+        if (backResult.currentView.label === this.label) {
+          this.parent._locationMappingComplete = false;
+          this.emit('location-mapping-update', false);
+        }
+        return true;
       },
 
       _rdoSingleAddressChanged: function (v) {
@@ -171,19 +219,6 @@ define(['dojo/_base/declare',
             domClass.add(tr, 'bottom-border');
           }
         });
-
-        //template row
-
-        //template row
-        //<tr class="control-row">
-        //  <td class="pad-left-20 pad-right-10">
-        //    <div class="main-text float-left" data-dojo-attach-point="lblY">TEST</div>
-        //  </td>
-        //  <td class="float-right">
-        //    <select style="min-width: 200px;" data-dojo-attach-point="selectY" data-dojo-type="dijit/form/Select"></select>
-        //  </td>
-        //</tr>
-
       },
 
       setStyleColor: function (styleColor) {
@@ -196,7 +231,24 @@ define(['dojo/_base/declare',
 
       updateTheme: function (theme) {
         this.theme = theme;
-      }
+      },
 
+      _getResults: function () {
+        var table = this.useSingle ? this.singleFieldTable : this.multiFieldTable;
+
+        var rows = table.rows;
+        var fields = [];
+        array.forEach(rows, function (r) {
+          fields.push({
+            targetField: r.cells[0].textContent,
+            sourceField: r.fieldControl.get('value')
+          });
+        });
+        
+        return {
+          type: "Addresses",
+          fields: fields
+        };
+      }
     });
   });

@@ -74,7 +74,18 @@
       saveError: "Error saving features.",
       unableToFindOrCreateCache: "Unable to find or create a geocode cache.",
       consumesCredits: "This tool consumes credits when used with the ArcGIS Online World Geocoding Service",
-      noValue: "Select a Value"
+      noValue: "Select a Value",
+      mappingTitle: "Some appropriate title goes here",
+      locationMappingComplete: "Location Mapping Complete",
+      locationCleared: "Location mapping will be cleared.",
+      fieldMappingComplete: "Field Mapping Complete",
+      fieldMappingCleared: "Field mapping will be cleared.",
+      locationAndFieldMappingCleared: "Location and field mapping will be cleared.",
+      proceed: "Do you want to proceed?"
+    },
+    shouldComeFromJimuNLS: {
+      yes: "Yes",
+      no: "No"
     }
   }),
   "ar": 0,

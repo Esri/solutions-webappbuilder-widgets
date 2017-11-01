@@ -103,10 +103,22 @@ define(['dojo/_base/declare',
 
       startup: function () {
         console.log('Feature startup');
+        this._started = true;
+        this._updateAltIndexes();
       },
 
       onShown: function () {
         console.log('Feature shown');
+      },
+
+      _updateAltIndexes: function () {
+        //if (this.pageContainer && !this._featureListView) {
+        //  this._featureListView = this.pageContainer.getViewByTitle();
+
+        //  if (this._featureListView) {
+        //    this.altBackIndex = this._featureListView.index;
+        //  }
+        //}
       },
 
       _initToolbar: function (domNode) {

@@ -24,7 +24,9 @@ define(['dojo/_base/declare',
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
   "dojo/text!./Review.html",
-  'dojo/query'
+  'dojo/query',
+  './FeatureList',
+  'jimu/dijit/Message',
 ],
   function (declare,
     lang,
@@ -36,7 +38,9 @@ define(['dojo/_base/declare',
     _WidgetsInTemplateMixin,
     Evented,
     template,
-    query) {
+    query,
+    FeatureList,
+    Message) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-review',
       declaredClass: 'CriticalFacilities.Review',
@@ -54,6 +58,8 @@ define(['dojo/_base/declare',
       theme: '',
       isDarkTheme: '',
       styleColor: '',
+      myCsvStore: null,
+      editLayer: null,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -68,10 +74,92 @@ define(['dojo/_base/declare',
 
       startup: function () {
         console.log('Review startup');
+        this._started = true;
+        this._updateAltIndexes();
+        this._initNavPages();
       },
 
       onShown: function () {
         console.log('Review shown');
+      },
+
+      _initNavPages: function () {
+        if (this.pageContainer) {
+          //TODO may need to get view instances after all have been added if the indexes don't update as expected
+          if (this.matchedList.length > 0) {
+
+            //the features here should be derived from the list 
+            var _fl = new FeatureList({
+              nls: this.nls,
+              map: this.map,
+              parent: this,
+              config: this.config,
+              appConfig: this.appConfig,
+              hint: this.nls.review.reviewMatchedPageHint,
+              label: 'MatchedFeatures',
+              features: this.matchedList,
+              theme: this.theme,
+              isDarkTheme: this.isDarkTheme
+            });
+
+            this.pageContainer.addView(_fl);
+            this._matchedListView = this.pageContainer.getViewByTitle(_fl.label);
+
+            this.altNextIndex = this._matchedListView.index;
+          }
+
+          if (this.unMatchedList.length > 0) {
+            //the features here should be derived from the list 
+            var fl = new FeatureList({
+              nls: this.nls,
+              map: this.map,
+              parent: this,
+              config: this.config,
+              appConfig: this.appConfig,
+              hint: this.nls.review.reviewUnMatchedPageHint,
+              label: 'UnMatchedFeatures',
+              features: this.unMatchedList,
+              theme: this.theme,
+              isDarkTheme: this.isDarkTheme
+            });
+
+            this.pageContainer.addView(fl);
+            this._unMatchedListView = this.pageContainer.getViewByTitle(fl.label);
+          }
+
+          if (this.duplicateList.length > 0) {
+            var duplicateFeat = new FeatureList({
+              nls: this.nls,
+              map: this.map,
+              parent: this,
+              config: this.config,
+              appConfig: this.appConfig,
+              hint: this.nls.review.reviewDuplicatePageHint,
+              label: 'DuplicateFeatures',
+              features: this.duplicateList,
+              theme: this.theme,
+              isDuplicate: true,
+              isDarkTheme: this.isDarkTheme
+            });
+
+            this.pageContainer.addView(duplicateFeat);
+            this._duplicateListView = this.pageContainer.getViewByTitle(duplicateFeat.label);
+          }
+        }
+
+        this.pageContainer.selectView(this.index);
+      },
+
+      _updateAltIndexes: function () {
+        if (this.pageContainer && !this._startPageView) {
+          this._startPageView = this.pageContainer.getViewByTitle('StartPage');
+          if (this._startPageView) {
+            //TODO this will need a custom validate function 
+            // Will need a message also that is specific to clearing the results...or if 
+            // we could support modification of the set...if they only change attribute values
+            this.altBackIndex = this._startPageView.index;
+          }
+        }
       },
 
       _initReviewRows: function () {
@@ -114,10 +202,39 @@ define(['dojo/_base/declare',
 
       _download: function () {
         //wire up csv Utils
+        alert('download goes here');
       },
 
       _submit: function () {
         //submit to feature service
+        alert('submit goes here');
+
+        //code from old widget
+
+        var featureLayer = this.myCsvStore.featureLayer;
+        var oidField = this.myCsvStore.objectIdField;
+        var flayer = this.editLayer;
+        var features = [];
+        array.forEach(featureLayer.graphics, function (feature) {
+          if (feature.attributes.hasOwnProperty(oidField)) {
+            delete feature.attributes[oidField];
+          }
+          if (feature.attributes.hasOwnProperty("_graphicsLayer")) {
+            delete feature._graphicsLayer;
+          }
+          if (feature.attributes.hasOwnProperty("_layer")) {
+            delete feature._layer;
+          }
+          features.push(feature);
+        });
+        flayer.applyEdits(features, null, null, function (e) {
+          console.log(e);
+        }, function (err) {
+          console.log(err);
+          new Message({
+            message: this.nls.warningsAndErrors.saveError
+          });
+        });
       },
 
       setStyleColor: function (styleColor) {
@@ -126,7 +243,18 @@ define(['dojo/_base/declare',
 
       updateTheme: function (theme) {
         this.theme = theme;
-      }
+      },
 
+      _reviewMatched: function () {
+        this.pageContainer.selectView(this._matchedListView.index);
+      },
+
+      _reviewUnMatched: function () {
+        this.pageContainer.selectView(this._unMatchedListView.index);
+      },
+
+      _reviewDuplicate: function () {
+        this.pageContainer.selectView(this._duplicateListView.index);
+      }
     });
   });

@@ -18,6 +18,7 @@ define(['dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/_base/html',
   'dojo/_base/array',
+  'dojo/Deferred',
   'dijit/_WidgetBase',
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
@@ -31,6 +32,7 @@ define(['dojo/_base/declare',
     lang,
     html,
     array,
+    Deferred,
     _WidgetBase,
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
@@ -65,6 +67,7 @@ define(['dojo/_base/declare',
 
       startup: function () {
         console.log('Home startup');
+        this._started = true;
       },
 
       onShown: function () {
@@ -178,8 +181,15 @@ define(['dojo/_base/declare',
 
       updateTheme: function (theme) {
         this.theme = theme;
+      },
+
+      validate: function (type, result) {
+        var def = new Deferred();
+        //TODO...I think after I get past the fake button stuff should be able to move all of this from the widget to this view
+        this.parent.validate(type, result).then(function (v) {
+          def.resolve(v);
+        });
+        return def;
       }
-
-
     });
   });

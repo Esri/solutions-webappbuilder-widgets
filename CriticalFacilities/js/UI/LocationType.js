@@ -50,6 +50,8 @@ define(['dojo/_base/declare',
       theme: '',
       isDarkTheme: '',
       styleColor: '',
+      _coordinatesView: undefined,
+      _addressView: undefined,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -62,19 +64,47 @@ define(['dojo/_base/declare',
       },
 
       startup: function () {
-        console.log('LocationType startup');
+        this._started = true;
+        this._updateAltIndexes();
       },
 
       onShown: function () {
         console.log('LocationType shown');
       },
 
+      _updateAltIndexes: function () {
+        //No gaurentee that page container will exist prior to when the view is created
+        // However, it must exist for the page to be shown
+        if (this.pageContainer && !this._coordinatesView && !this._addressView) {
+          this._coordinatesView = this.pageContainer.getViewByTitle('Coordinates');
+          this._addressView = this.pageContainer.getViewByTitle('Addresses');
+
+          var isUseAddress = this.rdoAddress.checked;
+          if (this._addressView && this._coordinatesView) {
+            //when navigating back from either of these views we need to go back to this LocationType view
+            this._addressView.altBackIndex = this.index;
+            this._coordinatesView.altBackIndex = this.index;
+            this.altNextIndex = isUseAddress ? this._addressView.index : this._coordinatesView.index;
+          }
+        }
+      },
+
       _rdoAddressChanged: function (v) {
         this.useAddress = v;
+        //altNextIndex should be set to address view when true
+        if (this._addressView && this._coordinatesView) {
+          this.altNextIndex = v ? this._addressView.index : this._coordinatesView.index;
+        }
+        this.parent._locationMappingComplete = false;
       },
 
       _rdoCoordinateChanged: function (v) {
         this.useCoordinates = v;
+        //altNextIndex should be set to coordinates view when true
+        if (this._addressView && this._coordinatesView) {
+          this.altNextIndex = v ? this._coordinatesView.index : this._addressView.index;
+        }
+        this.parent._locationMappingComplete = false;
       },
 
       setStyleColor: function (styleColor) {
@@ -87,6 +117,14 @@ define(['dojo/_base/declare',
 
       updateTheme: function (theme) {
         this.theme = theme;
+      },
+
+      _getResults: function () {
+        if (this.useAddress) {
+          return this._addressView._getResults();
+        } else {
+          return this._coordinatesView._getResults();
+        }
       }
 
     });

@@ -11,7 +11,7 @@
           <div class="task-text">${nls.mapping.locationMapping}</div>
         </td>
         <td class="width-15">
-          <div class="display-none done-mark">
+          <div class="display-none done-mark" data-dojo-attach-point="locationMappingComplete">
           </div>
         </td>
         <td class="width-15">
@@ -30,7 +30,7 @@
           <div class="task-text">${nls.mapping.schemaMapping}</div>
         </td>
         <td class="width-15">
-          <div class="display-none done-mark">
+          <div class="display-none done-mark" data-dojo-attach-point="fieldMappingComplete">
           </div>
         </td>
         <td class="width-15">
@@ -39,4 +39,8 @@
       </tr>
     </tbody>
   </table>
+
+  <div class="pad-top-10">
+    <div class="jimu-btn float-right display-none" data-dojo-attach-point="addToMapButton" data-dojo-attach-event="onClick:_addToMapClick">${nls.buttons.addToMap}</div>
+  </div>
 </div>

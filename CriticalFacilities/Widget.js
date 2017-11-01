@@ -4,7 +4,12 @@
   './js/UI/PageContainer',
   'dojo/on',
   'dojo/_base/lang',
+  'dojo/dom-class',
+  'dojo/dom-construct',
+  'dojo/_base/array',
+  'dojo/Deferred',
   'jimu/dijit/TabContainer3',
+  'jimu/dijit/Popup',
   './js/UI/Home',
   './js/UI/Addresses',
   './js/UI/Coordinates',
@@ -14,13 +19,19 @@
   './js/UI/FieldMapping',
   './js/UI/Review',
   './js/UI/FeatureList',
-  './js/UI/Feature'],
+  './js/UI/Feature',
+  './js/csvStore'],
   function (declare,
     BaseWidget,
     PageContainer,
     on,
     lang,
+    domClass,
+    domConstruct,
+    array,
+    Deferred,
     TabContainer3,
+    Popup,
     Home,
     Addresses,
     Coordinates,
@@ -30,14 +41,54 @@
     FieldMapping,
     Review,
     FeatureList,
-    Feature) {
+    Feature,
+    CsvStore) {
     return declare([BaseWidget], {
       baseClass: 'jimu-widget-critical-facilities-ui',
+
+      _fsFields: [],
+      matchedRecords: [],
+      unMatchedRecords: [],
+      duplicateRecords: [],
+      _locationMappingComplete: false,
+      _fieldMappingComplete: false,
 
       postCreate: function () {
         this.inherited(arguments);
         this._setThemeAndColors(this.appConfig.theme.name);
         this._initPageContainer();
+
+        this.own(on(this.map.container, "dragenter", this.onDragEnter));
+        this.own(on(this.map.container, "dragover", this.onDragOver));
+        this.own(on(this.map.container, "drop", lang.hitch(this, this.onDrop)));
+      },
+
+      startup: function () {
+        if (this.config.layerInfos && this.config.layerInfos.hasOwnProperty(0)) {
+          this._valid = true;
+          this._configLayerInfo = this.config.layerInfos[0];
+          this._url = this._configLayerInfo.featureLayer.url;
+          this._geocodeSources = this.config.sources;
+
+          this._fsFields = [];
+          if (this._configLayerInfo) {
+            array.forEach(this._configLayerInfo.fieldInfos, lang.hitch(this, function (field) {
+              if (field && field.visible) {
+                this._fsFields.push({
+                  name: field.fieldName,
+                  value: field.type,
+                  isRecognizedValues: field.isRecognizedValues
+                });
+              }
+            }));
+          }
+
+          //switch this to layerStructure
+          LayerInfos.getInstance(this.map, this.map.itemInfo).then(lang.hitch(this, function (operLayerInfos) {
+            this.opLayers = operLayerInfos;
+            this.editLayer = operLayerInfos.getLayerInfoById(this._configLayerInfo.featureLayer.id).layerObject;
+          }));
+        }
       },
 
       _setThemeAndColors: function (theme) {
@@ -116,12 +167,12 @@
             isRecognizedValues: ['State']
             }],
           fields: [{
-            label: "City",
-            value: "City",
+            label: "City1",
+            value: "City1",
             type: "string"
           }, {
-            label: "State",
-            value: "State",
+            label: "State1",
+            value: "State1",
             type: "string"
             }],
           theme: this.theme,
@@ -163,238 +214,181 @@
           isDarkTheme: this.isDarkTheme
         });
 
-        var r = new Review({
-          nls: this.nls,
-          map: this.map,
-          parent: this,
-          config: this.config,
-          appConfig: this.appConfig,
-          matchedList: [1,2,3,4], //array of FeatureItems
-          unMatchedList: [1, 2, 3, 4], //array of FeatureItems
-          duplicateList: [1, 2], //array of FeatureItems
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme
-        });
-
-        var fl = new FeatureList({
-          nls: this.nls,
-          map: this.map,
-          parent: this,
-          config: this.config,
-          appConfig: this.appConfig,
-          hint: this.nls.review.reviewMatchedPageHint,
-          features: [{
-            label: 'Bel Air Elemmentary 1',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude'
-            }, {
-              name: 'Address',
-              value: '380 New York St'
-            }, {
-              name: 'City',
-              value: 'Redlands'
-            }]
-          }, {
-            label: 'Bel Air Elemmentary 2',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude'
-            }, {
-              name: 'Address',
-              value: '380 New York St'
-            }, {
-              name: 'City',
-              value: 'Redlands'
-            }]
-            }, {
-              label: 'Bel Air Elemmentary 3',
-              fieldInfo: [{
-                name: 'Factility Name',
-                value: 'Bel Air Elemmentary'
-              }, {
-                name: 'Managed By',
-                value: 'Some Dude'
-              }, {
-                name: 'Address',
-                value: '380 New York St'
-              }, {
-                name: 'City',
-                value: 'Redlands'
-              }]
-          }],
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme
-        });
-
-        var feat = new Feature({
-          nls: this.nls,
-          map: this.map,
-          parent: this,
-          config: this.config,
-          appConfig: this.appConfig,
-          feature: {
-            label: 'Bel Air Elemmentary 1',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude'
-            }, {
-              name: 'Address',
-              value: '380 New York St'
-            }, {
-              name: 'City',
-              value: 'Redlands'
-            }]
-          },
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme
-        });
-
-        var duplicateFeat = new Feature({
-          nls: this.nls,
-          map: this.map,
-          parent: this,
-          config: this.config,
-          appConfig: this.appConfig,
-          isDuplicate: true,
-          feature: {
-            label: 'Bel Air Elemmentary 1',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary',
-              duplicateFieldInfo: {
-                value: 'Bel Air Elemmentary duplicate'
-              }
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude',
-              duplicateFieldInfo: {
-                value: 'Some Dude duplicate'
-              }
-            }, {
-              name: 'Address',
-              value: '380 New York St',
-              duplicateFieldInfo: {
-                value: '380 New York St duplicate'
-              }
-            }, {
-              name: 'City',
-              value: 'Redlands',
-              duplicateFieldInfo: {
-                value: 'Redlands duplicate'
-              }
-            }]
-          },
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme
-        });
-
-        //views: [h, sp, lt, c, add, f, r, fl, feat, duplicateFeat]
-
         this._pageContainer = new PageContainer({
-          views: [h, sp, lt, c, add, f, r, fl, feat, duplicateFeat],
+          views: [h, sp, lt, c, add, f],
           nls: this.nls.pageContainer,
-          appConfig: this.appConfig
+          altHomeIndex: 1,
+          appConfig: this.appConfig,
+          displayControllerOnStart: false,
+          parent: this
         }, this.pageNavigation);
 
-        this.own(on(this._pageContainer, 'tabChanged', lang.hitch(this, function (title) {
-          console.log(title);
+        this.own(on(this._pageContainer, 'view-changed', lang.hitch(this, function (title) {
+          console.log('view-changed: ' + title);
         })));
 
         this._pageContainer.startup();
       },
 
-      updatePageContainer: function () {
-
+      _fakeLoadCSVClick: function () {
+        this._pageContainer._nextView();
       },
 
-      onAppConfigChanged: function (appConfig, reason, changedData) {
-        //switch (reason) {
-        //  case 'themeChange':
-        //    this._setThemeAndColors(changedData);
-        //    this.destroy();
-        //    break;
-        //  case 'layoutChange':
-        //    this.destroy();
-        //    break;
-        //  case 'styleChange':
-        //    this._updateStyleColor(changedData);
-        //    break;
-        //  case 'widgetChange':
-        //    this.widgetChange = true;
-        //    this.destroy();
-        //    break;
-        //  case 'mapChange':
-        //    //this._clearMap();
-        //    this.destroy();
-        //    break;
-        //}
-      },
-
-      _updateStyleColor: function (changedData) {
-        setTimeout(lang.hitch(this, function () {
-          var p = this.getPanel();
-          var node;
-          switch (this.theme) {
-            case 'BoxTheme':
-              node = p.containerNode.parentNode.parentNode.children[0];
-              break;
-            case 'DartTheme':
-              node = p.containerNode.parentNode;
-              break;
-            case 'TabTheme':
-              node = p.containerNode;
-              break;
-            case 'BillboardTheme':
-              node = p.containerNode.parentNode;
-              break;
-            case 'FoldableTheme':
-              node = p.containerNode.parentNode.firstChild;
-              break;
-            default:
-              node = this.pageHeader;
-              break;
-          }
-          var bc = window.getComputedStyle(node, null).getPropertyValue('background-color');
-          this._styleColor = Color.fromRgb(bc).toHex();
-          array.forEach(this._pageContainer.views, function (view) {
-            view.setStyleColor(this._styleColor);
-
-            //need to test if should use lite or dark buttons
-
+      validate: function (type, result) {
+        var def = new Deferred();
+        if (type === 'next-view') {
+          def.resolve(this._nextView(result));
+        } else if (type === 'back-view') {
+          this._backView(result).then(function (v) {
+            def.resolve(v);
           });
-        }), 50);
+        }
+        return def;
       },
 
-      _updateStyleColor: function (changedData) {
-        this.isLightTheme = changedData ? changedData === 'light' : this.isLightTheme;
+      _nextView: function (nextResult) {
+        if (nextResult.navView.label === this._pageContainer.views[1].label) {
+          this._pageContainer.toggleController(false);
+          this._toggleFakeButton(true);
+        }
+        return true;
+      },
 
-        setTimeout(lang.hitch(this, function () {
-          var p = this.getPanel();
-          var node;
-          switch (this.appConfig.theme.name) {
-            default:
-              node = this.pageHeader;
-              break;
+      _backView: function (backResult) {
+        var def = new Deferred();
+
+        if (backResult.navView.label === this._pageContainer.views[0].label) {
+          var msg;
+
+          if (this._locationMappingComplete && this._fieldMappingComplete) {
+            msg = this.nls.warningsAndErrors.locationAndFieldMappingCleared;
+          } else {
+            if (this._locationMappingComplete) {
+              msg = this.nls.warningsAndErrors.locationCleared;
+            } else if (this._fieldMappingComplete) {
+              msg = this.nls.warningsAndErrors.fieldMappingCleared;
+            }
           }
-          var bc = window.getComputedStyle(node, null).getPropertyValue('background-color');
-          this.styleColor = bc ? Color.fromRgb(bc).toHex() : "#485566";
-          array.forEach(this._pageContainer.views, function (view) {
-            view.setStyleColor(this.styleColor);
 
-            //need to test if should use lite or dark buttons
+          if (msg) {
+            var content = domConstruct.create('div');
 
-          });
-        }), 50);
+            domConstruct.create('div', {
+              innerHTML: msg
+            }, content);
+
+            domConstruct.create('div', {
+              innerHTML: this.nls.warningsAndErrors.proceed,
+              style: 'padding-top:10px;'
+            }, content);
+
+            var warningMessage = new Popup({
+              titleLabel: this.nls.warningsAndErrors.mappingTitle,
+              width: 400,
+              autoHeight: true,
+              content: content,
+              buttons: [{
+                label: this.nls.shouldComeFromJimuNLS.yes,
+                onClick: lang.hitch(this, function () {
+                  this._clearMapping();
+                  this._pageContainer.toggleController(true);
+                  this._toggleFakeButton(false);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(true);
+                })
+              }, {
+                  label: this.nls.shouldComeFromJimuNLS.no,
+                classNames: ['jimu-btn-vacation'],
+                onClick: lang.hitch(this, function () {
+                  this._pageContainer.selectView(backResult.currentView.index);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(false);
+                })
+              }],
+              onClose: function () {
+                warningMessage = null;
+              }
+            });
+          } else {
+            //for validate
+            this._pageContainer.toggleController(true);
+            this._toggleFakeButton(false);
+            def.resolve(true);
+          }
+        }
+        return def;
       },
+
+      _clearMapping: function () {
+        this._locationMappingComplete = false;
+        this._fieldMappingComplete = false;
+      },
+
+      _toggleFakeButton: function (isDisabled) {
+        if (isDisabled) {
+          if (!domClass.contains(this.fakeLoadCSV, 'display-none')) {
+            domClass.add(this.fakeLoadCSV, 'display-none');
+          }
+        } else {
+          if (domClass.contains(this.fakeLoadCSV, 'display-none')) {
+            domClass.remove(this.fakeLoadCSV, 'display-none');
+          }
+        }
+      },
+
+      onDragEnter: function (event) {
+        event.preventDefault();
+      },
+
+      onDragOver: function (event) {
+        event.preventDefault();
+      },
+
+      onDrop: function (event) {
+        if (this._valid) {
+          if (this.myCsvStore) {
+            this.myCsvStore.clear();
+          }
+          event.preventDefault();
+
+          var dataTransfer = event.dataTransfer,
+            files = dataTransfer.files,
+            types = dataTransfer.types;
+
+          if (files && files.length > 0) {
+            var file = files[0];//single file for the moment
+            if (file.name.indexOf(".csv") !== -1) {
+              this.myCsvStore = new CsvStore({
+                file: file,
+                fsFields: this._fsFields,
+                map: this.map,
+                geocodeSources: this._geocodeSources,
+                nls: this.nls,
+                appConfig: this.appConfig,
+                unMatchedContainer: this.unMatchedContainer
+              });
+              this.myCsvStore.handleCsv().then(lang.hitch(this, function (obj) {
+                this._updateFieldControls(this.schemaMapTable, obj, true, true, obj.fsFields, 'keyField');
+                if (this.xyEnabled) {
+                  this._updateFieldControls(this.xyTable, obj, true, true, this.xyFields, 'keyField');
+                }
+                if (this.singleEnabled) {
+                  this._updateFieldControls(this.addressTable, obj, false, true, this.singleAddressFields, 'label');
+                }
+                if (this.multiEnabled) {
+                  this._updateFieldControls(this.addressMultiTable, obj, false, true, this.multiAddressFields, 'label');
+                }
+                this.validateValues();
+                domStyle.set(this.schemaMapInstructions, "display", "none");
+                domStyle.set(this.mainContainer, "display", "block");
+              }));
+            }
+            this.panalManager.openPanel(this.getPanel());
+          }
+        }
+      },
+
     });
   });

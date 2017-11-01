@@ -20,6 +20,8 @@ define(['dojo/_base/declare',
   'dojo/_base/array',
   'dojo/dom-construct',
   'dojo/dom-class',
+  'dojo/on',
+  'dojo/Deferred',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
@@ -34,6 +36,8 @@ define(['dojo/_base/declare',
     array,
     domConstruct,
     domClass,
+    on,
+    Deferred,
     _WidgetBase,
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
@@ -70,11 +74,61 @@ define(['dojo/_base/declare',
       },
 
       startup: function () {
-        console.log('FieldMapping startup');
+        this._started = true;
+        this._updateAltIndexes();
       },
 
       onShown: function () {
         console.log('FieldMapping shown');
+      },
+
+      _updateAltIndexes: function () {
+        //No gaurentee that page container will exist prior to when the view is created
+        // However, it must exist for the page to be shown
+        if (this.pageContainer && !this._startPageView) {
+          //this.own(on(this.pageContainer, 'next-view', lang.hitch(this, this._nextView)));
+          //this.own(on(this.pageContainer, 'back-view', lang.hitch(this, this._backView)));
+
+          this._startPageView = this.pageContainer.getViewByTitle('StartPage');
+
+          if (this._startPageView) {
+            this.altNextIndex = this._startPageView.index;
+            this.altBackIndex = this._startPageView.index;
+          }
+        }
+      },
+
+      validate: function (type, result) {
+        var def = new Deferred();
+        if (type === 'next-view') {
+          def.resolve(this._nextView(result));
+        } else if (type === 'back-view') {
+          def.resolve(this._backView(result));
+        }
+        return def;
+      },
+
+      _nextView: function (nextResult) {
+        //The assumption is that if they click next the definition of mapping is complete
+        //  This may need a better approach to evaluate when it is actually complete rather than just when they have clicked next
+        //  Need to keep in mind that they could have the auto recognized fields established and never have to click a select control
+        if (nextResult.currentView.label === this.label) {
+          this.parent._fieldMappingComplete = true;
+          var results = this._getResults();
+          this.emit('field-mapping-update', true, results);
+        }
+        return true;
+      },
+
+      _backView: function (backResult) {
+        //The assumption is that if they click back the definition of mapping is not complete
+        //  This may need a better approach to evaluate when it is actually complete rather than just when they have clicked next or back
+        //  Need to keep in mind that they could have the auto recognized fields established and never have to click a select control
+        if (backResult.currentView.label === this.label) {
+          this.parent._fieldMappingComplete = false;
+          this.emit('field-mapping-update', false);
+        }
+        return true;
       },
 
       _initFieldsTable: function () {
@@ -150,7 +204,18 @@ define(['dojo/_base/declare',
 
       updateTheme: function (theme) {
         this.theme = theme;
-      }
+      },
 
+      _getResults: function () {
+        var rows = this._fieldsTable.getRows();
+        var results = [];
+        array.forEach(rows, function (r) {
+          results.push({
+            targetField: r.cells[0].textContent,
+            sourceField: r.cells[1].fieldsSelect.getValue()
+          });
+        });
+        return results;
+      }
     });
   });

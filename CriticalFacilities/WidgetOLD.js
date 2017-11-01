@@ -68,9 +68,10 @@ define(['dojo/_base/declare',
     postCreate: function () {
       this.inherited(arguments);
 
-      this.own(on(this.map.container, "dragenter", this.onDragEnter));
-      this.own(on(this.map.container, "dragover", this.onDragOver));
-      this.own(on(this.map.container, "drop", lang.hitch(this, this.onDrop)));
+      //moved to new widget
+      //this.own(on(this.map.container, "dragenter", this.onDragEnter));
+      //this.own(on(this.map.container, "dragover", this.onDragOver));
+      //this.own(on(this.map.container, "drop", lang.hitch(this, this.onDrop)));
 
       this.xyEnabled = this.config.xyEnabled;
       
@@ -87,44 +88,41 @@ define(['dojo/_base/declare',
       this.panalManager = PanelManager.getInstance();
     },
 
-    startup: function () {
-      domStyle.set(this.mainContainer, "display", "none");
-      domStyle.set(this.clearMapData, "display", "none");
-      domStyle.set(this.submitData, "display", "none");
-      domStyle.set(this.updateData, "display", "none");
-
-      if (this.config.layerInfos && this.config.layerInfos.hasOwnProperty(0)) {
-        this._valid = true;
-        domStyle.set(this.loadWarning, "display", "none");
-        this._configLayerInfo = this.config.layerInfos[0];
-        this._url = this._configLayerInfo.featureLayer.url;
-        this._geocodeSources = this.config.sources;
-
-        this._fsFields = [];
-        if (this._configLayerInfo) {
-          array.forEach(this._configLayerInfo.fieldInfos, lang.hitch(this, function (field) {
-            if (field && field.visible) {
-              this._fsFields.push({
-                name: field.fieldName,
-                value: field.type,
-                isRecognizedValues: field.isRecognizedValues
-              });
-              this.addFieldRow(this.schemaMapTable, field.fieldName, field.label);
-            }
-          }));
-
-          this._addLocationFieldRows();
-        }
-
-        LayerInfos.getInstance(this.map, this.map.itemInfo).then(lang.hitch(this, function (operLayerInfos) {
-          this.opLayers = operLayerInfos;
-          this.editLayer = operLayerInfos.getLayerInfoById(this._configLayerInfo.featureLayer.id).layerObject;
-        }));
-      } else {
-        domStyle.set(this.schemaMapInstructions, "display", "none");
-        domStyle.set(this.loadWarning, "display", "block");
-      }
-    },
+    //moved to new widget
+    //startup: function () {
+    //  domStyle.set(this.mainContainer, "display", "none");
+    //  domStyle.set(this.clearMapData, "display", "none");
+    //  domStyle.set(this.submitData, "display", "none");
+    //  domStyle.set(this.updateData, "display", "none");
+    //  if (this.config.layerInfos && this.config.layerInfos.hasOwnProperty(0)) {
+    //    this._valid = true;
+    //    domStyle.set(this.loadWarning, "display", "none");
+    //    this._configLayerInfo = this.config.layerInfos[0];
+    //    this._url = this._configLayerInfo.featureLayer.url;
+    //    this._geocodeSources = this.config.sources;
+    //    this._fsFields = [];
+    //    if (this._configLayerInfo) {
+    //      array.forEach(this._configLayerInfo.fieldInfos, lang.hitch(this, function (field) {
+    //        if (field && field.visible) {
+    //          this._fsFields.push({
+    //            name: field.fieldName,
+    //            value: field.type,
+    //            isRecognizedValues: field.isRecognizedValues
+    //          });
+    //          this.addFieldRow(this.schemaMapTable, field.fieldName, field.label);
+    //        }
+    //      }));
+    //      this._addLocationFieldRows();
+    //    }
+    //    LayerInfos.getInstance(this.map, this.map.itemInfo).then(lang.hitch(this, function (operLayerInfos) {
+    //      this.opLayers = operLayerInfos;
+    //      this.editLayer = operLayerInfos.getLayerInfoById(this._configLayerInfo.featureLayer.id).layerObject;
+    //    }));
+    //  } else {
+    //    domStyle.set(this.schemaMapInstructions, "display", "none");
+    //    domStyle.set(this.loadWarning, "display", "block");
+    //  }
+    //},
 
     _initLocationUI: function () {
       var numEnabled = 0;
@@ -322,57 +320,56 @@ define(['dojo/_base/declare',
       }
     },
 
-    onDragEnter: function (event) {
-      event.preventDefault();
-    },
+    //moved to new widget
+    //onDragEnter: function (event) {
+    //  event.preventDefault();
+    //},
+    //onDragOver: function (event) {
+    //  event.preventDefault();
+    //},
+    //onDrop: function (event) {
+    //  if (this._valid) {
+    //    if (this.myCsvStore) {
+    //      this.myCsvStore.clear();
+    //    }
+    //    event.preventDefault();
 
-    onDragOver: function (event) {
-      event.preventDefault();
-    },
+    //    var dataTransfer = event.dataTransfer,
+    //      files = dataTransfer.files,
+    //      types = dataTransfer.types;
 
-    onDrop: function (event) {
-      if (this._valid) {
-        if (this.myCsvStore) {
-          this.myCsvStore.clear();
-        }
-        event.preventDefault();
-
-        var dataTransfer = event.dataTransfer,
-          files = dataTransfer.files,
-          types = dataTransfer.types;
-
-        if (files && files.length > 0) {
-          var file = files[0];//single file for the moment
-          if (file.name.indexOf(".csv") !== -1) {
-            this.myCsvStore = new CsvStore({
-              file: file,
-              fsFields: this._fsFields,
-              map: this.map,
-              geocodeSources: this._geocodeSources,
-              nls: this.nls,
-              appConfig: this.appConfig,
-              unMatchedContainer: this.unMatchedContainer
-            });
-            this.myCsvStore.handleCsv().then(lang.hitch(this, function (obj) {
-              this._updateFieldControls(this.schemaMapTable, obj, true, true, obj.fsFields, 'keyField');
-              if (this.xyEnabled) {
-                this._updateFieldControls(this.xyTable, obj, true, true, this.xyFields, 'keyField');
-              }
-              if (this.singleEnabled) {
-                this._updateFieldControls(this.addressTable, obj, false, true, this.singleAddressFields, 'label');
-              }
-              if (this.multiEnabled) {
-                this._updateFieldControls(this.addressMultiTable, obj, false, true, this.multiAddressFields, 'label');
-              }
-              this.validateValues();
-              domStyle.set(this.schemaMapInstructions, "display", "none");
-              domStyle.set(this.mainContainer, "display", "block");
-            }));
-          }
-          this.panalManager.openPanel(this.getPanel());
-        }
-      }
-    },
+    //    if (files && files.length > 0) {
+    //      var file = files[0];//single file for the moment
+    //      if (file.name.indexOf(".csv") !== -1) {
+    //        this.myCsvStore = new CsvStore({
+    //          file: file,
+    //          fsFields: this._fsFields,
+    //          map: this.map,
+    //          geocodeSources: this._geocodeSources,
+    //          nls: this.nls,
+    //          appConfig: this.appConfig,
+    //          unMatchedContainer: this.unMatchedContainer
+    //        });
+    //        this.myCsvStore.handleCsv().then(lang.hitch(this, function (obj) {
+    //          this._updateFieldControls(this.schemaMapTable, obj, true, true, obj.fsFields, 'keyField');
+    //          if (this.xyEnabled) {
+    //            this._updateFieldControls(this.xyTable, obj, true, true, this.xyFields, 'keyField');
+    //          }
+    //          if (this.singleEnabled) {
+    //            this._updateFieldControls(this.addressTable, obj, false, true, this.singleAddressFields, 'label');
+    //          }
+    //          if (this.multiEnabled) {
+    //            this._updateFieldControls(this.addressMultiTable, obj, false, true, this.multiAddressFields, 'label');
+    //          }
+    //          this.validateValues();
+    //          domStyle.set(this.schemaMapInstructions, "display", "none");
+    //          domStyle.set(this.mainContainer, "display", "block");
+    //        }));
+    //      }
+    //      this.panalManager.openPanel(this.getPanel());
+    //    }
+    //  }
+    //},
 
     onChooseType: function (type) {
       this._useAddr = type === "addr" || type === "multi-addr" ? true : false;
@@ -623,30 +620,33 @@ define(['dojo/_base/declare',
     },
 
     onSubmitClick: function () {
-      var featureLayer = this.myCsvStore.featureLayer;
-      var oidField = this.myCsvStore.objectIdField;
-      var flayer = this.editLayer;
-      var features = [];
-      array.forEach(featureLayer.graphics, function (feature) {
-        if (feature.attributes.hasOwnProperty(oidField)) {
-          delete feature.attributes[oidField];
-        }
-        if (feature.attributes.hasOwnProperty("_graphicsLayer")) {
-          delete feature._graphicsLayer;
-        }
-        if (feature.attributes.hasOwnProperty("_layer")) {
-          delete feature._layer;
-        }
-        features.push(feature);
-      });
-      flayer.applyEdits(features, null, null, function (e) {
-        console.log(e);
-      }, function (err) {
-        console.log(err);
-        new Message({
-          message: this.nls.saveError
-        });
-      });
+
+      //moved to Review.js
+
+      //var featureLayer = this.myCsvStore.featureLayer;
+      //var oidField = this.myCsvStore.objectIdField;
+      //var flayer = this.editLayer;
+      //var features = [];
+      //array.forEach(featureLayer.graphics, function (feature) {
+      //  if (feature.attributes.hasOwnProperty(oidField)) {
+      //    delete feature.attributes[oidField];
+      //  }
+      //  if (feature.attributes.hasOwnProperty("_graphicsLayer")) {
+      //    delete feature._graphicsLayer;
+      //  }
+      //  if (feature.attributes.hasOwnProperty("_layer")) {
+      //    delete feature._layer;
+      //  }
+      //  features.push(feature);
+      //});
+      //flayer.applyEdits(features, null, null, function (e) {
+      //  console.log(e);
+      //}, function (err) {
+      //  console.log(err);
+      //  new Message({
+      //    message: this.nls.saveError
+      //  });
+      //});
     }
   });
 });
