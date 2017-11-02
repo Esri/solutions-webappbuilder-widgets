@@ -164,7 +164,7 @@ define(['dojo/_base/declare',
         //When both are complete enable add to map...otherwise set the altNextIndex so we can navigate to the
         // appropriate next page
         var enableOk = false;
-        if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
+        if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete && this.state === 'mapping') {
           enableOk = true;
           this.pageContainer.nextDisabled = true;
         } else if (!this.parent._locationMappingComplete && this._locationTypeView){
