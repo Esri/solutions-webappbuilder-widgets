@@ -64,6 +64,7 @@ define(['dojo/_base/declare',
       altHomeIndex: 0,
       nextDisabled: false,
 
+
       //requires an instance of the appConfig
       //using altHomeIndex allows the user to set an alternate home view depending upon where we are in a workflow
 
@@ -320,6 +321,7 @@ define(['dojo/_base/declare',
         }
         this.viewStack.addView(view);
         this._updateViews();
+        this.selectView(this._currentIndex);
         this.emit('view-added', view);
       },
 
@@ -383,12 +385,13 @@ define(['dojo/_base/declare',
         this._updateControl(this.homeTd, homeDisabled);
         this._updateControl(this.homeImage, homeDisabled);
 
-        //TODO work through this logic...its not quite right...disableing this check for nextDisabled for now...nextDisabled is so a view
-        //can flag it to prevent navigation until the user does something
-        //var nextDisabled = (index === homeIndex) && !this.nextDisabled ?
-        //  false : index + 1 === this.views.length ? true : this.nextDisabled;
+        //nextDisabled is so a view can flag it to prevent navigation until the user does something or force it
+        // to be enabled if view supports an altNextIndex that would allow it to not just go to next view in the stack
+        var finalViewHasAltIndex = typeof(this.views[this.views.length - 1].altNextIndex) !== 'undefined';
+        var nextDisabled = this.nextDisabled ? this.nextDisabled : (index === homeIndex) && !this.nextDisabled ?
+          false : ((index + 1 === this.views.length) && !finalViewHasAltIndex) ? true : this.nextDisabled;
 
-        var nextDisabled = (index === homeIndex) ? false : index + 1 === this.views.length ? true : false;
+        //var nextDisabled = (index === homeIndex) ? false : index + 1 === this.views.length ? true : false;
         this._updateControl(this.nextTd, nextDisabled);
         this._updateControl(this.nextImage, nextDisabled);
       },
