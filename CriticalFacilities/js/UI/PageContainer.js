@@ -25,7 +25,7 @@ define(['dojo/_base/declare',
   'dojo/dom-class',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
-  "dojo/text!./PageContainer.html",
+  "dojo/text!./templates/PageContainer.html",
   'jimu/dijit/ViewStack'
 ],
   function (declare,

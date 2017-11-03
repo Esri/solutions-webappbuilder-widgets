@@ -26,7 +26,7 @@ define(['dojo/_base/declare',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
   'dojo/Evented',
-  'dojo/text!./FieldMapping.html',
+  'dojo/text!./templates/FieldMapping.html',
   'jimu/dijit/SimpleTable',
   'dijit/form/Select'
 ],
@@ -133,6 +133,13 @@ define(['dojo/_base/declare',
 
       _initFieldsTable: function () {
         var fields = [{
+          name: 'targetField',
+          type: 'extension',
+          hidden: true,
+          create: lang.hitch(this, this._createTargetField),
+          setValue: lang.hitch(this, this._setTargetFieldValue),
+          getValue: lang.hitch(this, this._getTargetFieldValue)
+        }, {
           name: 'target',
           title: this.nls.fieldMapping.targetField,
           type: 'text',
@@ -155,6 +162,18 @@ define(['dojo/_base/declare',
         this._fieldsTable.startup();
       },
 
+      _createTargetField: function (td) {
+        //do nothing
+      },
+
+      _setTargetFieldValue: function (td, value) {
+        td.targetField = value;
+      },
+
+      _getTargetFieldValue: function () {
+        return td.targetField;
+      },
+
       _createSelect: function (td) {
         var fieldsSelect = new Select({
           style: {
@@ -163,14 +182,24 @@ define(['dojo/_base/declare',
             height: "28px"
           }
         });
-        array.forEach(this.sourceFields, function (f) {
-          //TODO needs to support the isRecognized list
-          // set selected true for the correct one
-          fieldsSelect.addOption({
+
+        var targetField = td.parentNode.cells[0].targetField;
+        var fields = this._getSupportedFields(this.sourceFields, targetField.type);
+
+        var options = [{
+          label: this.nls.warningsAndErrors.noValue,
+          value: this.nls.warningsAndErrors.noValue
+        }];
+        var defaultFieldName = this._getDefaultFieldName(fields, targetField);
+        array.forEach(fields, function (f) {
+          options.push({
             label: f.label,
-            value: f.value
+            value: f.value,
+            selected: defaultFieldName === f.value
           });
         });
+
+        fieldsSelect.addOption(options);
 
         td.fieldsSelect = fieldsSelect;
         domConstruct.place(fieldsSelect.domNode, td);
@@ -188,10 +217,41 @@ define(['dojo/_base/declare',
 
       _initFields: function (targetFields) {
         array.forEach(targetFields, lang.hitch(this, function (targetField) {
-          var result = this._fieldsTable.addRow({
-            target: targetField.label
+          var row = this._fieldsTable.addRow({
+            target: targetField.label,
+            targetField: targetField
           });
         }));
+      },
+
+      _getSupportedFields: function (fields, type) {
+        var _fields = fields.filter(function (f) {
+          //TODO fix issue with csvStore that leads to this not existing in some cases
+          // should not have to do this test as field should always have a type captured
+          if (f.type) {
+            var int = f.type.supportsInt;
+            var flt = f.type.supportsFloat;
+            return type === 'other' ? true : type === 'int' ? int : type === 'float' ? flt : false;
+          } else {
+            return false;
+          }
+        });
+
+        return _fields;
+      },
+
+      _getDefaultFieldName: function (fields, configField) {
+        var isRecognizedValues = configField.isRecognizedValues;
+        for (var i = 0; i < isRecognizedValues.length; i++) {
+          var isRecognizedValue = isRecognizedValues[i];
+          for (var ii = 0; ii < fields.length; ii++) {
+            var field = fields[ii];
+            if (field.value.toString().toUpperCase() === isRecognizedValue.toString().toUpperCase()) {
+              return field.value;
+            }
+          }
+        }
+        return;
       },
 
       setStyleColor: function (styleColor) {
@@ -208,13 +268,15 @@ define(['dojo/_base/declare',
 
       _getResults: function () {
         var rows = this._fieldsTable.getRows();
-        var results = [];
+        var results = {};
+        var noValue = this.nls.warningsAndErrors.noValue;
         array.forEach(rows, function (r) {
-          results.push({
-            targetField: r.cells[0].textContent,
-            sourceField: r.cells[1].fieldsSelect.getValue()
-          });
+          var value = r.cells[2].fieldsSelect.getValue();
+          if (value !== noValue) {
+            results[r.cells[0].targetField.name] = value;
+          }
         });
+
         return results;
       }
     });

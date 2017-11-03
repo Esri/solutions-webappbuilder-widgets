@@ -115,13 +115,14 @@ define([
       var sourceDefs = array.map(config.sources, lang.hitch(this, function (source) {
         var def = new Deferred();
         //if selected source is geo coder create geo coder source else feature layer
+        //TODO think through the hardcoded placeholder
         if (source && source.url && source.type === 'locator') {
           var _source = {
             locator: new Locator(source.url || ""),
             outFields: ["*"],
             singleLineFieldName: source.singleLineFieldName || "",
             name: jimuUtils.stripHTML(source.name || ""),
-            placeholder: jimuUtils.stripHTML(source.placeholder || ""),
+            placeholder: this.nls.startPage.enterAddress,//jimuUtils.stripHTML(source.placeholder || ""),
             countryCode: source.countryCode || "",
             maxSuggestions: source.maxSuggestions,
             maxResults: source.maxResults || 6,

@@ -54,6 +54,10 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
     // would basically need to test each address in the cahce individually to avoid additional credit consumption. This could be way too chatty
     // could make it's use optional also
 
+
+    //TODO move away from cache manager...add function to search for duplicates in the service
+    // need to understand how we know what fields from the service should be compared with serch layers
+
     constructor: function (options) {
       this.file = options.file;
       this.map = options.map;
@@ -69,6 +73,8 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
       this.featureCollection = null;
       this.featureLayer = null;
       this.mappedArrayFields = null;
+      this.unMatchedFeatureLayer = null;
+      this.duplicateLayer = null;
 
       this.hasUnmatched = false;
       this.useAddr = true;
@@ -116,33 +122,35 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
     processForm: function () {
       var def = new Deferred();
       this._locateData(this.useAddr).then(lang.hitch(this, function (data) {
+        var results = {};
         this.featureCollection = this._generateFC();
         this.unmatchedFC = this._generateFC();
         var unmatchedI = 0;
+
         var keys = Object.keys(data);
         for (var i = 0; i < keys.length; i++) {
-            var attributes = {};           
-            var di = data[keys[i]];
-            var si = this.storeItems[di.csvIndex];
-            array.forEach(this.fsFields, lang.hitch(this, function (f) {
-              attributes[f.name] = this.csvStore.getValue(si, this.mappedArrayFields[f.name]);
-            }));
+          var attributes = {};
+          var di = data[keys[i]];
+          var si = this.storeItems[di.csvIndex];
+          array.forEach(this.fsFields, lang.hitch(this, function (f) {
+            attributes[f.name] = this.csvStore.getValue(si, this.mappedArrayFields[f.name]);
+          }));
 
-            if (di && di.score > this.minScore) {
-              attributes["ObjectID"] = i - unmatchedI;
-              this.featureCollection.featureSet.features.push({
-                "geometry": di.location,
-                "attributes": lang.clone(attributes)
-              });
-            } else {
-              //attributes["ObjectID"] = unmatchedI;
-              ////TODO need to handle the null location by doing something
-              //this.unmatchedFC.featureSet.features.push({
-              //  "geometry": new Point(0, 0, this.map.spatialReference),
-              //  "attributes": lang.clone(attributes)
-              //});
-              //unmatchedI++;
-            }
+          if (di && di.score > this.minScore) {
+            attributes["ObjectID"] = i - unmatchedI;
+            this.featureCollection.featureSet.features.push({
+              "geometry": di.location,
+              "attributes": lang.clone(attributes)
+            });
+          } else {
+            attributes["ObjectID"] = unmatchedI;
+            //TODO need to handle the null location by doing something
+            this.unmatchedFC.featureSet.features.push({
+              "geometry": new Point(0, 0, this.map.spatialReference),
+              "attributes": lang.clone(attributes)
+            });
+            unmatchedI++;
+          }
         }
 
         if (unmatchedI > 0) {
@@ -151,9 +159,9 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
           //  array.forEach(this.unMatchedContainer.children, html.destroy);
           //}
 
-          //this.hasUnmatched = true;
-          //this.unMatchedFeatureLayer = this._initLayer(this.unmatchedFC,
-          //  this.file.name += "_UnMatched");
+          this.hasUnmatched = true;
+          this.unMatchedFeatureLayer = this._initLayer(this.unmatchedFC,
+            this.file.name += "_UnMatched");
 
           //var unmatchedList = new UnMatchedList();
           //unmatchedList.createList({
@@ -165,13 +173,20 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
           //});
 
           //html.place(unmatchedList.list.domNode, this.unMatchedContainer);
+
+
+
         }
 
         //TODO this should be the theme color
         this.featureLayer = this._initLayer(this.featureCollection, this.file.name);
 
         this._zoomToData(this.featureLayer);
-        def.resolve('complete');
+        def.resolve({
+          matchedLayer: this.featureLayer,
+          unmatchedLayer: this.unMatchedFeatureLayer,
+          duplicateLayer: this.duplicateLayer
+        });
 
       }));
       return def;
@@ -194,7 +209,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
         this.geocodeManager.getCache().then(lang.hitch(this, function (cacheData) {
           //recursive function that will process un-matched records when more than one locator has been provided
           var _geocodeData = lang.hitch(this, function (cacheData, storeItems, _idx, finalResults) {
-            //cacheData = {};
+            cacheData = {}; //TODO prevent cache logic for now
             var def = new Deferred();
             var locatorSource = this._geocodeSources[_idx];
             var locator = locatorSource.locator;

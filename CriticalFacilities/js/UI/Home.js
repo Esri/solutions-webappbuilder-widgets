@@ -23,10 +23,17 @@ define(['dojo/_base/declare',
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
-  "dojo/text!./Home.html",
+  "dojo/text!./templates/Home.html",
   '../search',
   'dojo/dom-construct',
-  'dojo/query'
+  'dojo/query',
+  'dojo/on',
+  '../csvStore',
+  './Addresses',
+  './Coordinates',
+  './FieldMapping',
+  'jimu/dijit/Popup',
+  'esri/lang'
 ],
   function (declare,
     lang,
@@ -40,7 +47,14 @@ define(['dojo/_base/declare',
     template,
     Search,
     domConstruct,
-    query) {
+    query,
+    on,
+    CsvStore,
+    Addresses,
+    Coordinates,
+    FieldMapping,
+    Popup,
+    esriLang) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-home',
       declaredClass: 'CriticalFacilities.Home',
@@ -55,6 +69,10 @@ define(['dojo/_base/declare',
       theme: '',
       isDarkTheme: '',
       styleColor: '',
+      _geocodeSources: null,
+      _fsFields: [],
+      _singleFields: [],
+      _multiFields: [],
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -63,11 +81,19 @@ define(['dojo/_base/declare',
       postCreate: function () {
         this.inherited(arguments);
         this._createSearchInstance();
+        this.pageInstruction.innerHTML = esriLang.substitute({
+          layer: this.parent.editLayer.name
+        }, this.nls.startPage.startPageInstructions);
       },
 
       startup: function () {
         console.log('Home startup');
         this._started = true;
+
+        this.own(on(this.map.container, "dragenter", this.onDragEnter));
+        this.own(on(this.map.container, "dragover", this.onDragOver));
+        this.own(on(this.map.container, "drop", lang.hitch(this, this.onDrop)));
+        this.own(on(this.fileNode, "change", lang.hitch(this, this.onDrop)));
       },
 
       onShown: function () {
@@ -185,11 +211,233 @@ define(['dojo/_base/declare',
 
       validate: function (type, result) {
         var def = new Deferred();
-        //TODO...I think after I get past the fake button stuff should be able to move all of this from the widget to this view
-        this.parent.validate(type, result).then(function (v) {
-          def.resolve(v);
-        });
+        if (type === 'next-view') {
+          def.resolve(this._nextView(result));
+        } else if (type === 'back-view') {
+          this._backView(result).then(function (v) {
+            def.resolve(v);
+          });
+        }
         return def;
+      },
+
+      _nextView: function (nextResult) {
+        if (nextResult.navView.label === this.pageContainer.views[1].label) {
+          this.pageContainer.toggleController(false);
+        }
+        return true;
+      },
+
+      _backView: function (backResult) {
+        var def = new Deferred();
+
+        if (backResult.navView.label === this.label) {
+          var msg;
+
+          if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
+            msg = this.nls.warningsAndErrors.locationAndFieldMappingCleared;
+          } else {
+            if (this._locationMappingComplete) {
+              msg = this.nls.warningsAndErrors.locationCleared;
+            } else if (this._fieldMappingComplete) {
+              msg = this.nls.warningsAndErrors.fieldMappingCleared;
+            }
+          }
+
+          if (msg) {
+            var content = domConstruct.create('div');
+
+            domConstruct.create('div', {
+              innerHTML: msg
+            }, content);
+
+            domConstruct.create('div', {
+              innerHTML: this.nls.warningsAndErrors.proceed,
+              style: 'padding-top:10px;'
+            }, content);
+
+            var warningMessage = new Popup({
+              titleLabel: this.nls.warningsAndErrors.mappingTitle,
+              width: 400,
+              autoHeight: true,
+              content: content,
+              buttons: [{
+                label: this.nls.shouldComeFromJimuNLS.yes,
+                onClick: lang.hitch(this, function () {
+                  this._clearMapping();
+                  this.pageContainer.toggleController(true);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(true);
+                })
+              }, {
+                label: this.nls.shouldComeFromJimuNLS.no,
+                classNames: ['jimu-btn-vacation'],
+                onClick: lang.hitch(this, function () {
+                  this.pageContainer.selectView(backResult.currentView.index);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(false);
+                })
+              }],
+              onClose: function () {
+                warningMessage = null;
+              }
+            });
+          } else {
+            //for validate
+            this.pageContainer.toggleController(true);
+            def.resolve(true);
+          }
+        }
+        return def;
+      },
+
+      _clearMapping: function () {
+        this.parent._locationMappingComplete = false;
+        this.parent._fieldMappingComplete = false;
+      },
+
+      onDragEnter: function (event) {
+        event.preventDefault();
+      },
+
+      onDragOver: function (event) {
+        event.preventDefault();
+      },
+
+      _getFileInfo: function (event) { },
+
+      onDrop: function (event) {
+        if (this.csvStore) {
+          this.csvStore.clear();
+        }
+
+        var files;
+        if (event.dataTransfer) {
+          event.preventDefault();
+          files = event.dataTransfer.files;
+        } else if (event.currentTarget){
+          files = event.currentTarget.files; 
+        }
+
+        if (files && files.length > 0) {
+          var file = files[0];//single file for the moment
+          if (file.name.indexOf(".csv") !== -1) {
+            this.csvStore = new CsvStore({
+              file: file,
+              fsFields: this._fsFields,
+              map: this.map,
+              geocodeSources: this._geocodeSources,
+              nls: this.nls,
+              appConfig: this.appConfig
+            });
+            this.csvStore.handleCsv().then(lang.hitch(this, function (obj) {
+              this._updatePageContainer(obj);
+            }));
+          }
+        }
+      },
+
+      _initCoordinatesView: function (obj) {
+        var xField = this.config.xyFields[0];
+        var yField = this.config.xyFields[1];
+
+        var fields = [];
+        array.forEach(obj.fields, function (field) {
+          var fieldType = obj.fieldTypes[field];
+          if (fieldType) {
+            if (fieldType.supportsInt || fieldType.supportsFloat) {
+              fields.push({
+                label: field,
+                value: field
+              });
+            }
+          }
+        });
+
+        return new Coordinates({
+          nls: this.nls,
+          map: this.map,
+          parent: this.parent,
+          config: this.config,
+          appConfig: this.appConfig,
+          fields: fields,
+          xField: xField,
+          yField: yField,
+          theme: this.theme,
+          isDarkTheme: this.isDarkTheme
+        });
+      },
+
+      _initAddressView: function (obj) {
+        var fields = [];
+        array.forEach(obj.fields, function (field) {
+          var fieldType = obj.fieldTypes[field];
+          //TODO can we do a type test here...think through this
+          fields.push({
+            label: field,
+            value: field,
+            type: fieldType
+          });
+        });
+
+        return new Addresses({
+          nls: this.nls,
+          map: this.map,
+          parent: this.parent,
+          config: this.config,
+          appConfig: this.appConfig,
+          singleFields: this._singleFields,
+          multiFields: this._multiFields,
+          fields: fields,
+          theme: this.theme,
+          isDarkTheme: this.isDarkTheme
+        });
+      },
+
+      _initFieldMappingView: function (obj) {
+        var targetFields = obj.fsFields;
+
+        var sourceFields = [];
+        array.forEach(obj.fields, function (field) {
+          var fieldType = obj.fieldTypes[field];
+          sourceFields.push({
+            label: field,
+            value: field,
+            type: fieldType
+          });
+        });
+
+        return new FieldMapping({
+          nls: this.nls,
+          map: this.map,
+          parent: this.parent,
+          config: this.config,
+          appConfig: this.appConfig,
+          targetFields: targetFields,
+          sourceFields: sourceFields,
+          theme: this.theme,
+          isDarkTheme: this.isDarkTheme
+        });
+      },
+
+      _updatePageContainer: function (obj) {
+        var startPage = this.pageContainer.getViewByTitle('StartPage');
+        startPage.csvStore = this.csvStore;
+
+        //TODO may need a pageContainer.containsView and if that returns true..destroy and re-create the new view...??
+        var coordinatesView = this._initCoordinatesView(obj);
+        this.pageContainer.addView(coordinatesView);
+
+        var addressView = this._initAddressView(obj);
+        this.pageContainer.addView(addressView);
+
+        var fieldMappingView = this._initFieldMappingView(obj);
+        this.pageContainer.addView(fieldMappingView);
+
+        //go to the next page to start the user workflow
+        this.pageContainer._nextView();
       }
     });
   });

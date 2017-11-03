@@ -26,7 +26,7 @@ define(['dojo/_base/declare',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
   'dojo/Evented',
-  'dojo/text!./Addresses.html',
+  'dojo/text!./templates/Addresses.html',
   'dijit/form/Select',
   'dijit/form/RadioButton'
 ],
@@ -180,7 +180,7 @@ define(['dojo/_base/declare',
       _setFields: function (controlFields, fields, table) {
         //Create UI for field controls
         var id = 0;
-        array.forEach(controlFields, function (controlField) {
+        array.forEach(controlFields, lang.hitch(this, function (controlField) {
           var tr = domConstruct.create('tr', {
             className: "control-row"
           }, table);
@@ -201,14 +201,24 @@ define(['dojo/_base/declare',
             className: "field-control"
           });
           //domClass.add(fieldSelect.domNode, "field-control");
+           
+          //TODO need to filter based on type here also
 
+          var options = [{
+            label: this.nls.warningsAndErrors.noValue,
+            value: this.nls.warningsAndErrors.noValue
+          }];
+
+          var defaultFieldName = this._getDefaultFieldName(fields, controlField);
           array.forEach(fields, function (f) {
-            //TODO need to deal with the logic to select the appropriate field
-            fieldSelect.addOption({
+            options.push({
               label: f.label,
-              value: f.value
+              value: f.value,
+              selected: f.value === defaultFieldName
             });
           });
+
+          fieldSelect.addOption(options);
 
           fieldSelect.placeAt(tdControl);
           fieldSelect.startup();
@@ -218,7 +228,21 @@ define(['dojo/_base/declare',
           if (controlFields.length > 1) {
             domClass.add(tr, 'bottom-border');
           }
-        });
+        }));
+      },
+
+      _getDefaultFieldName: function (fields, configField) {
+        var isRecognizedValues = configField.isRecognizedValues;
+        for (var i = 0; i < isRecognizedValues.length; i++) {
+          var isRecognizedValue = isRecognizedValues[i];
+          for (var ii = 0; ii < fields.length; ii++) {
+            var field = fields[ii];
+            if (field.value.toString().toUpperCase() === isRecognizedValue.toString().toUpperCase()) {
+              return field.value;
+            }
+          }
+        }
+        return;
       },
 
       setStyleColor: function (styleColor) {
@@ -238,16 +262,25 @@ define(['dojo/_base/declare',
 
         var rows = table.rows;
         var fields = [];
+        var mappedArrayFields = {};
+        var noValue = this.nls.warningsAndErrors.noValue;
         array.forEach(rows, function (r) {
-          fields.push({
-            targetField: r.cells[0].textContent,
-            sourceField: r.fieldControl.get('value')
-          });
+          var sourceField = r.fieldControl.get('value');
+          var targetField = r.cells[0].textContent;
+          if (sourceField !== noValue) {
+            fields.push({
+              keyField: targetField,
+              value: sourceField,
+              label: sourceField
+            });
+            mappedArrayFields[targetField] = sourceField;
+          }
         });
         
         return {
-          type: "Addresses",
-          fields: fields
+          type: this.useSingle ? 'single' : 'multi',
+          fields: fields,
+          mappedArrayFields: mappedArrayFields
         };
       }
     });

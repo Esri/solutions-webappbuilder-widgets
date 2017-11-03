@@ -22,7 +22,7 @@ define(['dojo/_base/declare',
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
-  "dojo/text!./LocationType.html",
+  "dojo/text!./templates/LocationType.html",
   'dijit/form/RadioButton'
 ],
   function (declare,

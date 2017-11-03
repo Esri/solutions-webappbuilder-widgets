@@ -23,10 +23,11 @@ define(['dojo/_base/declare',
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
-  "dojo/text!./Review.html",
+  "dojo/text!./templates/Review.html",
   'dojo/query',
   './FeatureList',
   'jimu/dijit/Message',
+  'jimu/CSVUtils'
 ],
   function (declare,
     lang,
@@ -40,7 +41,8 @@ define(['dojo/_base/declare',
     template,
     query,
     FeatureList,
-    Message) {
+    Message,
+    CSVUtils) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-review',
       declaredClass: 'CriticalFacilities.Review',
@@ -58,7 +60,7 @@ define(['dojo/_base/declare',
       theme: '',
       isDarkTheme: '',
       styleColor: '',
-      myCsvStore: null,
+      csvStore: null,
       editLayer: null,
 
       constructor: function (options) {
@@ -73,81 +75,61 @@ define(['dojo/_base/declare',
       },
 
       startup: function () {
-        console.log('Review startup');
         this._started = true;
         this._updateAltIndexes();
         this._initNavPages();
       },
 
       onShown: function () {
-        console.log('Review shown');
+
       },
 
       _initNavPages: function () {
         if (this.pageContainer) {
-          //TODO may need to get view instances after all have been added if the indexes don't update as expected
+
           if (this.matchedList.length > 0) {
-
-            //the features here should be derived from the list 
-            var _fl = new FeatureList({
-              nls: this.nls,
-              map: this.map,
-              parent: this,
-              config: this.config,
-              appConfig: this.appConfig,
-              hint: this.nls.review.reviewMatchedPageHint,
-              label: 'MatchedFeatures',
-              features: this.matchedList,
-              theme: this.theme,
-              isDarkTheme: this.isDarkTheme
-            });
-
-            this.pageContainer.addView(_fl);
-            this._matchedListView = this.pageContainer.getViewByTitle(_fl.label);
-
-            this.altNextIndex = this._matchedListView.index;
+            var matched = this._initFeatureList(this.matchedList, 'MatchedFeatures',
+              this.nls.review.reviewMatchedPageHint, false);
+            this.pageContainer.addView(matched);
+            this._matchedListView = this.pageContainer.getViewByTitle(matched.label);
           }
 
           if (this.unMatchedList.length > 0) {
-            //the features here should be derived from the list 
-            var fl = new FeatureList({
-              nls: this.nls,
-              map: this.map,
-              parent: this,
-              config: this.config,
-              appConfig: this.appConfig,
-              hint: this.nls.review.reviewUnMatchedPageHint,
-              label: 'UnMatchedFeatures',
-              features: this.unMatchedList,
-              theme: this.theme,
-              isDarkTheme: this.isDarkTheme
-            });
-
-            this.pageContainer.addView(fl);
-            this._unMatchedListView = this.pageContainer.getViewByTitle(fl.label);
+            var unMatched = this._initFeatureList(this.unMatchedList, 'UnMatchedFeatures',
+              this.nls.review.reviewUnMatchedPageHint, false);
+            this.pageContainer.addView(unMatched);
+            this._unMatchedListView = this.pageContainer.getViewByTitle(unMatched.label);
           }
 
           if (this.duplicateList.length > 0) {
-            var duplicateFeat = new FeatureList({
-              nls: this.nls,
-              map: this.map,
-              parent: this,
-              config: this.config,
-              appConfig: this.appConfig,
-              hint: this.nls.review.reviewDuplicatePageHint,
-              label: 'DuplicateFeatures',
-              features: this.duplicateList,
-              theme: this.theme,
-              isDuplicate: true,
-              isDarkTheme: this.isDarkTheme
-            });
-
+            var duplicateFeat = this._initFeatureList(this.duplicateList, 'DuplicateFeatures',
+              this.nls.review.reviewDuplicatePageHint, true);
             this.pageContainer.addView(duplicateFeat);
             this._duplicateListView = this.pageContainer.getViewByTitle(duplicateFeat.label);
           }
+
+          this.altNextIndex = this.matchedList.length > 0 ? this._matchedListView.index :
+            this.unMatchedList.length > 0 ? this._unMatchedListView.index :
+              this.duplicateList.length > 0 ? this._duplicateListView.index : this.altNextIndex;
         }
 
         this.pageContainer.selectView(this.index);
+      },
+
+      _initFeatureList: function (features, label, hint, isDuplicate) {
+        return new FeatureList({
+          nls: this.nls,
+          map: this.map,
+          parent: this.parent,
+          config: this.config,
+          appConfig: this.appConfig,
+          hint: hint,
+          label: label,
+          features: features,
+          theme: this.theme,
+          isDuplicate: isDuplicate,
+          isDarkTheme: this.isDarkTheme
+        });
       },
 
       _updateAltIndexes: function () {
@@ -201,18 +183,44 @@ define(['dojo/_base/declare',
       },
 
       _download: function () {
-        //wire up csv Utils
-        alert('download goes here');
+        var name;
+        if (this.matchedList.length > 0) {
+          name = this.csvStore.featureLayer.id.replace('.csv', '');
+          this._export(this.csvStore.featureLayer, name + this.nls.review.matched);
+        }
+        if (this.unMatchedList.length > 0) {
+          name = this.csvStore.featureLayer.id.replace('.csv', '');
+          this._export(this.csvStore.unMatchedFeatureLayer, name + this.nls.review.unMatched);
+        }
+        if (this.duplicateList.length > 0) {
+          name = this.csvStore.featureLayer.id.replace('.csv', '');
+          this._export(this.csvStore.duplicateLayer, name + this.nls.review.duplicate);
+        }
+      },
+
+      _export: function (layer, name) {        
+        var data = [];
+        array.forEach(layer.graphics, function (gra) {
+          data.push(gra.attributes);
+        });
+
+        var options = {};
+        //options.popupInfo = layerInfo.getPopupInfo();
+        options.datas = data;
+        options.fromClient = false;
+        options.withGeometry = false;
+        options.outFields = layer.fields;
+        options.formatDate = true;
+        options.formatCodedValue = true;
+        options.formatNumber = false;
+
+        CSVUtils.exportCSVFromFeatureLayer(name, layer, options);
       },
 
       _submit: function () {
         //submit to feature service
-        alert('submit goes here');
-
-        //code from old widget
-
-        var featureLayer = this.myCsvStore.featureLayer;
-        var oidField = this.myCsvStore.objectIdField;
+        var featureLayer = this.csvStore.featureLayer;
+        var oidField = this.csvStore.objectIdField;
         var flayer = this.editLayer;
         var features = [];
         array.forEach(featureLayer.graphics, function (feature) {

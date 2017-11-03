@@ -24,12 +24,13 @@ define(['dojo/_base/declare',
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
-  "dojo/text!./StartPage.html",
+  "dojo/text!./templates/StartPage.html",
   '../search',
   'dojo/dom-construct',
   'dojo/dom-class',
   'dojo/query',
-  './Review'
+  './Review',
+  'jimu/dijit/Popup'
 ],
   function (declare,
     lang,
@@ -46,7 +47,8 @@ define(['dojo/_base/declare',
     domConstruct,
     domClass,
     query,
-    Review) {
+    Review,
+    Popup) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-startpage',
       declaredClass: 'CriticalFacilities.StartPage',
@@ -62,6 +64,7 @@ define(['dojo/_base/declare',
       isDarkTheme: '',
       styleColor: '',
       state: 'mapping', //mapping or review...helps control what happens for various apsects of view navigation
+      csvStore: null,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -75,10 +78,10 @@ define(['dojo/_base/declare',
 
       startup: function () {
         this._started = true;
-        this._initDependencies();
       },
 
       onShown: function () {
+        this._initDependencies();
         this._validateStatus();
       },
 
@@ -105,11 +108,91 @@ define(['dojo/_base/declare',
 
       validate: function (type, result) {
         var def = new Deferred();
-        //TODO...I think after I get past the fake button stuff should be able to move all of this from the widget to this view
-        this.parent.validate(type, result).then(function (v) {
-          def.resolve(v);
-        });
+        if (type === 'next-view') {
+          def.resolve(this._nextView(result));
+        } else if (type === 'back-view') {
+          this._backView(result).then(function (v) {
+            def.resolve(v);
+          });
+        }
         return def;
+      },
+
+      _nextView: function (nextResult) {
+        if (nextResult.navView.label === this.label) {
+          this.pageContainer.toggleController(false);
+        }
+        return true;
+      },
+
+      _backView: function (backResult) {
+        var def = new Deferred();
+
+        if (backResult.navView.label === this.pageContainer.views[0].label) {
+          var msg;
+
+          if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
+            msg = this.nls.warningsAndErrors.locationAndFieldMappingCleared;
+          } else {
+            if (this._locationMappingComplete) {
+              msg = this.nls.warningsAndErrors.locationCleared;
+            } else if (this._fieldMappingComplete) {
+              msg = this.nls.warningsAndErrors.fieldMappingCleared;
+            }
+          }
+
+          if (msg) {
+            var content = domConstruct.create('div');
+
+            domConstruct.create('div', {
+              innerHTML: msg
+            }, content);
+
+            domConstruct.create('div', {
+              innerHTML: this.nls.warningsAndErrors.proceed,
+              style: 'padding-top:10px;'
+            }, content);
+
+            var warningMessage = new Popup({
+              titleLabel: this.nls.warningsAndErrors.mappingTitle,
+              width: 400,
+              autoHeight: true,
+              content: content,
+              buttons: [{
+                label: this.nls.shouldComeFromJimuNLS.yes,
+                onClick: lang.hitch(this, function () {
+                  this._clearMapping();
+                  this.pageContainer.toggleController(true);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(true);
+                })
+              }, {
+                label: this.nls.shouldComeFromJimuNLS.no,
+                classNames: ['jimu-btn-vacation'],
+                onClick: lang.hitch(this, function () {
+                  this.pageContainer.selectView(backResult.currentView.index);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(false);
+                })
+              }],
+              onClose: function () {
+                warningMessage = null;
+              }
+            });
+          } else {
+            //for validate
+            this.pageContainer.toggleController(true);
+            def.resolve(true);
+          }
+        }
+        return def;
+      },
+
+      _clearMapping: function () {
+        this.parent._locationMappingComplete = false;
+        this.parent._fieldMappingComplete = false;
       },
 
       _locationMappingClick: function () {
@@ -194,145 +277,148 @@ define(['dojo/_base/declare',
       _addToMapClick: function () {
         var fieldMappingResults = this._fieldMappingView._getResults();
         var locationResults = this._locationTypeView._getResults();
-
-        var locateResults = this._locateFeatures();
-
-        this._addResultView(locateResults);
-
-        //TODO still thinking through this
-        this.state = 'review';
-
-        this._reviewView = this.pageContainer.getViewByTitle('Review');
-
-        this.pageContainer.nextDisabled = false;
-        this.pageContainer.altHomeIndex = this._reviewView.index;
-        this.pageContainer.selectView(this._reviewView.index);
+        this._locateFeatures(fieldMappingResults, locationResults);
       },
 
       _locateFeatures: function (fieldMappingResults, locationResults) {
-        return {
-          matchedFeatures: [{
-            label: 'Bel Air Elemmentary 1',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary 1'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude 1'
-            }, {
-              name: 'Address',
-              value: '380 New York St 1'
-            }, {
-              name: 'City',
-              value: 'Redlands 1'
-            }]
-          }, {
-            label: 'Bel Air Elemmentary 2',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary 2'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude 2'
-            }, {
-              name: 'Address',
-              value: '380 New York St 2'
-            }, {
-              name: 'City',
-              value: 'Redlands 2'
-            }]
-          }, {
-            label: 'Bel Air Elemmentary 3',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary 3'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude 3'
-            }, {
-              name: 'Address',
-              value: '380 New York St 3'
-            }, {
-              name: 'City',
-              value: 'Redlands 3'
-            }]
-          }],
-          unMatchedFeatures: [{
-            label: 'Bel Air Elemmentary 1',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary 1'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude 1'
-            }, {
-              name: 'Address',
-              value: '380 New York St 1'
-            }, {
-              name: 'City',
-              value: 'Redlands 1'
-            }]
-          }, {
-            label: 'Bel Air Elemmentary 2',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary 2'
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude 2'
-            }, {
-              name: 'Address',
-              value: '380 New York St 2'
-            }, {
-              name: 'City',
-              value: 'Redlands 2'
-            }]
-          }],
-          duplicateFeatures: [{
-            label: 'Bel Air Elemmentary 1',
-            fieldInfo: [{
-              name: 'Factility Name',
-              value: 'Bel Air Elemmentary 1',
-              duplicateFieldInfo: {
-                value: 'Bel Air Elemmentary 1 duplicate'
-              }
-            }, {
-              name: 'Managed By',
-              value: 'Some Dude 1',
-              duplicateFieldInfo: {
-                value: 'Some Dude 1 duplicate'
-              }
-            }, {
-              name: 'Address',
-              value: '380 New York St 1',
-              duplicateFieldInfo: {
-                value: '380 New York St 1 duplicate'
-              }
-            }, {
-              name: 'City',
-              value: 'Redlands 1',
-              duplicateFieldInfo: {
-                value: 'Redlands 1 duplicate'
-              }
-            }]
-          }]
-        };
+
+        this.csvStore.useMultiFields = locationResults.type === 'multi' ? true : false;
+        this.csvStore.mappedArrayFields = fieldMappingResults;
+
+        if (locationResults.type === 'single') {
+          this.myCsvStore.addrFieldName = locationResults.fields[0].sourceField;
+          this.csvStore.singleFields = []; //single ? fields : this.myCsvStore.singleFields;
+        } else if (locationResults.type === 'multi') {
+          this.csvStore.multiFields = locationResults.fields; //multi ? fields : this.myCsvStore.multiFields;     
+        } else if (locationResults.type === 'xy') {
+          //Set xy field properties on csvStore
+          //this.csvStore.useMultiFields = false;
+          this.csvStore.useAddr = false;
+          var f = locationResults.fields[0];
+          var _f = locationResults.fields[1];
+          this.csvStore.xFieldName = f.targetField === 'X' ? f.sourceField : _f.sourceField;
+          this.csvStore.yFieldName = _f.targetField === 'Y' ? _f.sourceField : f.sourceField;
+        }
+
+        this.csvStore.processForm().then(lang.hitch(this, function (results) {
+          //add the result view
+          this._addResultView({
+            matchedFeatures: this._formatFeatures(results.matchedLayer),
+            matchedLayer: results.matchedLayer,
+            unMatchedFeatures: this._formatFeatures(results.unMatchedLayer),
+            matchedLayer: results.unMatchedLayer,
+            duplicateFeatures: this._formatDuplicateFeatures(results.duplicateLayer),
+            matchedLayer: results.duplicateLayer,
+          });
+
+          //TODO still thinking through this but it will be necessary I believe
+          this.state = 'review';
+
+          this._reviewView = this.pageContainer.getViewByTitle('Review');
+
+          this.pageContainer.nextDisabled = false;
+          this.pageContainer.altHomeIndex = this._reviewView.index;
+          this.pageContainer.selectView(this._reviewView.index);
+
+        }), lang.hitch(this, function (err) {
+          console.log(err);
+        }));
+      },
+
+      _formatFeatures: function (layer) {
+        var features = [];
+        if (layer) {
+          var oidField = layer.objectIdField;
+          var keyField = '';
+          for (var i = 0; i < layer.fields.length; i++) {
+            var field = layer.fields[i];
+            keyField = field;
+            if (field.type !== 'esriFieldTypeOID') {
+              break;
+            }
+          }
+
+          //TODO the alias needs to trickle through here 
+          array.forEach(layer.graphics, function (g) {
+            //TODO this label needs to be based on a key field
+            var fieldInfo = [];
+            array.forEach(Object.keys(g.attributes), function (k) {
+              fieldInfo.push({
+                name: k,
+                value: g.attributes[k]
+              });
+            });
+
+            features.push({
+              label: g.attributes[keyField.name],
+              fieldInfo: fieldInfo
+            });
+          });
+        }
+
+        return features;
+      },
+
+      _formatDuplicateFeatures: function (layer) {
+        var features = [];
+        if (layer) {
+
+        }
+        return features;
+        //  duplicateFeatures: [{
+        //    label: 'Bel Air Elemmentary 1',
+        //    fieldInfo: [{
+        //      name: 'Factility Name',
+        //      value: 'Bel Air Elemmentary 1',
+        //      duplicateFieldInfo: {
+        //        value: 'Bel Air Elemmentary 1 duplicate'
+        //      }
+        //    }, {
+        //      name: 'Managed By',
+        //      value: 'Some Dude 1',
+        //      duplicateFieldInfo: {
+        //        value: 'Some Dude 1 duplicate'
+        //      }
+        //    }, {
+        //      name: 'Address',
+        //      value: '380 New York St 1',
+        //      duplicateFieldInfo: {
+        //        value: '380 New York St 1 duplicate'
+        //      }
+        //    }, {
+        //      name: 'City',
+        //      value: 'Redlands 1',
+        //      duplicateFieldInfo: {
+        //        value: 'Redlands 1 duplicate'
+        //      }
+        //    }]
+        //  }]
       },
 
       _addResultView: function (locateResults) {
         var r = new Review({
           nls: this.nls,
           map: this.map,
-          parent: this,
+          parent: this.parent,
           config: this.config,
           appConfig: this.appConfig,
           matchedList: locateResults.matchedFeatures,
           unMatchedList: locateResults.unMatchedFeatures,
           duplicateList: locateResults.duplicateFeatures,
           theme: this.theme,
-          isDarkTheme: this.isDarkTheme
+          isDarkTheme: this.isDarkTheme,
+          csvStore: this.csvStore,
+          editLayer: this.parent.editLayer
         });
         this.pageContainer.addView(r);
+      },
+
+      _getPotentialDuplicates: function (layer, matchFields, ) {
+        //this should search for potential duplicates by matching key fields between the service and the csv
+
+        //this is supposed to happen before locating...this would actually fit better internal to the csv store implementation
+        // if we can decide on an approach to flag the fields from the csv and what fields they are related to in the service
+
       }
     });
   });

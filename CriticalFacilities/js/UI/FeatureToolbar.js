@@ -24,7 +24,7 @@ define(['dojo/_base/declare',
   'dojo/dom-class',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
-  'dojo/text!./FeatureToolbar.html'
+  'dojo/text!./templates/FeatureToolbar.html'
 ],
   function (declare,
     lang,

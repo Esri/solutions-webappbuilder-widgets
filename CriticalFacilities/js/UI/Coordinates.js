@@ -24,7 +24,7 @@ define(['dojo/_base/declare',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
   'dojo/Evented',
-  'dojo/text!./Coordinates.html',
+  'dojo/text!./templates/Coordinates.html',
   'dijit/form/Select',
   'dojo/_base/array'
 ],
@@ -53,8 +53,8 @@ define(['dojo/_base/declare',
       appConfig: null,
       config: null,
       fields: [],
-      xLabel: "",
-      yLabel: "",
+      xField: null,
+      yField: null,
       theme: '',
       isDarkTheme: '',
       styleColor: '',
@@ -65,9 +65,9 @@ define(['dojo/_base/declare',
 
       postCreate: function () {
         this.inherited(arguments);
-        this.lblX.innerHTML = this.xLabel + ":";
-        this.lblY.innerHTML = this.yLabel + ":";
-        this._setFields(this.fields);
+        this.lblX.innerHTML = this.xField.label + ":";
+        this.lblY.innerHTML = this.yField.label + ":";
+        this._setFields(this.fields, this.xField, this.yField);
       },
 
       startup: function () {
@@ -90,12 +90,7 @@ define(['dojo/_base/declare',
       },
 
       _updateAltIndexes: function () {
-        //No gaurentee that page container will exist prior to when the view is created
-        // However, it must exist for the page to be shown
         if (this.pageContainer && !this._startPageView) {
-          //this.own(on(this.pageContainer, 'next-view', lang.hitch(this, this._nextView)));
-          //this.own(on(this.pageContainer, 'back-view', lang.hitch(this, this._backView)));
-
           this._startPageView = this.pageContainer.getViewByTitle('StartPage');
           this._locationTypeView = this.pageContainer.getViewByTitle('LocationType');
 
@@ -128,26 +123,49 @@ define(['dojo/_base/declare',
         return true;
       },
 
-      _setFields: function (fields) {
-        //fields needs to look like this:
-        //[{
-        //  label: this.nls.miles,
-        //  value: "miles",
-        //  xSelected or ySelected: true
-        //}, {...}]
+      _setFields: function (fields, xField, yField) {
+        var defaultXField = this._getDefaultFieldName(fields, xField);
+        var defaultYField = this._getDefaultFieldName(fields, yField);
 
-        array.forEach(fields, lang.hitch(this, function (f) {
-          this.selectX.addOption({
+        var xOptions = [{
+          label: this.nls.warningsAndErrors.noValue,
+          value: this.nls.warningsAndErrors.noValue
+        }];
+        var yOptions = [{
+          label: this.nls.warningsAndErrors.noValue,
+          value: this.nls.warningsAndErrors.noValue
+        }];
+        array.forEach(fields, function (f) {
+          xOptions.push({
             label: f.label,
             value: f.value,
-            selected: typeof (f.xSelected) === 'undefined' ? false : f.xSelected
+            selected: defaultXField === f.value
           });
-          this.selectY.addOption({
+          yOptions.push({
             label: f.label,
             value: f.value,
-            selected: typeof (f.ySelected) === 'undefined' ? false : f.ySelected
+            selected: defaultYField === f.value
           });
-        }));
+        });
+
+        this.selectX.addOption(xOptions);
+        this.selectY.addOption(yOptions);
+      },
+
+      _getDefaultFieldName: function (fields, configField) {
+        var firstFieldName;
+        var isRecognizedValues = configField.isRecognizedValues;
+        for (var i = 0; i < isRecognizedValues.length; i++) {
+          var isRecognizedValue = isRecognizedValues[i];
+          for (var ii = 0; ii < fields.length; ii++) {
+            var field = fields[ii];
+            firstFieldName = typeof (firstFieldName) === 'undefined' ? field.value : firstFieldName;
+            if (field.value.toString().toUpperCase() === isRecognizedValue.toString().toUpperCase()) {
+              return field.value;
+            }
+          }
+        }
+        return firstFieldName;
       },
 
       setStyleColor: function (styleColor) {
@@ -164,7 +182,7 @@ define(['dojo/_base/declare',
 
       _getResults: function () {
         return {
-          type: "Coordinates",
+          type: "xy",
           fields: [{
             targetField: "X",
             sourceField: this.selectX.value
@@ -175,6 +193,5 @@ define(['dojo/_base/declare',
         };
 
       }
-
     });
   });

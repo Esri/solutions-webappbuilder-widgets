@@ -99,6 +99,9 @@ define([
       //TODO need to persist group/server storage stuff
       //TODO update set server 'Set' button logic
 
+      //TODO edit layer isRecognized names do not exist if the edit fields dialog is not opened
+      // need to handle defaults
+
       //Questions
       //TODO should we support an option for configure user to mark certain fields as required or optional?
       
