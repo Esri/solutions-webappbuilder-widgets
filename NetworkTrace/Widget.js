@@ -53,6 +53,7 @@ define([
   "dojo/dom",
   "dojo/has",
   'jimu/utils',
+  'jimu/exportUtils',
   "dojo/sniff"
 ], function (
   declare,
@@ -92,7 +93,8 @@ define([
   JimuTabContainer,
   dom,
   has,
-  utils
+  utils,
+  exportUtils
 ) {
   return declare([BaseWidget], {
     baseClass: 'jimu-widget-NetworkTrace',
@@ -128,7 +130,7 @@ define([
     _tabContainer: null, // to store object of tab container
     _outputResultCount: 0, // to track count of output service execution
     _outputResultArr: [], // to store output response
-	_numTimesOpened: 0,
+  _numTimesOpened: 0,
     savedLayers: [],
     savedFeatureObjectId: null,
 
@@ -190,7 +192,7 @@ define([
     },
     /*jshint unused:true */
     _setTheme: function () {
-     
+
       var styleLink;
       if (this.appConfig.theme.name === "DartTheme") {
         utils.loadStyleLink('dartOverrideCSS', this.folderUrl + "/css/dartTheme.css", null);
@@ -201,15 +203,15 @@ define([
           styleLink.disabled = true;
         }
       }
-     
+
     },
     destroy: function () {
       this._clearResults();
       this._removeAllGraphicLayers();
       this.inherited(arguments);
     },
-	
-	/**
+
+  /**
      * Add back the graphic layers upon opening.
      */
     onOpen: function() {
@@ -231,13 +233,13 @@ define([
       this.inherited(arguments);
     },
 
-	/**
-	 * Adds all graphic layers back to the map if they already exist.  This allows
-	 * multiple instances of the network trace widget to be used in the same application.
-	 *
-	 * @private
-	 */
-	_addGraphicLayersBackToMap: function() {
+  /**
+   * Adds all graphic layers back to the map if they already exist.  This allows
+   * multiple instances of the network trace widget to be used in the same application.
+   *
+   * @private
+   */
+  _addGraphicLayersBackToMap: function() {
       for (var i in this.resultLayers) {
         this.map.addLayer(this.resultLayers[i]);
       }
@@ -257,7 +259,7 @@ define([
       for (var k in this.gpInputDetails) {
         this.map.addLayer(this.gpInputDetails[k]);
       }
-	},
+  },
 
     /**
     * This function will set the display text for run button
@@ -706,7 +708,7 @@ define([
         checkBox.check();
       });
 
-   
+
     },
     _onSelectAll: function () {
       array.forEach(this.saveCheckBoxs, function (checkBox) {
@@ -714,7 +716,7 @@ define([
         checkBox.check();
       });
       this._displayOutageAreaDetail();
-      
+
     },
 
     /**
@@ -950,7 +952,7 @@ define([
           array.forEach(results, function (result) {
             TempString = (result.csvdata).split(",");
             lang.hitch(this, this._exportToCSVComplete(
-              result, TempString[0]));
+              result, TempString[0], result.orgResults));
           }, this);
         }
 
@@ -966,14 +968,24 @@ define([
     * @param{object}csvdata: object containing information regarding csv data.
     * @param{string}fileName: name of the csv file.
     **/
-    _exportToCSVComplete: function (csvdata, fileName) {
+    _exportToCSVComplete: function (csvdata, fileName, orgData) {
       var link, oWin, click_ev;
       if (this.IsIE) {
+        /*
         oWin = window.top.open("about:blank", "_blank");
         oWin.document.write(csvdata.csvdata);
         oWin.document.close();
         oWin.document.execCommand('SaveAs', true, fileName);
         oWin.close();
+        */
+        var ds = exportUtils.createDataSource({
+          type: exportUtils.TYPE_FEATURESET,
+          filename: fileName,
+          data: utils.toFeatureSet(orgData.features)
+        });
+
+        ds.setFormat(exportUtils.FORMAT_CSV);
+        ds.download();
       } else {
         link = domConstruct.create("a", {
           href: 'data:attachment/csv;charset=utf-8,' +
@@ -1052,7 +1064,8 @@ define([
           csvContent += atts.join(",") + csvNewLineChar;
         }
         deferred.resolve({
-          "csvdata": csvContent
+          "csvdata": csvContent,
+          "orgResults": results
         });
       }, 1000));
       return deferred;
