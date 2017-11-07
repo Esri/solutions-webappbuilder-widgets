@@ -6,6 +6,7 @@
   'dojo/dom-construct',
   'dojo/_base/array',
   'jimu/BaseWidget',
+  "dojo/_base/xhr",
   //'jimu/LayerStructure',
   //'jimu/LayerNode',
   'jimu/LayerInfos/LayerInfos',
@@ -21,6 +22,7 @@
     domConstruct,
     array,
     BaseWidget,
+    xhr,
     //LayerStructure,
     //LayerNode,
     LayerInfos,
@@ -45,21 +47,45 @@
       _fieldMappingComplete: false,
 
       //TODO still need to handle single search
+      //TODO need to ask WAB for a better approach for knowing the style color
 
       postCreate: function () {
         this.inherited(arguments);
-        this._setThemeAndColors(this.appConfig.theme.name);
+        this._setThemeAndColors();
         this._initConfigInfo();
-        this._initPageContainer();
       },
 
       startup: function () {
 
       },
 
-      _setThemeAndColors: function (theme) {
-        this.theme = theme;
+      _setThemeAndColors: function () {
+        this.theme = this.appConfig.theme.name;
+        this.styleColor = this._getStyleColor();
       },
+
+      _getStyleColor: function (styleName) {
+        var s = this.appConfig.theme.styles[0];
+        if (styleName) {
+          s = styleName;
+        }
+        var url = "./themes/" + this.theme + "/manifest.json";
+        xhr.get({
+          url: url,
+          handleAs: "json",
+          load: lang.hitch(this, function (data) {
+            var styles = data.styles;
+            for (var i = 0; i < styles.length; i++) {
+              var st = styles[i];
+              if (st.name === s) {
+                this.styleColor = st.styleColor;
+                this._initPageContainer();
+              }
+            }
+          })
+        });
+      },
+
 
       _initConfigInfo: function () {
         if (this.config.layerSettings && this.config.layerSettings.layerInfo) {
@@ -136,7 +162,8 @@
           altHomeIndex: 1,
           appConfig: this.appConfig,
           displayControllerOnStart: false,
-          parent: this
+          parent: this,
+          styleColor: this.styleColor
         }, this.pageNavigation);
 
         this._pageContainer.startup();
@@ -155,6 +182,7 @@
           _fsFields: this._fsFields,
           _singleFields: this._singleFields,
           _multiFields: this._multiFields,
+          styleColor: this.styleColor
         });
       },
 
@@ -166,7 +194,8 @@
           config: this.config,
           appConfig: this.appConfig,
           theme: this.theme,
-          isDarkTheme: this.isDarkTheme
+          isDarkTheme: this.isDarkTheme,
+          styleColor: this.styleColor
         });
       },
 
@@ -178,7 +207,8 @@
           config: this.config,
           appConfig: this.appConfig,
           theme: this.theme,
-          isDarkTheme: this.isDarkTheme
+          isDarkTheme: this.isDarkTheme,
+          styleColor: this.styleColor
         });
       }
     });

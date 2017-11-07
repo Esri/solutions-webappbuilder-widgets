@@ -423,7 +423,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
       array.forEach(this.fsFields, lang.hitch(this, function (af) {
         lyr.layerDefinition.fields.push({
           "name": af.name,
-          "alias": af.name,
+          "alias": af.label,
           "type": af.value,
           "editable": true,
           "domain": null

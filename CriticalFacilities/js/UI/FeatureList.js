@@ -59,6 +59,7 @@ define(['dojo/_base/declare',
       styleColor: '',
       type: '',
       isDuplicate: false,
+      layer: null,
 
       //TODO may need a loading shelter here to avoid see feature views while adding
 
@@ -172,7 +173,8 @@ define(['dojo/_base/declare',
           isDuplicate: this.isDuplicate,
           feature: feature,
           theme: this.theme,
-          isDarkTheme: this.isDarkTheme
+          isDarkTheme: this.isDarkTheme,
+          layer: this.layer
         });
 
         this.pageContainer.addView(feat);

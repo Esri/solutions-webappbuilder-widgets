@@ -595,6 +595,14 @@ define([
         var bFieldInfos =  wFieldInfos ? wFieldInfos : this._getDefaultFieldInfos(layerObject);
         if (layerInfo && layerInfo.fieldInfos) {
           array.forEach(layerInfo.fieldInfos, function (fi) {
+            if (!fi.hasOwnProperty('isRecognizedValues')) {
+              var isRecognizedValues = [fi.fieldName];
+              if (fi.label && isRecognizedValues.indexOf(fi.label) === -1) {
+                isRecognizedValues.push(fi.label);
+              }
+              fi.isRecognizedValues = isRecognizedValues;
+            }
+
             if (typeof(fi.visible) === 'undefined') {
               if (wFieldInfos) {
                 for (var j = 0; j < wFieldInfos.length; j++) {

@@ -62,6 +62,9 @@ define(['dojo/_base/declare',
       styleColor: '',
       csvStore: null,
       editLayer: null,
+      matchedLayer: null,
+      unMatchedLayer: null,
+      duplicateLayer: null,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -88,21 +91,21 @@ define(['dojo/_base/declare',
         if (this.pageContainer) {
 
           if (this.matchedList.length > 0) {
-            var matched = this._initFeatureList(this.matchedList, 'MatchedFeatures',
+            var matched = this._initFeatureList(this.matchedList, this.matchedLayer, 'MatchedFeatures',
               this.nls.review.reviewMatchedPageHint, false);
             this.pageContainer.addView(matched);
             this._matchedListView = this.pageContainer.getViewByTitle(matched.label);
           }
 
           if (this.unMatchedList.length > 0) {
-            var unMatched = this._initFeatureList(this.unMatchedList, 'UnMatchedFeatures',
+            var unMatched = this._initFeatureList(this.unMatchedList, this.unMatchedLayer, 'UnMatchedFeatures',
               this.nls.review.reviewUnMatchedPageHint, false);
             this.pageContainer.addView(unMatched);
             this._unMatchedListView = this.pageContainer.getViewByTitle(unMatched.label);
           }
 
           if (this.duplicateList.length > 0) {
-            var duplicateFeat = this._initFeatureList(this.duplicateList, 'DuplicateFeatures',
+            var duplicateFeat = this._initFeatureList(this.duplicateList, this.duplicateLayer, 'DuplicateFeatures',
               this.nls.review.reviewDuplicatePageHint, true);
             this.pageContainer.addView(duplicateFeat);
             this._duplicateListView = this.pageContainer.getViewByTitle(duplicateFeat.label);
@@ -116,7 +119,7 @@ define(['dojo/_base/declare',
         this.pageContainer.selectView(this.index);
       },
 
-      _initFeatureList: function (features, label, hint, isDuplicate) {
+      _initFeatureList: function (features, layer, label, hint, isDuplicate) {
         return new FeatureList({
           nls: this.nls,
           map: this.map,
@@ -128,7 +131,8 @@ define(['dojo/_base/declare',
           features: features,
           theme: this.theme,
           isDuplicate: isDuplicate,
-          isDarkTheme: this.isDarkTheme
+          isDarkTheme: this.isDarkTheme,
+          layer: layer
         });
       },
 

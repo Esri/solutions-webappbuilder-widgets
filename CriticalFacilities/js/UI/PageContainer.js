@@ -129,7 +129,13 @@ define(['dojo/_base/declare',
         this.theme = this.appConfig.theme.name;
 
         //subscribe to appConfigChange to know when to update local resources like images
-        topic.subscribe("appConfigChanged", lang.hitch(this, this._onAppConfigChanged));
+        this.own(topic.subscribe("appConfigChanged", lang.hitch(this, this._onAppConfigChanged)));
+
+        this.own(topic.subscribe("builder/styleChanged", lang.hitch(this, this._onBuilderStyleChanged)));
+      },
+
+      destroy: function () {
+        alert('destroy');
       },
 
       postCreate: function () {
@@ -154,6 +160,11 @@ define(['dojo/_base/declare',
         } else if (this.views.length > 0) {
           this.selectView(this._homeIndex);
         }
+      },
+
+      _onBuilderStyleChanged: function (styleChange) {
+        this.setStyleColor(styleChange.styleColor);
+
       },
 
       _onAppConfigChanged: function (appConfig, reason, changedData) {
@@ -309,6 +320,7 @@ define(['dojo/_base/declare',
         this.viewCount = this.views.length;
         for (var i = 0; i < this.views.length; i++) {
           var view = this.views[i];
+          view.styleColor = this.styleColor;
           view.index = i;
         }
       },

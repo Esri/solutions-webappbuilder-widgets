@@ -21,7 +21,6 @@
 }
 
 .jimu-widget-critical-facilities-ui .bottom-border {
-  /*border-bottom: 1px solid black;*/
   border-bottom-width: 1px;
   border-bottom-style: solid;
 }
@@ -209,7 +208,6 @@
 
 .jimu-widget-critical-facilities-ui .control-node {
   padding-bottom: 10px;
-  /*border-bottom: 1px solid black;*/
   border-bottom-width: 1px;
   border-bottom-style: solid;
 }
@@ -520,7 +518,6 @@
 }
 
 
-
 /*----------------------- Styles for search -------------------------*/
 
 .jimu-widget-critical-facilities-ui .cf-home .address-search {
@@ -603,5 +600,33 @@
   margin-left: 10px;
   background-repeat: no-repeat;
 }
+
+.jimu-widget-critical-facilities-ui .bg-loading {
+  background-image: url('../css/images/wait.gif');
+}
+
+.jimu-widget-critical-facilities-ui .bg-loading-img {
+  width: 50px;
+  height: 50px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  margin: auto;
+}
+
+/*.jimu-widget-critical-facilities-ui .bg-loading {
+  background-image: url('../css/images/loading.gif');
+}
+
+.jimu-widget-critical-facilities-ui .bg-loading-img {
+  width: 75px;
+  height: 15px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+  margin: auto;
+}*/
 
 /*end start page*/

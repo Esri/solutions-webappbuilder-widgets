@@ -87,6 +87,7 @@ define(['dojo/_base/declare',
       styleColor: 'black',
       _fileFeature: null,
       _layerFeature: null,
+      layer: null,
 
       //TODO validation logic for each control should be defined based on field type from layer
 
@@ -98,17 +99,18 @@ define(['dojo/_base/declare',
         this.inherited(arguments);
         this.fields = this._getFields(this.feature);
         this._initToolbar(this.featureToolbar);
-        this._initRows(this.fields, this.featureControlTable);
+        this._initRows(this.fields, this.featureControlTable, this.layer);
       },
 
       startup: function () {
         console.log('Feature startup');
         this._started = true;
         this._updateAltIndexes();
+        this._panToAndSelectFeature(this.feature);
       },
 
       onShown: function () {
-        console.log('Feature shown');
+        this._panToAndSelectFeature(this.feature);
       },
 
       _updateAltIndexes: function () {
@@ -129,7 +131,8 @@ define(['dojo/_base/declare',
           config: this.config,
           appConfig: this.appConfig,
           feature: this.feature,
-          theme: this.theme
+          theme: this.theme,
+          layer: this.layer
         });
 
         this._featureToolbar.placeAt(this.featureToolbar);
@@ -141,31 +144,34 @@ define(['dojo/_base/declare',
         return feature.fieldInfo;
       },
 
-      _initRows: function (fields, table) {
+      _initRows: function (fields, table, layer) {
         if (this.isDuplicate) {
           this._initRadioButtonRows(this.nls.review.useGeometry, table);
           this._initRadioButtonRows(this.nls.review.useValues, table);
         }
 
+        var oidFieldName = layer.objectIdField;
         //Create UI for field controls
         array.forEach(fields, lang.hitch(this, function (f) {
-          var tr = domConstruct.create('tr', {
-            className: "control-row bottom-border",
-            isRadioRow: false
-          }, table);
+          if (f.name !== oidFieldName) {
+            var tr = domConstruct.create('tr', {
+              className: "control-row bottom-border",
+              isRadioRow: false
+            }, table);
 
-          var tdLabel = domConstruct.create('td', {
-            className: "pad-right-10 pad-left-10 label-td"
-          }, tr);
-          domConstruct.create('div', {
-            className: "main-text float-left",
-            innerHTML: f.name
-          }, tdLabel);
+            var tdLabel = domConstruct.create('td', {
+              className: "pad-right-10 pad-left-10 label-td"
+            }, tr);
+            domConstruct.create('div', {
+              className: "main-text float-left",
+              innerHTML: f.label
+            }, tdLabel);
 
-          this._initValidationBox(tr, f.value, false);
+            this._initValidationBox(tr, f.value, false);
 
-          if (this.isDuplicate) {
-            this._initValidationBox(tr, f.duplicateFieldInfo.value, true);
+            if (this.isDuplicate) {
+              this._initValidationBox(tr, f.duplicateFieldInfo.value, true);
+            }
           }
         }));
       },
@@ -276,6 +282,8 @@ define(['dojo/_base/declare',
       },
 
       _panToAndSelectFeature: function (feature) {
+        this.feature = feature;
+        this._featureToolbar.feature = this.feature;
         if (feature && feature.geometry) {
           var geom = feature.geometry;
           if (geom.type === 'polyline') {

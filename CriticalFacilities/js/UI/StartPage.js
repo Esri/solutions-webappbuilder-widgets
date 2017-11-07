@@ -122,6 +122,9 @@ define(['dojo/_base/declare',
         if (nextResult.navView.label === this.label) {
           this.pageContainer.toggleController(false);
         }
+        if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
+          return false;
+        }
         return true;
       },
 
@@ -134,9 +137,9 @@ define(['dojo/_base/declare',
           if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
             msg = this.nls.warningsAndErrors.locationAndFieldMappingCleared;
           } else {
-            if (this._locationMappingComplete) {
+            if (this.parent._locationMappingComplete) {
               msg = this.nls.warningsAndErrors.locationCleared;
-            } else if (this._fieldMappingComplete) {
+            } else if (this.parent._fieldMappingComplete) {
               msg = this.nls.warningsAndErrors.fieldMappingCleared;
             }
           }
@@ -275,6 +278,9 @@ define(['dojo/_base/declare',
       },
 
       _addToMapClick: function () {
+        this._updateNode(this.addToMapButton, false);
+        this._updateNode(this.progressNode, true);
+
         var fieldMappingResults = this._fieldMappingView._getResults();
         var locationResults = this._locationTypeView._getResults();
         this._locateFeatures(fieldMappingResults, locationResults);
@@ -286,10 +292,10 @@ define(['dojo/_base/declare',
         this.csvStore.mappedArrayFields = fieldMappingResults;
 
         if (locationResults.type === 'single') {
-          this.myCsvStore.addrFieldName = locationResults.fields[0].sourceField;
-          this.csvStore.singleFields = []; //single ? fields : this.myCsvStore.singleFields;
+          this.csvStore.addrFieldName = locationResults.fields[0].keyField;
+          this.csvStore.singleFields = locationResults.fields;
         } else if (locationResults.type === 'multi') {
-          this.csvStore.multiFields = locationResults.fields; //multi ? fields : this.myCsvStore.multiFields;     
+          this.csvStore.multiFields = locationResults.fields;    
         } else if (locationResults.type === 'xy') {
           //Set xy field properties on csvStore
           //this.csvStore.useMultiFields = false;
@@ -306,9 +312,9 @@ define(['dojo/_base/declare',
             matchedFeatures: this._formatFeatures(results.matchedLayer),
             matchedLayer: results.matchedLayer,
             unMatchedFeatures: this._formatFeatures(results.unMatchedLayer),
-            matchedLayer: results.unMatchedLayer,
+            unMatchedLayer: results.unMatchedLayer,
             duplicateFeatures: this._formatDuplicateFeatures(results.duplicateLayer),
-            matchedLayer: results.duplicateLayer,
+            duplicateLayer: results.duplicateLayer,
           });
 
           //TODO still thinking through this but it will be necessary I believe
@@ -318,10 +324,13 @@ define(['dojo/_base/declare',
 
           this.pageContainer.nextDisabled = false;
           this.pageContainer.altHomeIndex = this._reviewView.index;
+
+          this._updateNode(this.progressNode, false);
           this.pageContainer.selectView(this._reviewView.index);
 
         }), lang.hitch(this, function (err) {
-          console.log(err);
+            console.log(err);
+            this._updateNode(this.progressNode, false);
         }));
       },
 
@@ -338,22 +347,27 @@ define(['dojo/_base/declare',
             }
           }
 
-          //TODO the alias needs to trickle through here 
-          array.forEach(layer.graphics, function (g) {
-            //TODO this label needs to be based on a key field
+          this._currentFields = layer.fields;
+          array.forEach(layer.graphics, lang.hitch(this, function (g) {
             var fieldInfo = [];
-            array.forEach(Object.keys(g.attributes), function (k) {
+            array.forEach(Object.keys(g.attributes), lang.hitch(this, function (k) {
+              var _field = this._currentFields.filter(function (f) {
+                return f.name === k;
+              });
               fieldInfo.push({
                 name: k,
+                label: (_field && _field.hasOwnProperty('length') && _field.length === 1 && _field[0].alias) ?
+                  _field[0].alias : k,
                 value: g.attributes[k]
               });
-            });
+            }));
 
             features.push({
               label: g.attributes[keyField.name],
-              fieldInfo: fieldInfo
+              fieldInfo: fieldInfo,
+              geometry: g.geometry
             });
-          });
+          }));
         }
 
         return features;
@@ -408,7 +422,10 @@ define(['dojo/_base/declare',
           theme: this.theme,
           isDarkTheme: this.isDarkTheme,
           csvStore: this.csvStore,
-          editLayer: this.parent.editLayer
+          editLayer: this.parent.editLayer,
+          matchedLayer: locateResults.matchedLayer,
+          unMatchedLayer: locateResults.unMatchedLayer,
+          duplicateLayer: locateResults.duplicateLayer
         });
         this.pageContainer.addView(r);
       },
