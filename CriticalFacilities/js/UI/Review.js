@@ -189,16 +189,16 @@ define(['dojo/_base/declare',
       _download: function () {
         var name;
         if (this.matchedList.length > 0) {
-          name = this.csvStore.featureLayer.id.replace('.csv', '');
-          this._export(this.csvStore.featureLayer, name + this.nls.review.matched);
+          name = this.csvStore.matchedFeatureLayer.id.replace('.csv', '');
+          this._export(this.csvStore.matchedFeatureLayer, name + this.nls.review.matched);
         }
         if (this.unMatchedList.length > 0) {
-          name = this.csvStore.featureLayer.id.replace('.csv', '');
+          name = this.csvStore.unMatchedFeatureLayer.id.replace('.csv', '');
           this._export(this.csvStore.unMatchedFeatureLayer, name + this.nls.review.unMatched);
         }
         if (this.duplicateList.length > 0) {
-          name = this.csvStore.featureLayer.id.replace('.csv', '');
-          this._export(this.csvStore.duplicateLayer, name + this.nls.review.duplicate);
+          name = this.csvStore.duplicateFeatureLayer.id.replace('.csv', '');
+          this._export(this.csvStore.duplicateFeatureLayer, name + this.nls.review.duplicate);
         }
       },
 
@@ -223,7 +223,7 @@ define(['dojo/_base/declare',
 
       _submit: function () {
         //submit to feature service
-        var featureLayer = this.csvStore.featureLayer;
+        var featureLayer = this.csvStore.matchedFeatureLayer;
         var oidField = this.csvStore.objectIdField;
         var flayer = this.editLayer;
         var features = [];

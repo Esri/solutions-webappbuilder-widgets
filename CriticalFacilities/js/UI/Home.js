@@ -330,7 +330,8 @@ define(['dojo/_base/declare',
               map: this.map,
               geocodeSources: this._geocodeSources,
               nls: this.nls,
-              appConfig: this.appConfig
+              appConfig: this.appConfig,
+              editLayer: this.parent.editLayer
             });
             this.csvStore.handleCsv().then(lang.hitch(this, function (obj) {
               this._updatePageContainer(obj);

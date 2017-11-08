@@ -77,6 +77,7 @@ define(['dojo/_base/declare',
       _featureToolbar: null,
       fields: [],
       feature: null,
+      fileAddress: {}, //TODO need to make this work..for now since we have not discussed exposing the address fields...just store the address details here so they could be passed to the toolbar to support locate
       isDuplicate: false,
       _useGeomFromFile: true,
       _useGeomFromLayer: false,

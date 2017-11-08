@@ -165,6 +165,9 @@ define(['dojo/_base/declare',
                 label: this.nls.shouldComeFromJimuNLS.yes,
                 onClick: lang.hitch(this, function () {
                   this._clearMapping();
+                  if (this.csvStore) {
+                    this.csvStore.clear();
+                  }
                   this.pageContainer.toggleController(true);
                   warningMessage.close();
                   warningMessage = null;
@@ -313,8 +316,9 @@ define(['dojo/_base/declare',
             matchedLayer: results.matchedLayer,
             unMatchedFeatures: this._formatFeatures(results.unMatchedLayer),
             unMatchedLayer: results.unMatchedLayer,
-            duplicateFeatures: this._formatDuplicateFeatures(results.duplicateLayer),
-            duplicateLayer: results.duplicateLayer,
+            duplicateFeatures: this._formatDuplicateFeatures(results.duplicateLayer,
+              results.duplicateLookupList),
+            duplicateLayer: results.duplicateLayer
           });
 
           //TODO still thinking through this but it will be necessary I believe
@@ -365,7 +369,8 @@ define(['dojo/_base/declare',
             features.push({
               label: g.attributes[keyField.name],
               fieldInfo: fieldInfo,
-              geometry: g.geometry
+              geometry: g.geometry,
+              address: 'this will need to pass through but will support locate function'
             });
           }));
         }
@@ -373,40 +378,48 @@ define(['dojo/_base/declare',
         return features;
       },
 
-      _formatDuplicateFeatures: function (layer) {
+      _formatDuplicateFeatures: function (layer, duplicateLookupList) {
         var features = [];
         if (layer) {
+          var oidField = layer.objectIdField;
+          var keyField = '';
+          for (var i = 0; i < layer.fields.length; i++) {
+            var field = layer.fields[i];
+            keyField = field;
+            if (field.type !== 'esriFieldTypeOID') {
+              break;
+            }
+          }
 
+          this._currentFields = layer.fields;
+          array.forEach(layer.graphics, lang.hitch(this, function (g) {
+            var fieldInfo = [];
+            var duplicateFieldInfos = duplicateLookupList[g.attributes[oidField]];
+            array.forEach(Object.keys(g.attributes), lang.hitch(this, function (k) {
+              var _field = this._currentFields.filter(function (f) {
+                return f.name === k;
+              });
+              fieldInfo.push({
+                name: k,
+                label: (_field && _field.hasOwnProperty('length') && _field.length === 1 && _field[0].alias) ?
+                  _field[0].alias : k,
+                value: g.attributes[k],
+                duplicateFieldInfo: {
+                  value: duplicateFieldInfos[k]
+                }
+              });
+            }));
+
+            features.push({
+              label: g.attributes[keyField.name],
+              fieldInfo: fieldInfo,
+              geometry: g.geometry,
+              address: 'this will need to pass through but will support locate function'
+            });
+          }));
         }
+
         return features;
-        //  duplicateFeatures: [{
-        //    label: 'Bel Air Elemmentary 1',
-        //    fieldInfo: [{
-        //      name: 'Factility Name',
-        //      value: 'Bel Air Elemmentary 1',
-        //      duplicateFieldInfo: {
-        //        value: 'Bel Air Elemmentary 1 duplicate'
-        //      }
-        //    }, {
-        //      name: 'Managed By',
-        //      value: 'Some Dude 1',
-        //      duplicateFieldInfo: {
-        //        value: 'Some Dude 1 duplicate'
-        //      }
-        //    }, {
-        //      name: 'Address',
-        //      value: '380 New York St 1',
-        //      duplicateFieldInfo: {
-        //        value: '380 New York St 1 duplicate'
-        //      }
-        //    }, {
-        //      name: 'City',
-        //      value: 'Redlands 1',
-        //      duplicateFieldInfo: {
-        //        value: 'Redlands 1 duplicate'
-        //      }
-        //    }]
-        //  }]
       },
 
       _addResultView: function (locateResults) {
@@ -425,17 +438,10 @@ define(['dojo/_base/declare',
           editLayer: this.parent.editLayer,
           matchedLayer: locateResults.matchedLayer,
           unMatchedLayer: locateResults.unMatchedLayer,
-          duplicateLayer: locateResults.duplicateLayer
+          duplicateLayer: locateResults.duplicateLayer,
+          duplicateLookupList: locateResults.duplicateLookupList
         });
         this.pageContainer.addView(r);
-      },
-
-      _getPotentialDuplicates: function (layer, matchFields, ) {
-        //this should search for potential duplicates by matching key fields between the service and the csv
-
-        //this is supposed to happen before locating...this would actually fit better internal to the csv store implementation
-        // if we can decide on an approach to flag the fields from the csv and what fields they are related to in the service
-
       }
     });
   });
