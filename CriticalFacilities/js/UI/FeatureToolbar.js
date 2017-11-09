@@ -17,8 +17,6 @@
 define(['dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/_base/array',
-  'dojo/_base/html',
-  'dojo/on',
   'dojo/Evented',
   'dojo/query',
   'dojo/dom-class',
@@ -29,8 +27,6 @@ define(['dojo/_base/declare',
   function (declare,
     lang,
     array,
-    html,
-    on,
     Evented,
     query,
     domClass,
@@ -83,7 +79,7 @@ define(['dojo/_base/declare',
 
       },
 
-      locateFeature: function (address) {
+      locateFeature: function () {
         //return feature from locationToAddress
       },
 

@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Copyright © 2014 - 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -16,7 +16,6 @@
 
 define(['dojo/_base/declare',
   'dojo/_base/lang',
-  'dojo/_base/html',
   'dojo/_base/array',
   'dojo/Deferred',
   'dijit/_WidgetBase',
@@ -37,7 +36,6 @@ define(['dojo/_base/declare',
 ],
   function (declare,
     lang,
-    html,
     array,
     Deferred,
     _WidgetBase,
@@ -306,7 +304,9 @@ define(['dojo/_base/declare',
         event.preventDefault();
       },
 
-      _getFileInfo: function (event) { },
+      //_getFileInfo: function (event) {
+
+      //},
 
       onDrop: function (event) {
         if (this.csvStore) {
@@ -318,7 +318,7 @@ define(['dojo/_base/declare',
           event.preventDefault();
           files = event.dataTransfer.files;
         } else if (event.currentTarget){
-          files = event.currentTarget.files; 
+          files = event.currentTarget.files;
         }
 
         if (files && files.length > 0) {

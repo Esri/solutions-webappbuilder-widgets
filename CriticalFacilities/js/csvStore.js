@@ -16,9 +16,6 @@
 define(['dojo/_base/declare',
     'dojo/_base/array',
     'dojo/_base/lang',
-    'dojo/_base/html',
-    'dojo/query',
-    'dojo/on',
     'dojo/Deferred',
     'dojo/DeferredList',
     'dojo/Evented',
@@ -28,23 +25,21 @@ define(['dojo/_base/declare',
     'esri/graphicsUtils',
     'esri/geometry/webMercatorUtils',
     'esri/geometry/Point',
-    'esri/Color',
-    'esri/symbols/SimpleMarkerSymbol',
-    'esri/renderers/SimpleRenderer',
     'esri/layers/FeatureLayer',
     'esri/tasks/locator',
     'esri/tasks/query',
+    'esri/SpatialReference',
     'jimu/utils'
 ],
-function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented, CsvStore, Observable, Memory,
-  graphicsUtils, webMercatorUtils, Point, Color, SimpleMarkerSymbol, SimpleRenderer, FeatureLayer, Locator, Query,
+function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Observable, Memory,
+  graphicsUtils, webMercatorUtils, Point, FeatureLayer, Locator, Query, SpatialReference,
   jimuUtils) {
   return declare([Evented], {
 
     //may just move away from the this.useMultiFields alltogether since each source should know what it supports
     //but each source can use either actually...need to really think through this
     //so if they flag single and multi on a single locator...that locator should actually be processed twice
-    //once for multi and once for single is what I am thinking 
+    //once for multi and once for single is what I am thinking
 
     file: null,
     map: null,
@@ -85,7 +80,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
         reader.onload = lang.hitch(this, function () {
           this.data = reader.result;
           this._processCsvData().then(function (fieldsInfo) {
-            def.resolve(fieldsInfo)
+            def.resolve(fieldsInfo);
           });
         });
         reader.readAsText(this.file);
@@ -98,15 +93,16 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
       this._convertSources();
       this._getSeparator();
       this._getCsvStore().then(function (fieldsInfo) {
-        def.resolve(fieldsInfo)
+        def.resolve(fieldsInfo);
       });
       return def;
     },
 
+    /*jshint loopfunc:true */
     processForm: function () {
       var def = new Deferred();
       this._locateData(this.useAddr).then(lang.hitch(this, function (data) {
-        var results = {};
+        //var results = {};
         var matchedFeatures = [];
         var unmatchedFeatures = [];
         var duplicateFeatures = [];
@@ -123,13 +119,13 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
           }));
 
           if (di && di.score > this.minScore) {
-            attributes["ObjectID"] = i - unmatchedI - duplicateI;
+            attributes.ObjectID = i - unmatchedI - duplicateI;
             matchedFeatures.push({
               "geometry": di.location,
               "attributes": lang.clone(attributes)
             });
           } else if (di.isDuplicate) {
-            attributes["ObjectID"] = duplicateI;
+            attributes.ObjectID = duplicateI;
             //leave this for now...it is not necessary for this to function but could be helpful in testing
             //attributes["DestinationOID"] = di.featureAttributes[this.editLayer.objectIdField],
             duplicateFeatures.push({
@@ -139,7 +135,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
             duplicateLookupList[duplicateI] = di.featureAttributes;
             duplicateI++;
           } else {
-            attributes["ObjectID"] = unmatchedI;
+            attributes.ObjectID = unmatchedI;
             //need to handle the null location by doing something
             // not actually sure if this is the best way...may not store the geom...
             unmatchedFeatures.push({
@@ -153,7 +149,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
         var use;
         if (matchedFeatures.length > 0) {
           this.matchedFeatureLayer = this._initLayer(matchedFeatures, this.file.name);
-          use = "matched"
+          use = "matched";
           //feature list should support zoom to its children
           this._zoomToData(this.matchedFeatureLayer);
         }
@@ -281,7 +277,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
                     return {
                       geometry: f.geometry,
                       attributes: f.attributes
-                    }
+                    };
                   }));
                 }
               }
@@ -299,158 +295,158 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
     _locateData: function (useAddress) {
       var def = new Deferred();
       if (useAddress) {
-          this._findDuplicates().then(lang.hitch(this, function (duplicateData) {
-            this.duplicateData = duplicateData;
-            //recursive function that will process un-matched records when more than one locator has been provided
-            var _geocodeData = lang.hitch(this, function (storeItems, _idx, finalResults) {
-              var def = new Deferred();
-              var locatorSource = this._geocodeSources[_idx];
-              var locator = locatorSource.locator;
-              locator.outSpatialReference = this.spatialReference;
-              var unMatchedStoreItems = [];
-              var geocodeOps = [];
-              var oid = "OBJECTID";
-              var max = 500;
-              var x = 0;
-              var i, j;
-              //loop through all provided store items
-              store_item_loop:
-              for (var i = 0, j = storeItems.length; i < j; i += max) {
-                var items = storeItems.slice(i, i + max);
-                var addresses = [];
-                if (locatorSource.singleEnabled || locatorSource.multiEnabled) {
-                  array.forEach(items, lang.hitch(this, function (item) {
-                    var csvID = item._csvId;
-                    //test if ID is in duplicate data
-                    var duplicateItem = null;
-                    duplicate_data_loop:
-                    for (var duplicateKey in this.duplicateData) {
-                      var duplicateDataItem = this.duplicateData[duplicateKey];
-                      if (duplicateDataItem.fileId === csvID) {
-                        //look and see if I cab actually just pass the geom here or if I need to muck with it
-                        duplicateItem = Object.assign({}, duplicateDataItem);
-                        delete this.duplicateData[duplicateKey];
-                        break duplicate_data_loop
-                      }
+        this._findDuplicates().then(lang.hitch(this, function (duplicateData) {
+          this.duplicateData = duplicateData;
+          //recursive function that will process un-matched records when more than one locator has been provided
+          var _geocodeData = lang.hitch(this, function (storeItems, _idx, finalResults) {
+            var def = new Deferred();
+            var locatorSource = this._geocodeSources[_idx];
+            var locator = locatorSource.locator;
+            locator.outSpatialReference = this.spatialReference;
+            var unMatchedStoreItems = [];
+            var geocodeOps = [];
+            var oid = "OBJECTID";
+            var max = 500;
+            var x = 0;
+            var i, j;
+            //loop through all provided store items
+            store_item_loop:
+            for (i = 0, j = storeItems.length; i < j; i += max) {
+              var items = storeItems.slice(i, i + max);
+              var addresses = [];
+              if (locatorSource.singleEnabled || locatorSource.multiEnabled) {
+                array.forEach(items, lang.hitch(this, function (item) {
+                  var csvID = item._csvId;
+                  //test if ID is in duplicate data
+                  var duplicateItem = null;
+                  duplicate_data_loop:
+                  for (var duplicateKey in this.duplicateData) {
+                    var duplicateDataItem = this.duplicateData[duplicateKey];
+                    if (duplicateDataItem.fileId === csvID) {
+                      //look and see if I cab actually just pass the geom here or if I need to muck with it
+                      duplicateItem = Object.assign({}, duplicateDataItem);
+                      delete this.duplicateData[duplicateKey];
+                      break duplicate_data_loop;
                     }
+                  }
 
-                    var addr = {};
-                    addr[oid] = csvID;
-                    if (this.useMultiFields && locatorSource.multiEnabled) {
-                      array.forEach(this.multiFields, lang.hitch(this, function (f) {
-                        if (f.value !== this.nls.noValue) {
-                          var val = this.csvStore.getValue(item, f.value);
-                          addr[f.keyField] = val;
-                        }
-                      }));
-                    } else if (locatorSource.singleEnabled) {
-                      if (this.singleFields[0].value !== this.nls.noValue) {
-                        var s_val = this.csvStore.getValue(item, this.singleFields[0].value);
-                        if (typeof (s_val) === 'undefined') {
-                          //otherwise multiple undefined values are seen as the same key
-                          // may need to think through other potential duplicates
-                          s_val = typeof (s_val) + csvID;
-                        }
-                        addr[locatorSource.singleLineFieldName] = s_val;
+                  var addr = {};
+                  addr[oid] = csvID;
+                  if (this.useMultiFields && locatorSource.multiEnabled) {
+                    array.forEach(this.multiFields, lang.hitch(this, function (f) {
+                      if (f.value !== this.nls.noValue) {
+                        var val = this.csvStore.getValue(item, f.value);
+                        addr[f.keyField] = val;
                       }
+                    }));
+                  } else if (locatorSource.singleEnabled) {
+                    if (this.singleFields[0].value !== this.nls.noValue) {
+                      var s_val = this.csvStore.getValue(item, this.singleFields[0].value);
+                      if (typeof (s_val) === 'undefined') {
+                        //otherwise multiple undefined values are seen as the same key
+                        // may need to think through other potential duplicates
+                        s_val = typeof (s_val) + csvID;
+                      }
+                      addr[locatorSource.singleLineFieldName] = s_val;
                     }
+                  }
 
-                    var clone = Object.assign({}, addr);
-                    delete clone[oid]
-                    var cacheKey = JSON.stringify(clone);
-                    if (duplicateItem === null) {
-                      addresses.push(addr);
+                  var clone = Object.assign({}, addr);
+                  delete clone[oid];
+                  var cacheKey = JSON.stringify(clone);
+                  if (duplicateItem === null) {
+                    addresses.push(addr);
+                    finalResults[cacheKey] = {
+                      index: x,
+                      csvIndex: csvID,
+                      location: {}
+                    };
+                    x += 1;
+                  } else {
+                    if (duplicateItem !== null) {
                       finalResults[cacheKey] = {
-                        index: x,
+                        index: -1,
                         csvIndex: csvID,
-                        location: {}
+                        isDuplicate: true,
+                        location: Object.assign({}, duplicateItem.feature.geometry),
+                        featureAttributes: duplicateItem.feature.attributes
                       };
-                      x += 1
-                    } else {
-                      if (duplicateItem !== null) {
-                        finalResults[cacheKey] = {
-                          index: -1,
-                          csvIndex: csvID,
-                          isDuplicate: true,
-                          location: Object.assign({}, duplicateItem.feature.geometry),
-                          featureAttributes: duplicateItem.feature.attributes
-                        };
-                      }
                     }
-                  }));
-                }
-                geocodeOps.push(locator.addressesToLocations({
-                  addresses: addresses,
-                  countryCode: locatorSource.countryCode,
-                  outFields: ["ResultID", "Score"]
+                  }
                 }));
               }
-              var keys = Object.keys(finalResults);
-              var geocodeList = new DeferredList(geocodeOps);
-              geocodeList.then(lang.hitch(this, function (results) {
-                _idx += 1;
-                //var storeItems = this.storeItems;
-                var additionalLocators = this._geocodeSources.length > _idx;
-                if (results) {
-                  var minScore = this.minScore;
-                  var idx = 0;
-                  array.forEach(results, function (r) {
-                    var defResults = r[1];
-                    array.forEach(defResults, function (result) {
-                      result.ResultID = result.attributes.ResultID;
-                    });
-                    var geocodeDataStore = Observable(new Memory({
-                      data: defResults,
-                      idProperty: "ResultID"
-                    }));
-                    var resultsSort = geocodeDataStore.query({}, { sort: [{ attribute: "ResultID" }] });
-                    array.forEach(resultsSort, function (_r) {
-                      for (var k in keys) {
-                        var _i = keys[k];
-                        if (finalResults[_i] && finalResults[_i].index === idx) {
-                          if (_r.attributes["Score"] < minScore) {
-                            if (additionalLocators) {
-                              //unMatchedStoreItems.push(storeItems[finalResults[_i].csvIndex]);
-                              delete finalResults[_i];
-                            }
-                          } else {
-                            finalResults[_i].location = _r.location;
-                            finalResults[_i].score = _r.attributes["Score"];
-                            delete finalResults[_i].index
-                          }
-                          delete keys[k];
-                          break;
-                        }
-                      }
-                      idx += 1;
-                    });
+              geocodeOps.push(locator.addressesToLocations({
+                addresses: addresses,
+                countryCode: locatorSource.countryCode,
+                outFields: ["ResultID", "Score"]
+              }));
+            }
+            var keys = Object.keys(finalResults);
+            var geocodeList = new DeferredList(geocodeOps);
+            geocodeList.then(lang.hitch(this, function (results) {
+              _idx += 1;
+              //var storeItems = this.storeItems;
+              var additionalLocators = this._geocodeSources.length > _idx;
+              if (results) {
+                var minScore = this.minScore;
+                var idx = 0;
+                array.forEach(results, function (r) {
+                  var defResults = r[1];
+                  array.forEach(defResults, function (result) {
+                    result.ResultID = result.attributes.ResultID;
                   });
-                  if (additionalLocators && unMatchedStoreItems.length > 0) {
-                    _geocodeData(finalResults, unMatchedStoreItems, _idx, finalResults).then(lang.hitch(this, function (data) {
+                  var geocodeDataStore = Observable(new Memory({
+                    data: defResults,
+                    idProperty: "ResultID"
+                  }));
+                  var resultsSort = geocodeDataStore.query({}, { sort: [{ attribute: "ResultID" }] });
+                  array.forEach(resultsSort, function (_r) {
+                    for (var k in keys) {
+                      var _i = keys[k];
+                      if (finalResults[_i] && finalResults[_i].index === idx) {
+                        if (_r.attributes.Score < minScore) {
+                          if (additionalLocators) {
+                            //unMatchedStoreItems.push(storeItems[finalResults[_i].csvIndex]);
+                            delete finalResults[_i];
+                          }
+                        } else {
+                          finalResults[_i].location = _r.location;
+                          finalResults[_i].score = _r.attributes.Score;
+                          delete finalResults[_i].index;
+                        }
+                        delete keys[k];
+                        break;
+                      }
+                    }
+                    idx += 1;
+                  });
+                });
+                if (additionalLocators && unMatchedStoreItems.length > 0) {
+                  _geocodeData(finalResults, unMatchedStoreItems, _idx, finalResults)
+                    .then(lang.hitch(this, function (data) {
                       def.resolve(data);
                     }));
-                  } else {
-                    def.resolve(finalResults);
-                    return def.promise;
-                  }
+                } else {
+                  def.resolve(finalResults);
+                  return def.promise;
                 }
-              }));
-              return def;
-            });
-
-            //make the inital call to this recursive function
-            _geocodeData(this.storeItems, 0, {}).then(lang.hitch(this, function (results) {
-              def.resolve(results);
+              }
             }));
+            return def;
+          });
+
+          //make the inital call to this recursive function
+          _geocodeData(this.storeItems, 0, {}).then(lang.hitch(this, function (results) {
+            def.resolve(results);
           }));
+        }));
       } else {
         this._xyData({
           storeItems: this.storeItems,
           csvStore: this.csvStore,
           xFieldName: this.xFieldName,
           yFieldName: this.yFieldName,
-          wkid: this.map.spatialReference.wkid,
-          duplicateData: duplicateData
+          wkid: this.map.spatialReference.wkid
         }).then(function (data) {
           def.resolve(data);
         });
@@ -461,10 +457,9 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
     _xyData: function (options) {
       //TODO eventually it would be good to use the defense solutions parsing logic...we could suppport many types of coordinates
       var def = new Deferred();
-      var isGeographic = undefined;
+      var isGeographic;
       var data = [];
       var csvStore = options.csvStore;
-      var duplicateData = options.duplicateData;
       array.forEach(options.storeItems, function (i) {
         var attributes = {};
         var _attrs = csvStore.getAttributes(i);
@@ -479,7 +474,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
 
         //TODO may want to consider some other tests here to make sure we avoid
         // potential funky/bad corrds from passing through
-        if (x !== NaN && y !== NaN) {
+        if (!isNaN(x) && !isNaN(y)) {
           var geometry = new Point(x, y);
           if (isGeographic) {
             geometry = webMercatorUtils.geographicToWebMercator(geometry);
@@ -491,7 +486,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
             location: geometry,
             csvIndex: i._csvId,
             score: 100
-          })
+          });
         }
       });
       def.resolve(data);
@@ -600,7 +595,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
         onComplete: lang.hitch(this, function (items) {
           this.storeItems = items;
           this._fetchFieldsAndUpdateForm(this.storeItems, this.csvStore, this.fsFields).then(function (fieldsInfo) {
-            def.resolve(fieldsInfo)
+            def.resolve(fieldsInfo);
           });
         }),
         onError: function (error) {
@@ -621,7 +616,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
         return v.toString().length;
       };
       array.forEach(csvFieldNames, function (attr) {
-        var type = null;
+        //var type = null;
         array.forEach(storeItems, function (si) {
           var checkVal = true;
           var fTypeInt = true;
@@ -637,9 +632,9 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
             var v = csvStore.getValue(si, attr);
             if (v) {
               fieldTypes[attr] = {
-                supportsInt: ((parseInt(v) !== NaN) && len(parseInt(v)) === len(v)) && fTypeInt,
-                supportsFloat: ((parseFloat(v) !== NaN) && len(parseFloat(v)) === len(v)) && fTypeFloat
-              }
+                supportsInt: ((!isNaN(parseInt(v, 10))) && len(parseInt(v, 10)) === len(v)) && fTypeInt,
+                supportsFloat: ((!isNaN(parseFloat(v))) && len(parseFloat(v)) === len(v)) && fTypeFloat
+              };
             }
           }
         });
@@ -657,7 +652,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
         try {
           //TODO this would not handle null features
           var ext = graphicsUtils.graphicsExtent(featureLayer.graphics);
-          this.map.setExtent(ext.expand(1.5), true)
+          this.map.setExtent(ext.expand(1.5), true);
         } catch (err) {
           console.log(err.message);
         }

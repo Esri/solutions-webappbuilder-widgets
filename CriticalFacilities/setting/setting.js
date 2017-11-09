@@ -22,29 +22,17 @@ define([
   'dojo/when',
   'dojo/query',
   'dojo/_base/array',
-  'dojo/dom-construct',
   'dojo/dom-style',
-  'dojo/Deferred',
   'dijit/_WidgetsInTemplateMixin',
-  'dijit/form/NumberSpinner',
   'dijit/form/Select',
-  'dijit/form/ValidationTextBox',
-  'dijit/form/RadioButton',
   'jimu/BaseWidgetSetting',
   'jimu/dijit/SimpleTable',
-  'jimu/dijit/TabContainer3',
+  "jimu/utils",
   'jimu/LayerInfos/LayerInfos',
-  'jimu/utils',
-  'jimu/portalUtils',
   'jimu/dijit/Message',
-  'jimu/dijit/SymbolPicker',
   'jimu/dijit/CheckBox',
   'jimu/dijit/LayerChooserFromMapWithDropbox',
-  "jimu/dijit/Popup",
-  "jimu/dijit/LoadingShelter",
   'esri/symbols/jsonUtils',
-  "esri/request",
-  "esri/lang",
   '../locatorUtils',
   './EditablePointFeatureLayerChooserFromMap',
   './EditFields',
@@ -58,29 +46,17 @@ define([
     when,
     query,
     array,
-    domConstruct,
     domStyle,
-    Deferred,
     _WidgetsInTemplateMixin,
-    NumberSpinner,
     Select,
-    ValidationTextBox,
-    RadioButton,
     BaseWidgetSetting,
     SimpleTable,
-    TabContainer3,
+    jimuUtils,
     LayerInfos,
-    utils,
-    portalUtils,
     Message,
-    SymbolPicker,
     CheckBox,
     LayerChooserFromMapSelect,
-    Popup,
-    LoadingShelter,
     jsonUtils,
-    esriRequest,
-    esriLang,
     _utils,
     EditablePointFeatureLayerChooserFromMap,
     EditFields,
@@ -97,7 +73,6 @@ define([
 
       //Questions
       //TODO should we support an option for configure user to mark certain fields as required or optional?
-      
       operLayerInfos: null,
       jimuLayerInfo: null,
       jimuLayerObject: null,
@@ -193,12 +168,11 @@ define([
       },
 
       _initMaxRecords: function () {
-        var ls = this.config.layerSettings;
+        //var ls = this.config.layerSettings;
         //this.maxRecords.setValue((ls && ls.maxRecords && ls.maxRecords !== NaN) ? ls.maxRecords : undefined);
       },
 
       _initSymbolPicker: function () {
-        
         if (this.config.layerSettings && this.config.layerSettings.symbol) {
           //TODO any way to check this is a valid symbol?
           this.symbolPicker.showBySymbol(jsonUtils.fromJson(this.config.layerSettings.symbol));
@@ -274,7 +248,7 @@ define([
         }
       },
 
-      _onLayerEditFieldsClick: function (tr) {
+      _onLayerEditFieldsClick: function () {
         if (this.layerInfo) {
           var editFields = new EditFields({
             nls: this.nls,
@@ -321,7 +295,7 @@ define([
           layerInfo.getLayerObject().then(lang.hitch(this, function (layer) {
             this.layerChooserSelect.setSelectedLayer(layer).then(lang.hitch(this, function (success) {
               //TODO If we need to delay the event binding could be done here rather than on load
-
+              console.log(success);
             }));
           }));
         } else {
@@ -562,7 +536,7 @@ define([
       },
 
       _onXYEditFieldsClick: function () {
-        //TODO remove the enabled check if it will always be enabled 
+        //TODO remove the enabled check if it will always be enabled
         if (this.xyEnabled) {
           var editFields = new EditFields({
             nls: this.nls,
@@ -587,7 +561,7 @@ define([
 
       ///////////////////////////////////////////////////////////
       //Locator settings
-      _onAddClick: function (evt) {
+      _onAddClick: function () {
         this._createNewLocatorSourceSettingFromMenuItem({}, {});
       },
 
