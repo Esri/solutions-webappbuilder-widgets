@@ -1,6 +1,9 @@
-define([
+﻿define([
   'dojo/_base/declare',
+  'dojo/on',
   'dojo/_base/lang',
+  'dojo/dom-class',
+  'dojo/dom-construct',
   'dojo/_base/array',
   'jimu/BaseWidget',
   "dojo/_base/xhr",
@@ -10,9 +13,13 @@ define([
   './js/UI/PageContainer',
   './js/UI/Home',
   './js/UI/StartPage',
-  './js/UI/LocationType'],
+  './js/UI/LocationType',
+  './js/csvStore'],
   function (declare,
+    on,
     lang,
+    domClass,
+    domConstruct,
     array,
     BaseWidget,
     xhr,
@@ -22,7 +29,8 @@ define([
     PageContainer,
     Home,
     StartPage,
-    LocationType) {
+    LocationType,
+    CsvStore) {
     return declare([BaseWidget], {
       baseClass: 'jimu-widget-critical-facilities-ui',
 
@@ -115,7 +123,7 @@ define([
                 value: singleAddressField.fieldName,
                 type: singleAddressField.type,
                 isRecognizedValues: singleAddressField.isRecognizedValues
-              }];
+              }];;
 
               this._multiFields = [];
               array.forEach(source.addressFields, lang.hitch(this, function (field) {

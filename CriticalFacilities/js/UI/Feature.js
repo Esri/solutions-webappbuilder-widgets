@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////
 // Copyright © 2014 - 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -16,8 +16,11 @@
 
 define(['dojo/_base/declare',
   'dojo/_base/lang',
+  'dojo/_base/html',
   'dojo/_base/array',
   'dojo/dom-construct',
+  'dojo/dom-style',
+  'dojo/dom-class',
   'dojo/on',
   'dijit/form/ValidationTextBox',
   'dijit/form/RadioButton',
@@ -30,6 +33,7 @@ define(['dojo/_base/declare',
   'esri/graphic',
   'esri/geometry/Point',
   'esri/symbols/SimpleMarkerSymbol',
+  'esri/symbols/PictureMarkerSymbol',
   'esri/symbols/SimpleLineSymbol',
   'esri/symbols/SimpleFillSymbol',
   'esri/Color',
@@ -37,8 +41,11 @@ define(['dojo/_base/declare',
 ],
   function (declare,
     lang,
+    html,
     array,
     domConstruct,
+    domStyle,
+    domClass,
     on,
     ValidationTextBox,
     RadioButton,
@@ -51,6 +58,7 @@ define(['dojo/_base/declare',
     Graphic,
     Point,
     SimpleMarkerSymbol,
+    PictureMarkerSymbol,
     SimpleLineSymbol,
     SimpleFillSymbol,
     Color,
@@ -128,7 +136,7 @@ define(['dojo/_base/declare',
           layer: this.layer
         });
 
-        this._featureToolbar.placeAt(domNode);
+        this._featureToolbar.placeAt(this.featureToolbar);
 
         this._featureToolbar.startup();
       },
@@ -190,6 +198,9 @@ define(['dojo/_base/declare',
       },
 
       _initRadioButtonRows: function (useString, table) {
+        var fromLayer = this.nls.review.fromLayer;
+        var fromFile = this.nls.review.fromFile;
+
         var tr = domConstruct.create('tr', {
           className: "radio-row task-instruction-row bottom-border",
           isRadioRow: true
@@ -200,6 +211,7 @@ define(['dojo/_base/declare',
           className: "main-text float-left pad-left-10",
           innerHTML: useString
         }, tdUseLabel);
+ 
         var isGeom = useString === this.nls.review.useGeometry;
 
         //from layer
@@ -283,7 +295,7 @@ define(['dojo/_base/declare',
           if (geom.type !== 'point') {
             geom = geom.getExtent().getCenter();
           }
-          this.map.centerAt(geom).then(lang.hitch(this, function () {
+          this.map.centerAt(geom).then(lang.hitch(this, function (ext) {
             this._flashFeature(feature);
             if ((feature._layer && feature._layer.infoTemplate) || feature.infoTemplate) {
               this.map.infoWindow.setFeatures([feature]);

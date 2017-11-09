@@ -18,6 +18,7 @@ define(['dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/_base/array',
   'dojo/_base/html',
+  'dojo/on',
   'dojo/topic',
   'dojo/Evented',
   'dojo/query',
@@ -31,6 +32,7 @@ define(['dojo/_base/declare',
     lang,
     array,
     html,
+    on,
     topic,
     Evented,
     query,
@@ -261,12 +263,13 @@ define(['dojo/_base/declare',
           var viewResults = { currentView: currentView, navView: view };
           this.emit(emitText, viewResults);
 
-          //TODO think through this logic some more...goal is to have a spot to respond to back and next up front rather than
+          //TODO think through this logic some more...goal is to have a spot to respond to back and next up front rather than 
           // after the event has been fired
           //The validate function would return true or false if the navigation is supported or if we need to do something like
           // ask a question...use case that is driving this is needing to ask if they want to clear the settings that have defined
           // to this point when they navigate back to the start page...when we respond to the event emitted it is too late as we already see the next page before they
           // provide the response...yes or no
+          
           if (currentView.validate) {
             currentView.validate(emitText, viewResults).then(lang.hitch(this, function (v) {
               if (v) {
@@ -298,6 +301,7 @@ define(['dojo/_base/declare',
           var view = this.views[i];
           if (view.label === title) {
             return view;
+            break;
           }
         }
         return;
@@ -333,7 +337,7 @@ define(['dojo/_base/declare',
         this.emit('view-added', view);
       },
 
-      addViewAtIndex: function (view) {
+      addViewAtIndex: function (view, idx) {
         ////adds a new view to the viewstack at the user defined index
         //this.viewStack.addView(view);
         this.emit('view-added', view);
@@ -351,7 +355,7 @@ define(['dojo/_base/declare',
 
       removeViewByIndex: function (idx) {
         var view = this.getViewByIndex(idx);
-        this.viewStack.removeView(view);
+        this.viewStack.removeView(view)
         this._updateViews();
         this.emit('view-removed', view);
       },
@@ -361,6 +365,7 @@ define(['dojo/_base/declare',
           var view = this.views[i];
           if (view.label === title) {
             return true;
+            break;
           }
         }
         return false;

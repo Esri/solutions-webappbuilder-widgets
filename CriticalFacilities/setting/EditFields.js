@@ -16,6 +16,7 @@
 define(['dojo/_base/declare',
     'dojo/_base/lang',
     'dojo/_base/array',
+    'dojo/query',
     'dojo/on',
     'dojo/Evented',
     'dojo/dom-construct',
@@ -26,18 +27,7 @@ define(['dojo/_base/declare',
     'jimu/dijit/Popup',
     './LookupList'
   ],
-  function (declare,
-    lang,
-    array,
-    on,
-    Evented,
-    domConstruct,
-    TextBox,
-    _TemplatedMixin,
-    BaseWidgetSetting,
-    SimpleTable,
-    Popup,
-    LookupList) {
+  function (declare, lang, array, query, on, Evented, domConstruct, TextBox, _TemplatedMixin, BaseWidgetSetting, SimpleTable, Popup, LookupList) {
     return declare([BaseWidgetSetting, _TemplatedMixin, Evented], {
       baseClass: "jimu-widget-setting-fields-critical-facilities",
       templateString: '<div><div data-dojo-attach-point="fieldsTable"></div></div>',
@@ -165,7 +155,7 @@ define(['dojo/_base/declare',
       },
 
       _create: function (td) {
-        console.log(td);
+
       },
 
       _setValue: function (td, fieldData) {
@@ -209,8 +199,7 @@ define(['dojo/_base/declare',
               label: locNames ? field.localizedNames[l] : field.alias,
               visible: field.hasOwnProperty('visible') ? field.visible : false,
               type: "STRING",
-              isRecognizedValues: recNames ? field.recognizedNames[l] : recVals ?
-                field.isRecognizedValues : [field.name]
+              isRecognizedValues: recNames ? field.recognizedNames[l] : recVals ? field.isRecognizedValues : [field.name]
             });
           }
         }, this);

@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////
 // Copyright © 2014 - 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -16,6 +16,7 @@
 
 define(['dojo/_base/declare',
   'dojo/_base/lang',
+  'dojo/_base/html',
   'dojo/_base/array',
   'dojo/dom-construct',
   'dojo/dom-class',
@@ -29,6 +30,7 @@ define(['dojo/_base/declare',
 ],
   function (declare,
     lang,
+    html,
     array,
     domConstruct,
     domClass,
@@ -71,7 +73,7 @@ define(['dojo/_base/declare',
       },
 
       postCreate: function () {
-        this.inherited(arguments);
+        this.inherited(arguments);  
         this.pageHint.innerHTML = this.hint;
         this._darkThemes = ['DartTheme', 'DashboardTheme'];
       },

@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////
 // Copyright © 2014 - 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -16,9 +16,11 @@
 
 define(['dojo/_base/declare',
   'dojo/_base/lang',
+  'dojo/_base/html',
   'dojo/_base/array',
   'dojo/dom-construct',
   'dojo/dom-class',
+  'dojo/on',
   'dojo/Deferred',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
@@ -30,9 +32,11 @@ define(['dojo/_base/declare',
 ],
   function (declare,
     lang,
+    html,
     array,
     domConstruct,
     domClass,
+    on,
     Deferred,
     _WidgetBase,
     _TemplatedMixin,
@@ -160,14 +164,13 @@ define(['dojo/_base/declare',
 
       _createTargetField: function (td) {
         //do nothing
-        console.log(td);
       },
 
       _setTargetFieldValue: function (td, value) {
         td.targetField = value;
       },
 
-      _getTargetFieldValue: function (td) {
+      _getTargetFieldValue: function () {
         return td.targetField;
       },
 
@@ -204,7 +207,7 @@ define(['dojo/_base/declare',
         domClass.add(td, 'width-all');
       },
 
-      _getSelectValue: function (td) {
+      _getSelectValue: function () {
         return td.fieldsSelect.get('value');
       },
 
@@ -214,7 +217,7 @@ define(['dojo/_base/declare',
 
       _initFields: function (targetFields) {
         array.forEach(targetFields, lang.hitch(this, function (targetField) {
-          this._fieldsTable.addRow({
+          var row = this._fieldsTable.addRow({
             target: targetField.label,
             targetField: targetField
           });
@@ -226,9 +229,9 @@ define(['dojo/_base/declare',
           //TODO fix issue with csvStore that leads to this not existing in some cases
           // should not have to do this test as field should always have a type captured
           if (f.type) {
-            var _int = f.type.supportsInt;
+            var int = f.type.supportsInt;
             var flt = f.type.supportsFloat;
-            return type === 'other' ? true : type === 'int' ? _int : type === 'float' ? flt : false;
+            return type === 'other' ? true : type === 'int' ? int : type === 'float' ? flt : false;
           } else {
             return false;
           }

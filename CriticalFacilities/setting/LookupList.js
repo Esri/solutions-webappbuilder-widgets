@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////////////////
+﻿///////////////////////////////////////////////////////////////////////////
 // Copyright 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the 'License');
@@ -20,20 +20,13 @@ define(['dojo/_base/declare',
     'jimu/dijit/SimpleTable',
     'dojo/dom-style',
     'dojo/dom-construct',
+    'dojo/query',
     'dojo/_base/lang',
     'dojo/_base/array',
+    'dojo/on',
     'dijit/form/TextBox'
 ],
-  function (declare,
-    _WidgetsInTemplateMixin,
-    BaseWidget,
-    Evented,
-    SimpleTable,
-    domStyle,
-    domConstruct,
-    lang,
-    array,
-    TextBox) {
+  function (declare, _WidgetsInTemplateMixin, BaseWidget, Evented, SimpleTable, domStyle, domConstruct, query, lang, array, on, TextBox) {
     return declare([BaseWidget, _WidgetsInTemplateMixin, Evented], {
       templateString: '<div style="width: 100%; height: 100%;">' +
         '<div class="hintText">' +

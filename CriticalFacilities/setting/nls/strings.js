@@ -1,4 +1,4 @@
-define({
+﻿define({
   root: ({
     rdoLayer: "Feature Layer",
     txtLayerLabel: "Layer Name",
@@ -64,7 +64,6 @@ define({
     requiresInteger0100: "Please enter a numeric value between 0 and 100"
   }),
   "ar": 0,
-  "bs": 0,
   "cs": 0,
   "da": 0,
   "de": 0,
@@ -74,10 +73,8 @@ define({
   "fi": 0,
   "fr": 0,
   "he": 0,
-  "hi": 0,
   "hr": 0,
   "it": 0,
-  "id": 0,
   "ja": 0,
   "ko": 0,
   "lt": 0,
@@ -89,7 +86,6 @@ define({
   "pt-pt": 0,
   "ro": 0,
   "ru": 0,
-  "sl": 0,
   "sr": 0,
   "sv": 0,
   "th": 0,

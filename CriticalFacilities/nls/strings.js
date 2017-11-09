@@ -1,4 +1,4 @@
-define({
+﻿define({
   root: ({
     startPage: {
       startPageInstructions: "This widget will assist with processing and submitting data from a file to the ${layer} layer in the map",
@@ -75,7 +75,6 @@ define({
     }
   }),
   "ar": 0,
-  "bs": 0,
   "cs": 0,
   "da": 0,
   "de": 0,
@@ -85,10 +84,8 @@ define({
   "fi": 0,
   "fr": 0,
   "he": 0,
-  "hi": 0,
   "hr": 0,
   "it": 0,
-  "id": 0,
   "ja": 0,
   "ko": 0,
   "lt": 0,
@@ -100,7 +97,6 @@ define({
   "pt-pt": 0,
   "ro": 0,
   "ru": 0,
-  "sl": 0,
   "sr": 0,
   "sv": 0,
   "th": 0,
