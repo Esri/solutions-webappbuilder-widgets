@@ -135,7 +135,7 @@ define(['dojo/_base/declare',
       },
 
       destroy: function () {
-        alert('destroy');
+
       },
 
       postCreate: function () {

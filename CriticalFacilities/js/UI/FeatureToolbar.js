@@ -72,15 +72,15 @@ define(['dojo/_base/declare',
       },
 
       _edit: function () {
-        alert('edit');
+
       },
 
       _locate: function () {
-        alert('locate');
+
       },
 
       _save: function () {
-        alert('save');
+
       },
 
       locateFeature: function (address) {

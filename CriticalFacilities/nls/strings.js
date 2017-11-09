@@ -41,18 +41,6 @@
       submit: "Submit",
       download: "Download"
     },
-    featureToolbar: {
-      editTip: "Edit",
-      saveTip: "Save",
-      locateTip: "Locate"    
-    },
-    pageContainer: {
-      next: "Next",
-      nextTip: "Next",
-      back: "Back",
-      backTip: "Back",
-      homeTip: "Home"
-    },
     review: {
       matchScore: "Match Score",
       matched: "Matched",
@@ -75,7 +63,6 @@
     warningsAndErrors: {
       loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",
       saveError: "Error saving features.",
-      unableToFindOrCreateCache: "Unable to find or create a geocode cache.",
       consumesCredits: "This tool consumes credits when used with the ArcGIS Online World Geocoding Service",
       noValue: "Select a Value",
       mappingTitle: "Some appropriate title goes here",
@@ -85,10 +72,6 @@
       fieldMappingCleared: "Field mapping will be cleared.",
       locationAndFieldMappingCleared: "Location and field mapping will be cleared.",
       proceed: "Do you want to proceed?"
-    },
-    shouldComeFromJimuNLS: {
-      yes: "Yes",
-      no: "No"
     }
   }),
   "ar": 0,

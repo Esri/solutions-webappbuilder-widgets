@@ -262,7 +262,7 @@ define(['dojo/_base/declare',
               autoHeight: true,
               content: content,
               buttons: [{
-                label: this.nls.shouldComeFromJimuNLS.yes,
+                label: this.nls.yes,
                 onClick: lang.hitch(this, function () {
                   this._clearMapping();
                   this.pageContainer.toggleController(true);
@@ -271,7 +271,7 @@ define(['dojo/_base/declare',
                   def.resolve(true);
                 })
               }, {
-                label: this.nls.shouldComeFromJimuNLS.no,
+                label: this.nls.no,
                 classNames: ['jimu-btn-vacation'],
                 onClick: lang.hitch(this, function () {
                   this.pageContainer.selectView(backResult.currentView.index);

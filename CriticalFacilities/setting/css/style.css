@@ -73,14 +73,20 @@
 .jimu-widget-setting-critical-facilities .layer-table {
   table-layout: fixed;
   border-collapse: collapse;
-  margin: 10px 10px 10px 10px;
+  margin-bottom: 10px;
 }
 
 .jimu-widget-setting-critical-facilities .layer-table > tbody > tr > td {
-  padding: 5px 10px;
+  padding: 5px;
 }
 
 .jimu-widget-setting-critical-facilities .layer-table > tbody > tr > td .edit-fields {
+  padding-left: 10px;
+  background-image: url(images/edit_default.png);
+}
+
+.jimu-rtl .jimu-widget-setting-critical-facilities .layer-table > tbody > tr > td .edit-fields {
+  padding-right: 10px;
   background-image: url(images/edit_default.png);
 }
 

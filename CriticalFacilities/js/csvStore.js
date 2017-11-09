@@ -439,7 +439,7 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
             });
 
             //make the inital call to this recursive function
-            _geocodeData(cacheData, this.storeItems, 0, {}).then(lang.hitch(this, function (results) {
+            _geocodeData(this.storeItems, 0, {}).then(lang.hitch(this, function (results) {
               def.resolve(results);
             }));
           }));

@@ -1,55 +1,44 @@
 <div class="main-settings">
-  <div>
-    <p class="hint-text-large">${nls.longInstructions}</p>
-  </div>
   <div class="main-section">
-    <div data-dojo-attach-point="tabContainer">
-      <!--=Layer Options-->
-      <div data-dojo-attach-point="layerTabNode" style="height: calc(100% - 10px);">
-        <div class="instruction hintText">
-          <p>${nls.instructionLayers}</p>
-        </div>
+
+    <!--=Layer Options-->
+      <div data-dojo-attach-point="layerTabNode" style="margin-bottom:30px;">
         <table class="layer-table">
           <colgroup>
-            <col width="28%"></col>
-            <col width="33%"></col>
-            <col width="39%"></col>
+            <col width="40%"></col>
+            <col width="20%"></col>
+            <col width="40%"></col>
           </colgroup>
           <tbody>
             <tr class="row-padding">
-              <td>${nls.layerOption}</td>
+              <td class="instruction hintText">${nls.layerOptionHint}</td>
+              <td></td>
+              <td class="instruction hintText">${nls.tempSymbolHint}</td>
+            </tr>
+            <tr class="row-padding">
               <td data-dojo-attach-point="layerTd" class="control-padding"></td>
               <td>
                 <div data-dojo-attach-point="editLayerFields" class="edit-fields"></div>
               </td>
-            </tr>
-            <tr class="row-padding">
-              <td>${nls.tempSymbol}</td>
               <td data-dojo-attach-point="tempSymbol">
                 <div data-dojo-attach-point="symbolPicker" data-dojo-type="jimu/dijit/SymbolPicker" class="jimu-r-row symPick control-padding"></div>
               </td>
-              <td class="instruction hintText">${nls.tempSymbolHint}</td>
             </tr>
-            <tr class="row-padding">
+            <!--Move this with location setting dijit-->
+            <!--<tr class="row-padding">
               <td>${nls.maxRecords}</td>
               <td><input data-dojo-attach-point="maxRecords" class="control-padding" title="${nls.searchRadiusHint}" data-dojo-type="dijit/form/NumberTextBox" data-dojo-props="constraints:{min:0,max:99999999999}, invalidMessage:'${nls.requiresInteger}'" placeHolder="${nls.eg} 1000" /></td>
               <td class="instruction hintText">${nls.maxRecordsHint}</td>
-            </tr>
-            <tr class="row-padding">
-              <td>${nls.searchRadius}</td>
-              <td>
-                <div style="width: 100%; ">
-                  <input data-dojo-attach-point="searchDistance" class="search-radius control-padding" title="${nls.searchRadiusHint}" data-dojo-type="dijit/form/NumberTextBox" data-dojo-props="constraints:{min:0,max:99999999999}, invalidMessage:'${nls.requiresInteger}'" placeholder="${nls.eg} 2" />
-                  <select data-dojo-attach-point="searchUnit" class="radiusSelect" data-dojo-type="dijit/form/Select"></select>
-                </div>
-              </td>
-              <td class="instruction hintText">${nls.searchRadiusHint}</td>
-            </tr>
+            </tr>-->
           </tbody>
         </table>
       </div>
 
-      <!--Geocode Options-->
+    <!--Geocode Options-->
+    <fieldset class="settings-field-set">
+      <legend class="settings-field-set-legend">
+        ${nls.geocodeTabLabel}
+      </legend>
       <div data-dojo-attach-point="geocodeTabNode">
         <div style="margin: 0px 10px 0px 10px;">
 
@@ -87,6 +76,6 @@
           </div>
         </div>
       </div>
-    </div>
+    </fieldset>
   </div>
 </div>

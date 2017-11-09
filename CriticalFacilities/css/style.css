@@ -601,7 +601,7 @@
   background-repeat: no-repeat;
 }
 
-.jimu-widget-critical-facilities-ui .bg-loading {
+/*.jimu-widget-critical-facilities-ui .bg-loading {
   background-image: url('../css/images/wait.gif');
 }
 
@@ -613,9 +613,9 @@
   background-repeat: no-repeat;
   cursor: pointer;
   margin: auto;
-}
+}*/
 
-/*.jimu-widget-critical-facilities-ui .bg-loading {
+.jimu-widget-critical-facilities-ui .bg-loading {
   background-image: url('../css/images/loading.gif');
 }
 
@@ -627,6 +627,6 @@
   background-repeat: no-repeat;
   cursor: pointer;
   margin: auto;
-}*/
+}
 
 /*end start page*/

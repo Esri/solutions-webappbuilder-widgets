@@ -134,25 +134,8 @@ define([
       },
 
       _initUI: function () {
-        this._initTabs();
         this._createLayerChooserSelect(true);
         this._initLocationOptions();
-      },
-
-      _initTabs: function () {
-        this._tabsContainer = new TabContainer3({
-          tabs: [{
-            title: this.nls.layerTab.layerTabLabel,
-            content: this.layerTabNode
-          }, {
-            title: this.nls.geocodeTab.geocodeTabLabel,
-            content: this.geocodeTabNode
-          }]
-        }, this.tabContainer);
-        this.own(on(this._tabsContainer, "tabChanged", lang.hitch(this, function () {
-          this._tabsContainer.containerNode.scrollTop = 0;
-        })));
-        this._tabsContainer.startup();
       },
 
       _createLayerChooserSelect: function (bindEvent) {
@@ -203,9 +186,6 @@ define([
         this.own(on(this.sourceList, 'row-select', lang.hitch(this, this._onSourceItemSelected)));
         this.own(on(this.sourceList, 'row-delete', lang.hitch(this, this._onSourceItemRemoved)));
 
-        //XY is managed here...multi and single and managed per locator
-        //this.enableXYField = this._initCheckBox(this.enableXYField, this.nls.enableXYField, this.editXYFields);
-
         this.xyEnabled = true;
         this.own(on(this.editXYFields, 'click', lang.hitch(this, this._onXYEditFieldsClick)));
 
@@ -214,27 +194,7 @@ define([
 
       _initMaxRecords: function () {
         var ls = this.config.layerSettings;
-        this.maxRecords.setValue((ls && ls.maxRecords && ls.maxRecords !== NaN) ? ls.maxRecords : undefined);
-      },
-
-      _initSearchRadius: function () {
-        var ls = this.config.layerSettings;
-
-        //set distance
-        this.searchDistance.setValue((ls && ls.distance && ls.distance !== NaN) ? ls.distance : 2);
-
-        //set units    
-        var validUnits = ['miles', 'kilometers', 'feet', 'meters', 'yards'];
-        var defaultUnit = (ls && ls.unit && validUnits.indexOf(ls.unit) > -1) ? ls.unit : 'feet';
-        var unitOptions = [];
-        array.forEach(validUnits, function (k) {
-          unitOptions.push({
-            label: window.jimuNls.units[k],
-            value: k,
-            selected: k === defaultUnit ? true : false
-          });
-        });
-        this.searchUnit.addOption(unitOptions);
+        //this.maxRecords.setValue((ls && ls.maxRecords && ls.maxRecords !== NaN) ? ls.maxRecords : undefined);
       },
 
       _initSymbolPicker: function () {
@@ -371,7 +331,6 @@ define([
         //Layer Settings
         this._initSymbolPicker();
         this._initMaxRecords();
-        this._initSearchRadius();
 
         //Location settings
 
@@ -382,7 +341,6 @@ define([
 
         if (typeof (this.config.xyEnabled) !== 'undefined') {
           this.xyEnabled = this.config.xyEnabled;
-          //this.enableXYField.setValue(this.config.xyEnabled);
         }
 
         this._setXYFields(this.defaultXYFields, this.config);
@@ -534,10 +492,8 @@ define([
         //Layer Settings
         this.config.layerSettings = {
           layerInfo: this.layerInfo,
-          symbol: this.symbolPicker.getSymbol().toJson(),
-          maxRecords: this.maxRecords.getValue(),
-          distance: this.searchDistance.getValue(),
-          unit: this.searchUnit.getValue()
+          symbol: this.symbolPicker.getSymbol().toJson()
+          //maxRecords: this.maxRecords.getValue()
         };
 
         //Location Settings

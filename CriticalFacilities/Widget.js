@@ -51,6 +51,7 @@
 
       postCreate: function () {
         this.inherited(arguments);
+        this.nls = lang.mixin(this.nls, window.jimuNls.common);
         this._setThemeAndColors();
         this._initConfigInfo();
       },
@@ -158,7 +159,7 @@
 
         this._pageContainer = new PageContainer({
           views: [homeView, startPageView, locationTypeView],
-          nls: this.nls.pageContainer,
+          nls: this.nls,
           altHomeIndex: 1,
           appConfig: this.appConfig,
           displayControllerOnStart: false,
