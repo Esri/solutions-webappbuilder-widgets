@@ -5,7 +5,6 @@
   font-size: 15px;
 }
 
-
 .jimu-widget-setting-critical-facilities .main-section {
   width: 100%;
   height: 100%;
@@ -14,8 +13,7 @@
 }
 
 .jimu-widget-setting-critical-facilities .main-instruction {
-  /*margin-top: 10px;*/
-  /*margin-bottom: 10px;*/
+
 }
 
 .jimu-widget-setting-critical-facilities .instruction {
@@ -118,14 +116,6 @@
   max-width: 120px;
 }
 
-/*.jimu-widget-setting-critical-facilities .control-padding {
-  padding-left: 5%;
-  padding-right: 5%;
-}
-
-.jimu-widget-setting-critical-facilities .row-padding {
-  padding-top: 8px;
-}*/
 .jimu-widget-setting-critical-facilities .symPick {
   padding-top: 1px;
   padding-bottom: 1px;
@@ -133,68 +123,6 @@
 }
 /*End Layer Section*/
 /*------------------------------------------------------------------------------------------------------------*/
-
-/*Start used anymore Section???*/
-/*.jimu-widget-setting-critical-facilities .group-label{
-  display: inline-block;
-  margin-bottom: 10px;
-  font-weight: bold;
-}
-
-.jimu-widget-SAT-setting .setting-Label {
-  padding-top: 15px;
-  font-weight: bold;
-}
-
-.jimu-widget-setting-critical-facilities .editable {
-  width: 100px;
-}
-
-.jimu-widget-setting-critical-facilities .update {
-  width: 200px;
-}
-
-.jimu-widget-setting-critical-facilities .setting-table > thead > tr > th,
-.jimu-widget-setting-critical-facilities .setting-table > tbody > tr > td {
-  height: 40px;
-  line-height: 40px;
-  vertical-align: middle;
-}
-
-.jimu-widget-setting-critical-facilities .input-table > tbody > tr > .first {
-  width: auto;
-  min-width: 160px;
-  text-align: left;
-}
-
-.jimu-widget-setting-critical-facilities .input-table > tbody > tr > .first {
-  text-align: right;
-}
-
-.jimu-widget-setting-critical-facilities .input-table > tbody > tr > .second > span {
-  display: inline-block;
-  height: 40px;
-  line-height: 40px;
-}
-
-.jimu-widget-setting-critical-facilities .toolbar-options-tr {
-  position: relative;
-}
-
-.jimu-widget-setting-critical-facilities .toolbar-options-tr.disable {
-  opacity: 0.4;
-}
-
-.jimu-widget-setting-critical-facilities .toolbar-options-coverage {
-  position: absolute;
-  width: 390px;
-  height: 40px;
-  z-index: 1;
-}*/
-
-/*End used anymore Section???*/
-/*------------------------------------------------------------------------------------------------------------*/
-
 
 /*Start Geocode Section*/
 .jimu-widget-setting-critical-facilities .add-button {
@@ -461,10 +389,6 @@
   height: 300px;
 }
 
-/*.jimu-widget-setting-critical-facilities .edit-fields {
-  width: 100px;
-}*/
-
 .jimu-widget-setting-critical-facilities .edit-fields {
   display: block;
   width: 18px;
@@ -621,65 +545,4 @@
 }
 
 /*End jimu override section*/
-/*------------------------------------------------------------------------------------------------------------*/
-
-
-/*Start sample css for layer chooser*/
-/*.jimu-widget-setting-critical-facilities {
-  position: relative;
-  height: 30px;
-  border: solid 1px #aaaaaa;
-}
-
-  .jimu-widget-setting-critical-facilities > table {
-    width: 100%;
-    border-collapse: collapse;
-    table-layout: fixed;
-    cursor: pointer;
-  }
-
-  .jimu-widget-setting-critical-facilities .layer-name {
-    height: 30px;
-    line-height: 30px;
-    width: 100%;
-  }
-
-  .jimu-widget-setting-critical-facilities .drop-select {
-    position: relative;
-    width: 30px;
-    height: 30px;
-  }
-
-    .jimu-widget-setting-critical-facilities.drop-select .jimu-icon-down-arrow-8 {
-      position: absolute;
-      left: 11px;
-      top: 11px;
-    }
-
-  .jimu-widget-setting-critical-facilities > .layer-chooser {
-    position: absolute;
-    width: 100%;
-    left: 0;
-    right: 0;
-    top: 100%;
-    height: 0;
-    overflow: visible;
-  }*/
-
-  /*.jimu-widget-setting-critical-facilities .jimu-basic-layer-chooser-from-map {
-    border: 1px solid #ccc;
-  }*/
-
-  /*.jimu-widget-setting-critical-facilities .layer-chooser-tree {
-    border: 1px solid #ccc;
-    -ms-overflow-x: hidden;
-    overflow-x: hidden;
-  }
-
-  .jimu-widget-setting-critical-facilities .jimu-tree .dijitTreeNodeContainer > .dijitTreeNode > .dijitTreeRow {
-    border-left: 0 !important;
-    border-right: 0 !important;
-  }*/
-
-/*End sample css for layer chooser*/
 /*------------------------------------------------------------------------------------------------------------*/

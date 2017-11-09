@@ -71,12 +71,7 @@
     searchRadius: "Search radius:",
     searchRadiusHint: "Distance to search for duplicate features from layer",
     requiresInteger: "Please enter a numeric value.",
-    requiresInteger0100: "Please enter a numeric value between 0 and 100",
-    inOrganization: "In Organization",
-    inServer: "On a Server",
-    inOrganizationHint: "Choose a group to share the results with",
-    inServerHint: "Leaving this value blank will store the results in the current users organization.",
-    inServerExample: "http://<myServerName>/GeocodeResults.js"
+    requiresInteger0100: "Please enter a numeric value between 0 and 100"
   }),
   "ar": 0,
   "cs": 0,

@@ -51,9 +51,6 @@
 
       <!--Geocode Options-->
       <div data-dojo-attach-point="geocodeTabNode">
-        <div class="instruction hintText">
-          <p>${nls.instructionGeocode}</p>
-        </div>
         <div style="margin: 0px 10px 0px 10px;">
 
           <div data-dojo-attach-point="locatorOptions" style="display:block;">
@@ -87,68 +84,6 @@
               </div>
               <div class="source-setting jimu-float-trailing" data-dojo-attach-point="sourceSettingNode"></div>
             </div>
-
-            <fieldset class="settings-field-set">
-              <legend class="settings-field-set-legend">
-                ${nls.geocodeTab.storedSerachLabel}
-              </legend>
-              <div class="jimu-r-row">
-                <div class="instruction hintText" style="width: 85%; float: left;">
-                  <p>${nls.geocodeTab.storedSerachHint}</p>
-                </div>
-                <div>
-                  <a style="float: right; padding-right: 10px;" target="_blank" href="https://developers.arcgis.com/rest/geocode/api-reference/geocode-coverage.htm" style="line-height:30px;">?</a>
-                </div>
-              </div>
-              <div style="margin: 7px 10px 10px 10px;">
-                <div class="source-label" data-dojo-attach-point="enableStoreResults" style="float: left; width: 270px; min-height: 30px;"></div>
-                <div data-dojo-attach-point="storeResultsOptions" class="display-none" style="overflow: hidden; min-height: 50px;">
-                  <table cellspacing="0" class="store-table">
-                    <tbody>
-                      <tr style="line-height: 30px">
-                        <td style="width: 200px">
-                          <!--radio button for org-->
-                          <input name="shareOptionsGroup" class="jimu-radio-btn" data-dojo-attach-point="rdoOrg" title="${nls.inOrganization}" />
-                          <label class="label">${nls.inOrganization}</label>
-                        </td>
-                        <td style="padding-right: 10px;">
-                          <!--combo for share groups-->
-                          <div data-dojo-attach-point="shareSelect"></div>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td></td>
-                        <td>
-                          <span class="tip display-none" data-dojo-attach-point="orgTip">${nls.inOrganizationHint}</span>
-                        </td>
-                      </tr>
-                      <tr style="line-height: 30px">
-                        <td>
-                          <!--server-->
-                          <div>
-                            <input name="shareOptionsGroup" data-dojo-attach-point="rdoServer" title="${nls.inServer}" />
-                            <label class="label">${nls.inServer}</label>
-                          </div>
-                        </td>
-                        <td style="width: 370px; padding-right: 10px;">
-                          <!--textbox for url-->
-                          <div data-dojo-attach-point="storeUrl"></div>
-                        </td>
-                        <td>
-                          <span title="${nls.set}" data-dojo-attach-point="setServer" class="jimu-btn" style="line-height: 30px" data-dojo-attach-event="click:_onSetServerClick">${nls.set}</span>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td></td>
-                        <td colspan="2">
-                          <span class="tip display-none" data-dojo-attach-point="serverTip">${nls.inServerHint}</span>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </fieldset>
           </div>
         </div>
       </div>

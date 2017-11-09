@@ -34,12 +34,11 @@ define(['dojo/_base/declare',
     'esri/layers/FeatureLayer',
     'esri/tasks/locator',
     'esri/tasks/query',
-    'jimu/utils',
-    './GeocodeCacheManager'
+    'jimu/utils'
 ],
 function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented, CsvStore, Observable, Memory,
   graphicsUtils, webMercatorUtils, Point, Color, SimpleMarkerSymbol, SimpleRenderer, FeatureLayer, Locator, Query,
-  jimuUtils, GeocodeCacheManager) {
+  jimuUtils) {
   return declare([Evented], {
 
     //may just move away from the this.useMultiFields alltogether since each source should know what it supports
@@ -47,14 +46,6 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
     //so if they flag single and multi on a single locator...that locator should actually be processed twice
     //once for multi and once for single is what I am thinking 
 
-    //TODO may move all geocode logic into GeocodeCacheManager if we go with supporting that
-    // Main doubt with the cache idea is for proper handeling if the locations provided by the world geocoder change
-    // would basically need to test each address in the cahce individually to avoid additional credit consumption. This could be way too chatty
-    // could make it's use optional also
-
-
-    //TODO move away from cache manager...add function to search for duplicates in the service
-    // need to understand how we know what fields from the service should be compared with search layers
     file: null,
     map: null,
     spatialReference: null,
@@ -85,12 +76,6 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
 
       //TODO this is now configurable...need to pull from there
       this.minScore = 90;
-
-      //TODO sneed to remove this and associated processing based on it
-      this.geocodeManager = new GeocodeCacheManager({
-        appConfig: options.appConfig,
-        nls: options.nls
-      });
     },
 
     handleCsv: function () {
@@ -314,12 +299,10 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
     _locateData: function (useAddress) {
       var def = new Deferred();
       if (useAddress) {
-        this.geocodeManager.getCache().then(lang.hitch(this, function (cacheData) {
           this._findDuplicates().then(lang.hitch(this, function (duplicateData) {
             this.duplicateData = duplicateData;
             //recursive function that will process un-matched records when more than one locator has been provided
-            var _geocodeData = lang.hitch(this, function (cacheData, storeItems, _idx, finalResults) {
-              cacheData = {}; //TODO prevent cache logic for now
+            var _geocodeData = lang.hitch(this, function (storeItems, _idx, finalResults) {
               var def = new Deferred();
               var locatorSource = this._geocodeSources[_idx];
               var locator = locatorSource.locator;
@@ -372,12 +355,10 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
                       }
                     }
 
-                    //most of this is to support the cahce concept that I'm not sure if it will stick around
                     var clone = Object.assign({}, addr);
                     delete clone[oid]
                     var cacheKey = JSON.stringify(clone);
-                    var _cacheData = cacheData ? cacheData : {};
-                    if ((!(_cacheData && _cacheData.hasOwnProperty(cacheKey) ? true : false)) && duplicateItem === null) {
+                    if (duplicateItem === null) {
                       addresses.push(addr);
                       finalResults[cacheKey] = {
                         index: x,
@@ -393,12 +374,6 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
                           isDuplicate: true,
                           location: Object.assign({}, duplicateItem.feature.geometry),
                           featureAttributes: duplicateItem.feature.attributes
-                        };
-                      } else {
-                        finalResults[cacheKey] = {
-                          index: -1,
-                          csvIndex: csvID,
-                          location: _cacheData[cacheKey].location
                         };
                       }
                     }
@@ -468,7 +443,6 @@ function (declare, array, lang, html, query, on, Deferred, DeferredList, Evented
               def.resolve(results);
             }));
           }));
-        }));
       } else {
         this._xyData({
           storeItems: this.storeItems,

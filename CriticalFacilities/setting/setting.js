@@ -48,8 +48,7 @@ define([
   '../locatorUtils',
   './EditablePointFeatureLayerChooserFromMap',
   './EditFields',
-  './LocatorSourceSetting',
-  './StoreGeocodeResults'
+  './LocatorSourceSetting'
 ],
   function (
     declare,
@@ -85,8 +84,7 @@ define([
     _utils,
     EditablePointFeatureLayerChooserFromMap,
     EditFields,
-    LocatorSourceSetting,
-    StoreGeocodeResults) {
+    LocatorSourceSetting) {
     return declare([BaseWidgetSetting, _WidgetsInTemplateMixin], {
       baseClass: 'jimu-widget-setting-critical-facilities',
 
@@ -96,11 +94,6 @@ define([
       //TODO figure out what's up with the css for all SimpleTable instances with the rows. I handled in some way for IS but it was not correct
       //TODO update validation logic for the validation controls for max and search dist
       //TODO disable ok if any validators are invalid
-      //TODO need to persist group/server storage stuff
-      //TODO update set server 'Set' button logic
-
-      //TODO edit layer isRecognized names do not exist if the edit fields dialog is not opened
-      // need to handle defaults
 
       //Questions
       //TODO should we support an option for configure user to mark certain fields as required or optional?
@@ -217,15 +210,6 @@ define([
         this.own(on(this.editXYFields, 'click', lang.hitch(this, this._onXYEditFieldsClick)));
 
         this.own(on(this.editLayerFields, 'click', lang.hitch(this, this._onLayerEditFieldsClick)));
-
-        //Store share results options
-        this.enableStoreResults = this._initStoreResultsCheckBox(this.enableStoreResults, this.nls.enableStoreResults, this.storeResultsOptions);
-
-        this._initShareSelect();
-        this._initStoreUrl(this.storeUrl);
-
-        this.rdoOrg = this._initStoreRdo(this.rdoOrg, [this.shareSelect, this.orgTip], "org");
-        this.rdoServer = this._initStoreRdo(this.rdoServer, [this.storeUrl, this.setServer, this.serverTip], "server");
       },
 
       _initMaxRecords: function () {
@@ -284,44 +268,6 @@ define([
         this.layerInfo = configLayerInfo || defaultLayerInfo;
       },
 
-      _initStoreUrl: function (node) {
-        node.selectControl = new ValidationTextBox({
-          required: true,
-          trim: true,
-          disabled: true,
-          style: "width: 100%;",
-          placeHolder: this.nls.eg + " " + this.nls.inServerExample
-        });
-        node.selectControl.placeAt(node).startup();
-      },
-
-      _initShareSelect: function () {
-        this._getGroupValues().then(lang.hitch(this, function (vals) {
-          this.hasGroups = vals.length > 0 ? true : false;
-          this.addSelect(this.shareSelect, vals);
-        }));
-      },
-
-      _getGroupValues: function () {
-        var def = new Deferred();
-        var portal = portalUtils.getPortal(this.appConfig.portalUrl);
-        portal.getUser().then(lang.hitch(this, function (user) {
-          var values = [];
-          for (var k in user.groups) {
-            var g = user.groups[k];
-            values.push({
-              label: g.title,
-              value: g.id
-            });
-          }
-          def.resolve(values);
-        }), lang.hitch(this, function (err) {
-          console.log(err);
-          def.resolve([]);
-        }));
-        return def;
-      },
-
       addSelect: function (node, values) {
         node.selectControl = new Select({
           options: values,
@@ -345,42 +291,6 @@ define([
         }
 
         return layerDefinition;
-      },
-
-      _initStoreRdo: function (domNode, nodes, type) {
-        domNode = new RadioButton({
-          _rdoType: type
-        }, domNode);
-        array.forEach(nodes, lang.hitch(this, function (node) {
-          this._toggleNode(node, false, 'display-none', 'display-block');
-        }));       
-        this.own(on(domNode, 'change', lang.hitch(this, function () {
-          var enabled = domNode.checked;
-          if (domNode._rdoType === "org") {
-            this.useOrg = enabled;
-            this.useServer = !this.useOrg;
-          } else {
-            this.useServer = enabled;
-            this.useOrg = !this.useServer;
-          }
-          array.forEach(nodes, lang.hitch(this, function (node) {
-            this._toggleNode(node, enabled, 'display-none', 'display-block');
-          }));
-        })));
-        return domNode;
-      },
-
-      _initStoreResultsCheckBox: function (domNode, nlsValue, editNode) {
-        domNode = new CheckBox({
-          checked: false,
-          label: nlsValue
-        }, domNode);
-        this._toggleNode(editNode, false, 'display-none', 'display-block');
-        this.own(on(domNode, 'change', lang.hitch(this, function () {
-          this.storeResults = domNode.getValue();
-          this._toggleNode(editNode, this.storeResults, 'display-none', 'display-block');
-        })));
-        return domNode;
       },
 
       _initCheckBox: function (domNode, nlsValue, editNode) {
@@ -476,22 +386,6 @@ define([
         }
 
         this._setXYFields(this.defaultXYFields, this.config);
-
-        //Store results settings
-        this.storeResults = this.config.storeResults || false;
-        this.enableStoreResults.setValue(this.storeResults); 
-        this._toggleNode(this.storeResultsOptions, this.storeResults, 'display-none', 'display-block');
-
-        //if set in config use that otherwise set default to use org
-        this.useOrg = (this.config.useOrg || this.config.useServer) ? this.config.useOrg : true;
-        this.rdoOrg.set("checked", this.useOrg);
-
-        this.useServer = (this.config.useOrg || this.config.useServer) ? this.config.useServer : false;
-        this.rdoServer.set("checked", this.useServer);
-
-        if (this.config.shareGroup) {
-          this.shareSelect.selectControl.set('value', this.config.shareGroup);
-        }
       },
 
       _getLayerInfoFromConfiguration: function (layer) {
@@ -688,12 +582,6 @@ define([
         }
         this.config.xyFields = this.xyFields || this.config.defaultXYFields;
         this.config.xyEnabled = this.xyEnabled;
-
-        this.config.useOrg = this.useOrg;
-        this.config.useServer = this.useServer;
-        this.config.storeResults = this.storeResults;
-
-        this.config.shareGroup = this.shareSelect.selectControl.value;
 
         //search radius
         return this.config;
@@ -905,93 +793,6 @@ define([
         this._currentSourceSetting.destroy();
       },
       ///////////////////////////////////////////////////////////
-
-      _storeOptionsChanged: function () {
-        console.log(this);
-      },
-
-      _onSetServerClick: function () {
-        this.storeGeocodeResults = new StoreGeocodeResults({
-          url: this.storeUrl.selectControl.get('value') || "",
-          nls: this.nls
-        });
-        this.shelter = new LoadingShelter({
-          hidden: true
-        });
-
-        this.storePopup = new Popup({
-          autoHeight: true,
-          content: this.storeGeocodeResults.domNode,
-          container: window.jimuConfig.layoutId,
-          width: 640,
-          buttons: [{
-            label: this.nls.ok,
-            onClick: lang.hitch(this, function () {
-              this.storePopup.close();
-              this.emit('geocode-results-popup-ok');
-              this._onSelectLocatorUrlOk()
-            })
-          }, {
-            label: this.nls.cancel,
-            classNames: ['jimu-btn-vacation'],
-            onClick: lang.hitch(this, function () {
-              this.storePopup.close();
-              this.emit('geocode-results-popup-cancel');
-            })
-          }],
-          onClose: lang.hitch(this, function () {
-            this.emit('geocode-results-popup-close');
-          })
-        });
-        this.shelter.placeAt(this.storePopup.domNode);
-        html.setStyle(this.storeGeocodeResults.domNode, 'width', '580px');//TODO
-        //html.addClass(
-        //  this.storeGeocodeResults.domNode,
-        //  'override-geocode-service-chooser-content'
-        //);
-
-        this.storeGeocodeResults.own(
-          on(this.storeGeocodeResults, 'validate-click', lang.hitch(this, function () {
-            //html.removeClass(
-            //  this.storeGeocodeResults.domNode,
-            //  'override-geocode-service-chooser-content'
-            //);
-          }))
-        );
-      },
-
-      _onSelectLocatorUrlOk: function (evt) {
-        if (!(evt && evt[0] && evt[0].url && this.domNode)) {
-          return;
-        }
-        this.shelter.show();
-        var url = evt[0].url;
-        esriRequest({
-          url: url,
-          content: {
-            f: 'json'
-          },
-          handleAs: 'json',
-          callbackParamName: 'callback'
-        }).then(lang.hitch(this, function (response) {
-          this.shelter.hide();
-          if (response) {
-            this.storeUrl.selectControl.set('value', url);
-          } else {
-            new Message({
-              'message': this.nls.eg
-            });
-          }
-        }), lang.hitch(this, function (err) {
-          console.error(err);
-          this.shelter.hide();
-          new Message({
-            'message': esriLang.substitute({
-              'URL': this._getRequestUrl(url)
-            }, lang.clone(this.nls.eg))
-          });
-        }));
-      },
 
       _updateOk: function (disable) {
         var s = query(".button-container")[0];
