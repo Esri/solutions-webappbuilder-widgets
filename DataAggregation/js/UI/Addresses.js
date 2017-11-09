@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Copyright © 2014 - 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -16,11 +16,9 @@
 
 define(['dojo/_base/declare',
   'dojo/_base/lang',
-  'dojo/_base/html',
   'dojo/_base/array',
   'dojo/dom-construct',
   'dojo/dom-class',
-  'dojo/on',
   'dojo/Deferred',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
@@ -32,11 +30,9 @@ define(['dojo/_base/declare',
 ],
   function (declare,
     lang,
-    html,
     array,
     domConstruct,
     domClass,
-    on,
     Deferred,
     _WidgetBase,
     _TemplatedMixin,
@@ -201,9 +197,6 @@ define(['dojo/_base/declare',
             className: "field-control"
           });
           //domClass.add(fieldSelect.domNode, "field-control");
-           
-          //TODO need to filter based on type here also
-
           var options = [{
             label: this.nls.warningsAndErrors.noValue,
             value: this.nls.warningsAndErrors.noValue
@@ -276,7 +269,6 @@ define(['dojo/_base/declare',
             mappedArrayFields[targetField] = sourceField;
           }
         });
-        
         return {
           type: this.useSingle ? 'single' : 'multi',
           fields: fields,

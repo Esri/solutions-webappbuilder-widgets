@@ -20,7 +20,6 @@ define(
     "dojo/on",
     "dojo/Evented",
     "dojo/Deferred",
-    'dojo/query',
     "dijit/_WidgetBase",
     "dijit/_TemplatedMixin",
     "dijit/_WidgetsInTemplateMixin",
@@ -31,11 +30,9 @@ define(
     "jimu/dijit/LoadingShelter",
     "esri/request",
     "esri/lang",
-    './LookupList',
     './EditFields',
     "jimu/utils",
     "dojo/text!./LocatorSourceSetting.html",
-    "jimu/dijit/CheckBox",
     "dijit/form/ValidationTextBox",
     "dijit/form/NumberTextBox"
   ],
@@ -46,7 +43,6 @@ define(
     on,
     Evented,
     Deferred,
-    query,
     _WidgetBase,
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
@@ -57,11 +53,9 @@ define(
     LoadingShelter,
     esriRequest,
     esriLang,
-    LookupList,
     EditFields,
     jimuUtils,
-    template,
-    CheckBox) {
+    template) {
     /*jshint maxlen:150*/
     return declare([
       _WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented
@@ -91,7 +85,6 @@ define(
 
         //this.enableSingleField = this._initCheckBox(this.enableSingleField, this.nls.enableSingleField, this.editSingleFields);
         //this.enableMultiField = this._initCheckBox(this.enableMultiField, this.nls.enableMultiField, this.editMultiFields);
-       
         this.own(on(this.editSingleFields, 'click', lang.hitch(this, this._editFields, 'single')));
         this.own(on(this.editMultiFields, 'click', lang.hitch(this, this._editFields, 'multi')));
 
@@ -185,7 +178,7 @@ define(
       },
 
       isValidConfig: function () {
-        //TODO this needs some updating 
+        //TODO this needs some updating
         var config = this.getConfig();
         if (config.url && config.name && config.singleLineFieldName) {
           return true;
@@ -293,7 +286,7 @@ define(
           // this.validService = true;
           this.locatorUrl.set('value', config.url);
           this._processCountryCodeRow(config.url);
-          this._processMinCandidateScoreRow(config.url);  //??   
+          this._processMinCandidateScoreRow(config.url);  //??
           this._setAddressFields(config.url, this.config);
         }
         if (config.name) {
@@ -309,7 +302,6 @@ define(
           this.minCandidateScore.set('value', jimuUtils.stripHTML(config.minCandidateScore));
         }
         this._enableSourceItems();
-        
       },
 
       _setAddressFields: function (url, config) {

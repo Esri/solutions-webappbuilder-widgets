@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Copyright © 2014 - 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -16,8 +16,6 @@
 
 define(['dojo/_base/declare',
   'dojo/_base/lang',
-  'dojo/_base/html',
-  'dojo/_base/array',
   'dijit/_WidgetBase',
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
@@ -27,8 +25,6 @@ define(['dojo/_base/declare',
 ],
   function (declare,
     lang,
-    html,
-    array,
     _WidgetBase,
     _TemplatedMixin,
     _WidgetsInTemplateMixin,

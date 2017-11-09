@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Copyright © 2014 - 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -16,7 +16,6 @@
 
 define(['dojo/_base/declare',
   'dojo/_base/lang',
-  'dojo/_base/html',
   'dojo/_base/array',
   'dojo/on',
   'dojo/Deferred',
@@ -25,7 +24,6 @@ define(['dojo/_base/declare',
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
   "dojo/text!./templates/StartPage.html",
-  '../search',
   'dojo/dom-construct',
   'dojo/dom-class',
   'dojo/query',
@@ -34,7 +32,6 @@ define(['dojo/_base/declare',
 ],
   function (declare,
     lang,
-    html,
     array,
     on,
     Deferred,
@@ -43,7 +40,6 @@ define(['dojo/_base/declare',
     _WidgetsInTemplateMixin,
     Evented,
     template,
-    Search,
     domConstruct,
     domClass,
     query,
@@ -298,7 +294,7 @@ define(['dojo/_base/declare',
           this.csvStore.addrFieldName = locationResults.fields[0].keyField;
           this.csvStore.singleFields = locationResults.fields;
         } else if (locationResults.type === 'multi') {
-          this.csvStore.multiFields = locationResults.fields;    
+          this.csvStore.multiFields = locationResults.fields;
         } else if (locationResults.type === 'xy') {
           //Set xy field properties on csvStore
           //this.csvStore.useMultiFields = false;
@@ -333,15 +329,15 @@ define(['dojo/_base/declare',
           this.pageContainer.selectView(this._reviewView.index);
 
         }), lang.hitch(this, function (err) {
-            console.log(err);
-            this._updateNode(this.progressNode, false);
+          console.log(err);
+          this._updateNode(this.progressNode, false);
         }));
       },
 
       _formatFeatures: function (layer) {
         var features = [];
         if (layer) {
-          var oidField = layer.objectIdField;
+          //var oidField = layer.objectIdField;
           var keyField = '';
           for (var i = 0; i < layer.fields.length; i++) {
             var field = layer.fields[i];
