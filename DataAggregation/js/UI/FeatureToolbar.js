@@ -27,7 +27,10 @@ define(['dojo/_base/declare',
   'dojo/on',
   'dojo/text!./templates/FeatureToolbar.html',
   'esri/toolbars/edit',
-  'jimu/dijit/Popup'
+  'jimu/dijit/Popup',
+  'esri/geometry/Point',
+  'esri/geometry/webMercatorUtils',
+  'esri/SpatialReference'
 ],
   function (declare,
     lang,
@@ -42,7 +45,9 @@ define(['dojo/_base/declare',
     on,
     template,
     Edit,
-    Popup) {
+    Popup,
+    Point,
+    webMercatorUtils, SpatialReference) {
     return declare([_WidgetBase, _TemplatedMixin, Evented], {
       templateString: template,
 
@@ -63,6 +68,8 @@ define(['dojo/_base/declare',
       styleColor: '',
       featureView: null,
       _editToolbar: null,
+      csvStore: null,
+      _isAddressFeature: true,
 
       //TODO add message on save when is duplicate...at this point ask them if they would like to keep both or overwrite
 
@@ -80,31 +87,16 @@ define(['dojo/_base/declare',
 
         //Used to store and listen when a change occurs
         this._hasAttributeEdit = false;
-        this.own(on(this.featureView, 'attribute-change', lang.hitch(this, function (v) {
-          this._hasAttributeEdit = v;
-          if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
-            this._updateSave(!(this._hasAttributeEdit));
-          } else {
-            this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
-          }
-        })));
+        this.own(on(this.featureView, 'attribute-change', lang.hitch(this, this._attributeChange)));
 
         this._hasAddressEdit = false;
-        this.own(on(this.featureView, 'address-change', lang.hitch(this, function (v) {
-          this._hasAddressEdit = v;
-          this._updateLocate(!v);
-        })));
+        this.own(on(this.featureView, 'address-change', lang.hitch(this, this._addressChange)));
 
         this._hasGeometryEdit = false;
-        this.own(on(this._editToolbar, 'graphic-move-stop', lang.hitch(this, function (v) {
-          console.log(v);
-          this._hasGeometryEdit = true;
-          if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
-            this._updateSave(!(this._hasAttributeEdit));
-          } else {
-            this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
-          }
-        })));
+        this.own(on(this._editToolbar, 'graphic-move-stop', lang.hitch(this, this._graphicMoveStop)));
+        this.own(on(this.featureView, 'address-located', lang.hitch(this, this._graphicMoveStop)));
+
+        this.locator = this._getLocator();
       },
 
       postCreate: function () {
@@ -119,6 +111,65 @@ define(['dojo/_base/declare',
         this.featureView._toggleEditControls(this._editDisabled);
       },
 
+      _getLocator: function () {
+        //TODO need to have a backup if none of the locators support location to address 
+        var locator;
+        for (var i = 0; i < this.csvStore._geocodeSources.length; i++) {
+          var locatorSource = this.csvStore._geocodeSources[0];
+          locator = locatorSource.locator;
+          if (locator.locationToAddress) {
+            break;
+          }
+        }
+        if (locator) {
+          locator.outSpatialReference = this.spatialReference;
+        }
+        return locator;
+      },
+
+      _attributeChange: function (v) {
+        this._hasAttributeEdit = v;
+        if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
+          this._updateSave(!(this._hasAttributeEdit));
+        } else {
+          this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+        }
+      },
+
+      _addressChange: function (v) {
+        this._hasAddressEdit = v;
+        this._updateLocate(!v);
+      },
+
+      _graphicMoveStop: function (result) {
+        this._hasGeometryEdit = true;
+        if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
+          this._updateSave(!(this._hasAttributeEdit));
+        } else {
+          this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+        }
+        this.map.infoWindow.setFeatures(this.featureView._feature);
+        this.map.infoWindow.select(0);
+
+        //I fire graphicMoveStop when locating...in that case it's based off of the address the user entered
+        //no need to reverse geocode again
+        if (result) {
+          this._reverseLocate(result.graphic.geometry);
+        }
+      },
+
+      _reverseLocate: function (geometry) {
+        if (this._isAddressFeature) {
+          this.locator.locationToAddress(geometry, 100).then(lang.hitch(this, function (result) {
+            //TODO should this honor the configured match score limit...if 
+            this.featureView._updateAddressFields(result.address);
+          }));
+        } else {
+          //TODO support the same for coiordinate feature...should return xy
+          this.featureView._updateAddressFields(geometry);
+        }
+      },
+
       _edit: function () {
         this._editDisabled = !this._editDisabled;
         this._updateEdit(this._editDisabled);
@@ -131,12 +182,23 @@ define(['dojo/_base/declare',
 
         if (!this._editDisabled) {
           this._editToolbar.activate(Edit.MOVE, this.featureView._feature);
-          this.map.infoWindow.setFeatures(this.featureView._feature);
-          this.map.infoWindow.select(0);
-          //this.map.infoWindow.show(this.featureView._feature.geometry);
+          if (this.featureView.isDuplicate) {
+            this.featureView._panToAndSelectFeature(this.featureView._useGeomFromFile ?
+              this.featureView._feature : this.featureView._editFeature);
+            if (this.featureView._useGeomFromFile) {
+              this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+            } else {
+              this._updateSave(!(this._hasAttributeEdit));
+            }
+          } else {
+            this.featureView._panToAndSelectFeature(this.featureView._feature);
+            this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+          }
         } else {
           this._editToolbar.refresh();
           this._editToolbar.deactivate();
+          this._updateSave(true);
+          this.map.infoWindow.clearFeatures();
         }
       },
 
@@ -156,53 +218,133 @@ define(['dojo/_base/declare',
               switch (results.type) {
                 case 'overwrite':
                   array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-                    this.featureView._editFeature.attributes[k] = values[k];
+                    if (k !== '_rows') {
+                      this.featureView._editFeature.attributes[k] = values[k];
+                    }
                   }));
-                  this.parent.editLayer.applyEdits(null, [this.featureView._editFeature], null);
+                  if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
+                    this.featureView._editFeature.geometry = this.featureView._feature.geometry;
+                  }
+                  this.parent.editLayer.applyEdits(null, [this.featureView._editFeature], null)
+                    .then(lang.hitch(this, function (s) {
+                      console.log(s);
+                      if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
+                        this._hasGeometryEdit = false;
+                      }
+
+                      array.forEach(values._rows, function (r) {
+                        //update the row instance with the new value
+                        var newValue = values[r.fieldName];
+                        r.layerValue = newValue;
+                        r.fileValue = r.useFile ? newValue : r.fileValue;
+                        r.layerValueTextBox.set('value', newValue);
+                      });
+                    }));
                   break;
                 case 'both':
                   array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-                    this.featureView._feature.attributes[k] = values[k];
+                    if (k !== '_rows') {
+                      this.featureView._feature.attributes[k] = values[k];
+                    }
                   }));
-                  var updateFeature = lang.clone(this.featureView._feature);
+                  var updateFeature = this.featureView._feature;
                   array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
                     if (sf !== this.layer.objectIdField) {
                       delete updateFeature.attributes[sf];
                     }
                   }));
-                  this.parent.editLayer.applyEdits([updateFeature], null, null);
+                  this.parent.editLayer.applyEdits([updateFeature], null, null).then(lang.hitch(this, function (r) {
+                    console.log(r);
+                    if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
+                      this._hasGeometryEdit = false;
+                    }
+                  }));
                   break;
               }
 
               //disable save
               this._updateSave(true);
-              this._updateEdit(true);
+              //toggle edit
+              this._edit();
             }
           }));
         } else {
           array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-            this.featureView._feature.attributes[k] = values[k];
+            if (k !== '_rows') {
+              this.featureView._feature.attributes[k] = values[k];
+            }
           }));
 
           var updateFeature = this.featureView._feature;
           if (this.featureView.label.indexOf('UnMatched') === -1) {
-            this.layer.applyEdits(null, [updateFeature], null);
+            this.layer.applyEdits(null, [updateFeature], null).then(lang.hitch(this, function (r) {
+              console.log(r);
+              this._hasGeometryEdit = false;
+              this._hasAttributeEdit = false;
+            }));
           } else {
+
+            //TODO not complete...vew needs to be fully removed...list updated and the fetaureList re-generated or removed
             array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
               delete updateFeature.attributes[sf];
             }));
-            this.parent.editLayer.applyEdits([updateFeature], null, null);
-            this.parent._pageContainer.removeViewByTitle(this.featureView.label);
+            this.parent.editLayer.applyEdits([updateFeature], null, null).then(lang.hitch(this, function (r) {
+              console.log(r);
+              this._hasGeometryEdit = false;
+              this._hasAttributeEdit = false;
+            }));
+            //this.parent._pageContainer.removeViewByTitle(this.featureView.label);
           }
 
           //disable save
           this._updateSave(true);
-          this._updateEdit(true);
+          //toggle edit
+          this._edit();
         }
       },
 
-      locateFeature: function () {
+      _locateFeature: function () {
         //return feature from locationToAddress
+        var address = this.featureView._getAddressFieldsValues();
+        if (this._isAddressFeature) {
+          this.locator.addressToLocations(address).then(lang.hitch(this, function (result) {
+            var highestScoreItem;
+            if (result.length > 0) {
+              for (var i = 0; i < result.length; i++) {
+                var item = result[i];
+                if (typeof (highestScoreItem) === 'undefined') {
+                  highestScoreItem = item;
+                }
+                if (highestScoreItem && item.score > highestScoreItem.score) {
+                  highestScoreItem = item;
+                }
+              }
+              this.featureView._updateFeature(highestScoreItem.location, highestScoreItem.address);
+            }
+          }));
+        } else {
+          var x = address[this.xField];
+          var y = address[this.yField];
+
+          var isGeographic;
+          if (typeof (isGeographic) === 'undefined') {
+            isGeographic = /(?=^[-]?\d{1,3}\.)^[-]?\d{1,3}\.\d+|(?=^[-]?\d{4,})|^[-]?\d{1,3}/.exec(x) ? true : false;
+          }
+
+          //TODO may want to consider some other tests here to make sure we avoid
+          // potential funky/bad corrds from passing through
+          var geometry;
+          if (!isNaN(x) && !isNaN(y)) {
+            geometry = new Point(x, y);
+            if (isGeographic) {
+              geometry = webMercatorUtils.geographicToWebMercator(geometry);
+            } else {
+              geometry.spatialReference = new SpatialReference({ wkid: this.map.spatialReference.wkid });
+            }
+          }
+        
+          this.featureView._updateFeature(geometry, address);
+        }
       },
 
       setStyleColor: function (styleColor) {
@@ -269,7 +411,7 @@ define(['dojo/_base/declare',
         var content = domConstruct.create('div');
 
         domConstruct.create('div', {
-          innerHTML: 'Would you like to override the existing feature?'
+          innerHTML: 'Would you like to overwrite the existing feature?'
         }, content);
 
         if (this.featureView._useGeomFromFile || this.featureView._useValuesFromFile) {

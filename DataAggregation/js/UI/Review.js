@@ -135,7 +135,8 @@ define(['dojo/_base/declare',
           isDuplicate: isDuplicate,
           isDarkTheme: this.isDarkTheme,
           layer: layer,
-          _editToolbar: this._editToolbar
+          _editToolbar: this._editToolbar,
+          csvStore: this.csvStore
         });
       },
 
@@ -225,6 +226,8 @@ define(['dojo/_base/declare',
       },
 
       _submit: function () {
+        this._updateNode(this.submitButton, false);
+        this._updateNode(this.progressNode, true);
         //submit to feature service
         var featureLayer = this.csvStore.matchedFeatureLayer;
         var oidField = this.csvStore.objectIdField;
@@ -234,22 +237,46 @@ define(['dojo/_base/declare',
           if (feature.attributes.hasOwnProperty(oidField)) {
             delete feature.attributes[oidField];
           }
-          if (feature.attributes.hasOwnProperty("_graphicsLayer")) {
+          if (feature.hasOwnProperty("_graphicsLayer")) {
             delete feature._graphicsLayer;
           }
-          if (feature.attributes.hasOwnProperty("_layer")) {
+          if (feature.hasOwnProperty("_layer")) {
             delete feature._layer;
           }
           features.push(feature);
         });
-        flayer.applyEdits(features, null, null, function (e) {
+        flayer.applyEdits(features, null, null, lang.hitch(this, function (e) {
           console.log(e);
-        }, function (err) {
+          this._updateNode(this.progressNode, false);
+          this._navigateHome();
+        }), lang.hitch(this, function (err) {
           console.log(err);
           new Message({
             message: this.nls.warningsAndErrors.saveError
           });
-        });
+        }));
+      },
+
+      _navigateHome: function () {
+        //TODO navigate HOME
+        var homeView = this.pageContainer.getViewByTitle('Home');
+        var startView = this.pageContainer.getViewByTitle('StartPage');
+        startView._clearStore();
+        this.pageContainer.toggleController(true);
+        this.pageContainer.selectView(homeView.index);
+      },
+
+      _updateNode: function (node, complete) {
+        //toggle complete checkmark or add to map button
+        if (complete) {
+          if (domClass.contains(node, 'display-none')) {
+            domClass.remove(node, 'display-none');
+          }
+        } else {
+          if (!domClass.contains(node, 'display-none')) {
+            domClass.add(node, 'display-none');
+          }
+        }
       },
 
       setStyleColor: function (styleColor) {
@@ -270,10 +297,6 @@ define(['dojo/_base/declare',
 
       _reviewDuplicate: function () {
         this.pageContainer.selectView(this._duplicateListView.index);
-      },
-
-      destroy: function () {
-        this._editToolbar.destroy();
       }
     });
   });

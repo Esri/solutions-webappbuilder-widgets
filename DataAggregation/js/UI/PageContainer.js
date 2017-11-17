@@ -132,10 +132,6 @@ define(['dojo/_base/declare',
         this.own(topic.subscribe("builder/styleChanged", lang.hitch(this, this._onBuilderStyleChanged)));
       },
 
-      destroy: function () {
-
-      },
-
       postCreate: function () {
         this.inherited(arguments);
 
@@ -204,7 +200,11 @@ define(['dojo/_base/declare',
       },
 
       _initSelf: function () {
-        this.viewStack = new ViewStack(null, this.containerNode);
+        if (!this.viewStack) {
+          this.viewStack = new ViewStack(null, this.containerNode);
+        } else {
+          this.viewStack._currentView = undefined;
+        }
         this._initViews();
       },
 
@@ -352,8 +352,16 @@ define(['dojo/_base/declare',
       removeViewByIndex: function (idx) {
         var view = this.getViewByIndex(idx);
         this.viewStack.removeView(view);
+        this.views.splice(idx, 1);
         this._updateViews();
         this.emit('view-removed', view);
+      },
+
+      _clearViews: function () {
+        array.forEach(this.views, lang.hitch(this, function (v) {
+          this.viewStack.removeView(v);
+        }));
+        this.views = [];
       },
 
       _containsView: function (title) {
@@ -421,13 +429,15 @@ define(['dojo/_base/declare',
       },
 
       toggleController: function (isDisabled) {
-        if (isDisabled) {
-          if (!domClass.contains(this.controlTable, 'display-none')) {
-            domClass.add(this.controlTable, 'display-none');
-          }
-        } else {
-          if (domClass.contains(this.controlTable, 'display-none')) {
-            domClass.remove(this.controlTable, 'display-none');
+        if (this.controlTable) {
+          if (isDisabled) {
+            if (!domClass.contains(this.controlTable, 'display-none')) {
+              domClass.add(this.controlTable, 'display-none');
+            }
+          } else {
+            if (domClass.contains(this.controlTable, 'display-none')) {
+              domClass.remove(this.controlTable, 'display-none');
+            }
           }
         }
       }

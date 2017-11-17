@@ -135,17 +135,36 @@ define([
         var startPageView = this._initStartPageView();
         var locationTypeView = this._initLocationTypeView();
 
-        this._pageContainer = new PageContainer({
-          views: [homeView, startPageView, locationTypeView],
-          nls: this.nls,
-          altHomeIndex: 1,
-          appConfig: this.appConfig,
-          displayControllerOnStart: false,
-          parent: this,
-          styleColor: this.styleColor
-        }, this.pageNavigation);
+        if (this._pageContainer) {
+          this._locationMappingComplete = false;
+          this._fieldMappingComplete = false;
+          this._pageContainer._clearViews();
+          this._pageContainer.views = [];
+          this._pageContainer._currentIndex = -1;
+          this._pageContainer._homeIndex = 0;
+          this._pageContainer._rootIndex = 0;
+          this._pageContainer.altHomeIndex = 0;
+          this._pageContainer.nextDisabled = false;
+          this._pageContainer.altHomeIndex = 1;
+          this._pageContainer.selected = '';
+          this._pageContainer.displayControllerOnStart = false;
+          this._pageContainer.toggleController(true);
+          this._pageContainer.updateImageNodes();
+          this._pageContainer.views = [homeView, startPageView, locationTypeView];
+          this._pageContainer.startup();
+        } else {
+          this._pageContainer = new PageContainer({
+            views: [homeView, startPageView, locationTypeView],
+            nls: this.nls,
+            altHomeIndex: 1,
+            appConfig: this.appConfig,
+            displayControllerOnStart: false,
+            parent: this,
+            styleColor: this.styleColor
+          }, this.pageNavigation);
 
-        this._pageContainer.startup();
+          this._pageContainer.startup();
+        }
       },
 
       _initHomeView: function () {

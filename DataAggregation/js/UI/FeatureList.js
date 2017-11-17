@@ -172,7 +172,8 @@ define(['dojo/_base/declare',
           theme: this.theme,
           isDarkTheme: this.isDarkTheme,
           layer: this.layer,
-          _editToolbar: this._editToolbar
+          _editToolbar: this._editToolbar,
+          csvStore: this.csvStore
         });
 
         this.pageContainer.addView(feat);

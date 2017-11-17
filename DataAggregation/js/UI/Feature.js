@@ -37,6 +37,7 @@ define(['dojo/_base/declare',
   'esri/Color',
   'esri/layers/FeatureLayer',
   'esri/tasks/query',
+  'jimu/dijit/Message',
   'dojox/gfx/fx'
 ],
   function (declare,
@@ -62,6 +63,7 @@ define(['dojo/_base/declare',
     Color,
     FeatureLayer,
     Query,
+    Message,
     fx) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-feature',
@@ -90,9 +92,11 @@ define(['dojo/_base/declare',
       _layerFeature: null,
       layer: null,
       _changedAttributeRows: [],
+      _changedAddressRows: [],
       _editToolbar: null,
       _featureQuery: null,
       _skipFields: [],
+      csvStore: null, //used to get _geocodeSources for reverse geocode
 
       //TODO validation logic for each control should be defined based on field type from layer
       //TODO seems like for duplicate the validation txt boxes should be on seperate rows
@@ -112,9 +116,14 @@ define(['dojo/_base/declare',
       },
 
       _initSkipFields: function () {
-        this._skipFields.push("DestinationOID");
-        this._skipFields.push("matchScore");
-        this._skipFields.push(this.layer.objectIdField);
+        //these fields are needed for interactions with the feature but should not be shown in the UI
+        // nor should they be persisted with the layer or shown in the popup
+        this._skipFields = ["DestinationOID", "matchScore", this.layer.objectIdField];
+        array.forEach(this.fields, lang.hitch(this, function (f) {
+          if (f.name.indexOf("MatchField_") > -1) {
+            this._skipFields.push(f.name);
+          }
+        }));
       },
 
       startup: function () {
@@ -130,6 +139,15 @@ define(['dojo/_base/declare',
 
         this._toggleEditControls(typeof (this._featureToolbar._editDisabled) === 'undefined' ?
           true : this._featureToolbar._editDisabled);
+
+        //TODO what did I start this for...
+        var score;
+        for (var i = 0; i < this.feature.fieldInfo.length; i++) {
+          var fi = this.feature.fieldInfo[i];
+          if (fi.name === 'matchScore') {
+            score = fi.value;
+          }
+        }
       },
 
       onShown: function () {
@@ -184,7 +202,6 @@ define(['dojo/_base/declare',
       },
 
       _initPopup: function (fields) {
-        //TODO need to think through this for duplicate details
         var content = { title: this.feature.label };
 
         var fieldInfos = [];
@@ -208,7 +225,8 @@ define(['dojo/_base/declare',
           theme: this.theme,
           layer: this.layer,
           featureView: this,
-          _editToolbar: this._editToolbar
+          _editToolbar: this._editToolbar,
+          csvStore: this.csvStore
         });
 
         this._featureToolbar.placeAt(domNode);
@@ -247,16 +265,113 @@ define(['dojo/_base/declare',
             }, tdLabel);
 
             if (this.isDuplicate) {
-              this._initValidationBox(tr, f.duplicateFieldInfo.value, false);
+              this._initValidationBox(tr, f.duplicateFieldInfo.value, false, false);
             }
-            this._initValidationBox(tr, f.value, true);
+            this._initValidationBox(tr, f.value, true, false);
 
             rowIndex += 1;
           }
         }));
+
+        //Create UI for location field control
+        //this.locationControlTable
+
+        //check and see if we can get the address field info we need from csvStore info
+        // check csvStore useMultiFields and multiFields
+
+
+
+        this.addressFields = this.csvStore.useMultiFields ? this.csvStore.multiFields : this.csvStore.useAddr ?
+          this.csvStore.singleFields : this.getXYFields(); //finally should be the xy fields
+
+        array.forEach(this.addressFields, lang.hitch(this, function (f) {
+          var tr = domConstruct.create('tr', {
+            className: "control-row bottom-border",
+            isRadioRow: false,
+            isEditRow: false,
+            isAddressRow: true
+          }, this.locationControlTable);
+          tr.label = f.label;
+          tr.keyField = f.keyField;
+          tr.parent = this;
+          var tdLabel = domConstruct.create('td', {
+            className: "pad-right-10 pad-left-10 label-td"
+          }, tr);
+          domConstruct.create('div', {
+            className: "main-text float-left",
+            innerHTML: f.label
+          }, tdLabel);
+                 
+          var field = this.feature.fieldInfo.filter(function (fieldInfo) {
+            return fieldInfo.name === "MatchField_" + f.keyField;
+          });
+
+          this._initValidationBox(tr, field[0].value, false, true);
+        }));
       },
 
-      _initValidationBox: function (tr, value, isFile) {
+      getXYFields: function () {
+        this._featureToolbar._isAddressFeature = false;
+        var coordinatesView = this.parent._pageContainer.getViewByTitle('Coordinates');
+        var xField = coordinatesView.xField;
+        var yField = coordinatesView.yField;
+
+        this._featureToolbar.xField = this.csvStore.xFieldName;
+        this._featureToolbar.yField = this.csvStore.yFieldName;
+        return [{
+          keyField: this.csvStore.xFieldName,
+          label: xField.label,
+          value: this.csvStore.xFieldName
+        }, {
+            keyField: this.csvStore.yFieldName,
+          label: yField.label,
+          value: this.csvStore.yFieldName
+        }];
+      },
+
+      _updateAddressFields: function (address) {
+        this._address = address;
+        //use the located address to update whatever fileds we have displayed
+        array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
+          row.addressValueTextBox.set('value', this._address[row.keyField]);
+        }));
+      },
+
+      _updateFeature: function (location, address) {
+        //TODO when a new feature is generated from locate we need to update the local instances
+        //this will include the local feature instance that is disconnected from the layer and also the layer instance
+        //this will also include the attribute values for the local features that currently store the address
+
+        //need to make sure the feature toolbar instances are updated as well
+
+        //may be better to do this in the toolbar
+
+        this.feature.geometry = location;
+        this._feature.geometry = location;
+
+        //apply the edits 
+        this.layer.applyEdits(null, [this._feature]).then(lang.hitch(this, function (result) {
+         // this._featureToolbar._hasAttributeEdit = false;
+          this._panToAndSelectFeature(this._feature);
+          this.emit('address-located');
+        }, lang.hitch(this, function (err) {
+            console.log(err);
+            new Message({
+              message: this.nls.warningsAndErrors.saveError
+            });
+        })));
+      },
+
+      _getAddressFieldsValues: function () {
+        //get the address or coordinates from the 
+        var address = {};
+        array.forEach(this.locationControlTable.rows, function (row) {
+          address[row.keyField] = row.addressValueTextBox.value;
+        });
+        return address;
+      },
+
+      _initValidationBox: function (tr, value, isFile, isAddress) {
         var tdControl = domConstruct.create('td', {
           className: !isFile ? 'pad-right-10' : ''
         }, tr);
@@ -271,26 +386,43 @@ define(['dojo/_base/declare',
         valueTextBox.placeAt(tdControl);
         valueTextBox.startup();
         valueTextBox.isFile = isFile;
+        valueTextBox.isAddress = isAddress;
         valueTextBox.row = tr;
         valueTextBox.parent = this;
         if (isFile) {
           tr.fileValueTextBox = valueTextBox;
           tr.fileValue = value;
+        } else if (isAddress) {
+          tr.addressValueTextBox = valueTextBox;
+          tr.addressValue = value;
         } else {
           tr.layerValueTextBox = valueTextBox;
           tr.layerValue = value;
         }
 
         valueTextBox.on("keyUp", function (v) {
+          //TODO update this to handle address change
+
           var newValue = v.srcElement.value;
-          var valueChanged = this.isFile ? newValue !== this.row.fileValue : newValue !== this.row.layerValue;
-          var changeIndex = this.parent._changedAttributeRows.indexOf(this.row.rowIndex);
-          if (changeIndex === -1 && valueChanged) {
-            this.parent._changedAttributeRows.push(this.row.rowIndex);
-          } else if (changeIndex > -1 && !valueChanged) {
-            this.parent._changedAttributeRows.splice(changeIndex, 1);
+          if (this.isAddress) {
+            var valueChanged = newValue !== this.row.addressValue;
+            var changeIndex = this.parent._changedAddressRows.indexOf(this.row.rowIndex);
+            if (changeIndex === -1 && valueChanged) {
+              this.parent._changedAddressRows.push(this.row.rowIndex);
+            } else if (changeIndex > -1 && !valueChanged) {
+              this.parent._changedAddressRows.splice(changeIndex, 1);
+            }
+            this.parent.emit('address-change', this.parent._changedAddressRows.length > 0);
+          } else {
+            var valueChanged = this.isFile ? newValue !== this.row.fileValue : newValue !== this.row.layerValue;
+            var changeIndex = this.parent._changedAttributeRows.indexOf(this.row.rowIndex);
+            if (changeIndex === -1 && valueChanged) {
+              this.parent._changedAttributeRows.push(this.row.rowIndex);
+            } else if (changeIndex > -1 && !valueChanged) {
+              this.parent._changedAttributeRows.splice(changeIndex, 1);
+            }
+            this.parent.emit('attribute-change', this.parent._changedAttributeRows.length > 0);
           }
-          this.parent.emit('attribute-change', this.parent._changedAttributeRows.length > 0);
         });
       },
 
@@ -300,7 +432,7 @@ define(['dojo/_base/declare',
         array.forEach(this.featureControlTable.rows, lang.hitch(this, function (row) {
           if (row.isEditRow) {
             if (row.parent._useValuesFromFile) {
-              if (row.fileValueTextBox.value !== row.fileValue) {
+              if (row.fileValueTextBox.value !== row.fileValue || row.fileValueTextBox.value !== row.layerValue) {
                 this._changedAttributeRows.push(row.rowIndex);
               }
             }
@@ -312,15 +444,33 @@ define(['dojo/_base/declare',
           }
         }));
         this.emit('attribute-change', this._changedAttributeRows.length > 0);
+
+        //check the address rows
+        this._changedAddressRows = [];
+        array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
+          if (row.isAddressRow) {
+            if (row.addressValueTextBox.value !== row.addressValue) {
+              this._changedAddressRows.push(row.rowIndex);
+            }
+          }
+        }));
+        this.emit('attribute-change', this._changedAddressRows.length > 0);
       },
 
       _validateGeoms: function () {
-        var editX = this._editFeature.geometry.x;
-        var editY = this._editFeature.geometry.y;
-
-        var featureX = this._feature.geometry.x;
-        var featureY = this._feature.geometry.y;
-        return editX === featureX && editY === featureY;
+        var aEdit = this._featureToolbar._hasAttributeEdit;
+        var gEdit = this._featureToolbar._hasGeometryEdit;
+        if (!this._useGeomFromLayer) {
+          //when using geom from file only attributes matter unless we have a geom edit
+          if (gEdit) {
+            this._featureToolbar._updateSave(!aEdit && !gEdit);
+          } else {
+            this._featureToolbar._updateSave(!aEdit);
+          }
+        } else {
+          //when useing geom from layer only attribute edits matter
+          this._featureToolbar._updateSave(!aEdit);
+        }
       },
 
       _initRadioButtonRows: function (useString, table) {
@@ -370,19 +520,17 @@ define(['dojo/_base/declare',
       _rdoGeomFromFileChanged: function (v) {
         this._useGeomFromFile = v;
         if (v) {
-          this._panToAndSelectFeature(this._fileFeature);
+          this._panToAndSelectFeature(this._feature);
         }
-        var isSaveDisabled = !(this._featureToolbar._hasAttributeEdit || this._featureToolbar._hasGeometryEdit);
-        this._featureToolbar._updateSave(isSaveDisabled);
+        this._validateGeoms();
       },
 
       _rdoGeomFromLayerChanged: function (v) {
         this._useGeomFromLayer = v;
         if (v) {
-          this._panToAndSelectFeature(this._layerFeature);
+          this._panToAndSelectFeature(this._editFeature);
         }
-        var isSaveDisabled = !(this._featureToolbar._hasAttributeEdit || this._featureToolbar._hasGeometryEdit);
-        this._featureToolbar._updateSave(isSaveDisabled);
+        this._validateGeoms();
       },
 
       _rdoValuesFromFileChanged: function (v) {
@@ -415,8 +563,7 @@ define(['dojo/_base/declare',
       },
 
       _panToAndSelectFeature: function (feature) {
-        //this.feature = feature;
-        this._featureToolbar.feature = this.feature;
+        //this._featureToolbar.feature = this.feature;
         if (feature && feature.geometry) {
           var geom = feature.geometry;
           if (geom.type === 'polyline') {
@@ -520,19 +667,31 @@ define(['dojo/_base/declare',
             }
           }
         });
+
+        //address rows
+        array.forEach(this.locationControlTable.rows, function (row) {
+          if (row.isAddressRow) {
+            if (row.addressValueTextBox) {
+              row.addressValueTextBox.set('disabled', disabled);
+            }
+          }
+        });
       },
 
       _getEditValues: function () {
-        var edits = {};
+        var edits = {_rows: []};
+
         var editIndexes = this._changedAttributeRows;
         var useFile = this._useValuesFromFile;
         array.forEach(this.featureControlTable.rows, function (row) {
           if (row.isEditRow && editIndexes.indexOf(row.rowIndex) > -1) {
             if (row.parent.isDuplicate) {
-              edits[row.fieldName] = useFile === 'file' ? row.fileValueTextBox.value : row.layerValueTextBox.value;
+              edits[row.fieldName] = useFile ? row.fileValueTextBox.value : row.layerValueTextBox.value;
+              row.useFile = useFile;
             } else {
               edits[row.fieldName] = row.fileValueTextBox.value;
             }
+            edits._rows.push(row);
           }
         });
         return edits;

@@ -3,7 +3,7 @@
     <tbody>
       <tr class="bottom-border task-instruction-row">
         <td class="pad-bottom-10">
-          <div class="instruction" data-dojo-attach-point="pageHint" style="line-height:30px;">${nls.review.matchScore}</div>
+          <div class="instruction" data-dojo-attach-point="pageHint" style="line-height:30px;"></div>
         </td>
         <td class="pad-bottom-10">
           <div data-dojo-attach-point="featureToolbar">
@@ -17,6 +17,20 @@
             <tbody data-dojo-attach-point="featureControlTable">
 
             </tbody>
+          </table>
+        </td>
+      </tr>
+
+      <tr class="bottom-border task-instruction-row">
+        <td class="pad-bottom-10" colspan="2">
+          <div class="instruction" data-dojo-attach-point="locationHint" style="line-height:30px;">${nls.review.locationControlHint}</div>
+        </td>
+      </tr>
+
+      <tr>
+        <td colspan="2">
+          <table class="page-table" cellpading="0">
+            <tbody data-dojo-attach-point="locationControlTable"></tbody>
           </table>
         </td>
       </tr>

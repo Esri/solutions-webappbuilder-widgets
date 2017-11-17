@@ -130,10 +130,6 @@ define(['dojo/_base/declare',
 
       _getTextValue: function (td) {
         return td.labelBox.get('value');
-      },
-
-      destroy: function () {
-
       }
     });
   });

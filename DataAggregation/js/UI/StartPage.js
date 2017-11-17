@@ -74,6 +74,7 @@ define(['dojo/_base/declare',
 
       startup: function () {
         this._started = true;
+        this._homeView = this.pageContainer.getViewByTitle('Home');
       },
 
       onShown: function () {
@@ -129,7 +130,6 @@ define(['dojo/_base/declare',
 
         if (backResult.navView.label === this.pageContainer.views[0].label) {
           var msg;
-
           if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
             msg = this.nls.warningsAndErrors.settingsCleared;
           } else {
@@ -161,9 +161,7 @@ define(['dojo/_base/declare',
                 label: this.nls.yes,
                 onClick: lang.hitch(this, function () {
                   this._clearMapping();
-                  if (this.csvStore) {
-                    this.csvStore.clear();
-                  }
+                  this._clearStore();
                   this.pageContainer.toggleController(true);
                   warningMessage.close();
                   warningMessage = null;
@@ -186,10 +184,21 @@ define(['dojo/_base/declare',
           } else {
             //for validate
             this.pageContainer.toggleController(true);
+            this._clearStore();
             def.resolve(true);
           }
         }
         return def;
+      },
+
+      _clearStore: function () {
+        if (this.csvStore) {
+          this.csvStore.clear();
+        }
+        if (this._homeView) {
+          this._homeView.fileForm.reset();
+        }
+        this.parent._initPageContainer();
       },
 
       _clearMapping: function () {

@@ -12,7 +12,7 @@ define({
       schemaMapping: "Field Information",
       schemaMappingHint: "Choose fields from the file that correlate to the fields in the layer.",
       locationMapping: "Location Information",
-      locationMappingHint: "Choose the type of address or coordinate information to expect from the file.",
+      locationMappingHint: "Choose the type of address or coordinate information to expect from the file."
     },
     locationMapping: {
       locationMappingPageHint: "Choose location type",
@@ -24,9 +24,9 @@ define({
     address: {
       addressPageHint: "Choose address type",
       singleField: "Single field",
-      singleFieldHint: "Address data is in a single field",
+      singleFieldHint: "Address information is contained in one field",
       multiField: "Multiple fields",
-      multiFieldHint: "Address data is in multiple fields"
+      multiFieldHint: "Address information is contained in multiple fields"
     },
     coordinates: {
       coordinatesPageHint: "Choose fields that contain the coordinate data"
@@ -42,7 +42,7 @@ define({
       download: "Download"
     },
     review: {
-      matchScore: "Match Score",
+      matchScore: "Match Score: ${score}",
       matched: "Matched",
       reviewMatched: "Review Matched",
       reviewMatchedHint: "Review Matched",
@@ -58,7 +58,8 @@ define({
       useGeometry: "Use geometry",
       useValues: "Use values",
       fromLayer: "from layer",
-      fromFile: "from file"
+      fromFile: "from file",
+      locationControlHint: "Review address information"
     },
     warningsAndErrors: {
       loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",
@@ -70,6 +71,11 @@ define({
       fieldMappingComplete: "Field Mapping Complete",
       settingsCleared: "Settings will be cleared.",
       proceed: "Do you want to proceed?"
+    },
+    featureToolbar: {
+      edit: "Edit location information",
+      locate: "Locate",
+      save: "Save location"
     }
   }),
   "ar": 0,

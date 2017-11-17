@@ -179,6 +179,8 @@ define(['dojo/_base/declare',
           var tr = domConstruct.create('tr', {
             className: "control-row"
           }, table);
+          tr.keyField = controlField.value;
+          tr.label = controlField.label;
 
           var tdLabel = domConstruct.create('td', {
             className: "pad-right-10"
@@ -192,7 +194,7 @@ define(['dojo/_base/declare',
 
           var fieldSelect = new Select({
             name: "field" + id,
-            fieldName: controlField.label,
+            fieldName: controlField.label, //TODO does this need to update to be the same as teh rows keyField
             className: "field-control"
           });
           //domClass.add(fieldSelect.domNode, "field-control");
@@ -258,14 +260,15 @@ define(['dojo/_base/declare',
         var noValue = this.nls.warningsAndErrors.noValue;
         array.forEach(rows, function (r) {
           var sourceField = r.fieldControl.get('value');
-          var targetField = r.cells[0].textContent;
+          var targetField = r.label;
+          var keyField = r.keyField;
           if (sourceField !== noValue) {
             fields.push({
-              keyField: targetField,
+              keyField: keyField,
               value: sourceField,
-              label: sourceField
+              label: targetField
             });
-            mappedArrayFields[targetField] = sourceField;
+            mappedArrayFields[keyField] = sourceField;
           }
         });
         return {

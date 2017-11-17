@@ -333,11 +333,16 @@ define([
           if (layerObject.fields[i].editable &&
             layerObject.fields[i].name !== layerObject.globalIdField &&
             layerObject.fields[i].name !== layerObject.objectIdField) {
+            var isRecognizedValues = [layerObject.fields[i].name];
+            if (layerObject.fields[i].alias && isRecognizedValues.indexOf(layerObject.fields[i].alias) === -1) {
+              isRecognizedValues.push(layerObject.fields[i].alias);
+            }
             fieldInfos.push({
               fieldName: layerObject.fields[i].name,
               label: layerObject.fields[i].alias || layerObject.fields[i].name,
               isEditable: layerObject.fields[i].editable,
               visible: true,
+              isRecognizedValues: isRecognizedValues,
               type: layerObject.fields[i].type
             });
           }
@@ -477,12 +482,14 @@ define([
         this.config.defaultXYFields = [{
           "name": this.nls.xyFieldsLabelX,
           "alias": this.nls.xyFieldsLabelX,
+          "label": this.nls.xyFieldsLabelX,
           "visible": true,
           "isRecognizedValues": [this.nls.xyFieldsLabelX, this.nls.longitude, this.nls.easting],
           "type": "STRING"
         }, {
           "name": this.nls.xyFieldsLabelY,
           "alias": this.nls.xyFieldsLabelY,
+          "label": this.nls.xyFieldsLabelY,
           "visible": true,
           "isRecognizedValues": [this.nls.xyFieldsLabelY, this.nls.latitude, this.nls.northing],
           "type": "STRING"

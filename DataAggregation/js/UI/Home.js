@@ -63,6 +63,7 @@ define(['dojo/_base/declare',
       _fsFields: [],
       _singleFields: [],
       _multiFields: [],
+      _childViews: [],
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -187,6 +188,7 @@ define(['dojo/_base/declare',
             this.csvStore.handleCsv().then(lang.hitch(this, function (obj) {
               this._updatePageContainer(obj);
             }));
+            
           }
         }
       },
@@ -277,7 +279,6 @@ define(['dojo/_base/declare',
         var startPage = this.pageContainer.getViewByTitle('StartPage');
         startPage.csvStore = this.csvStore;
 
-        //TODO may need a pageContainer.containsView and if that returns true..destroy and re-create the new view...??
         var coordinatesView = this._initCoordinatesView(obj);
         this.pageContainer.addView(coordinatesView);
 

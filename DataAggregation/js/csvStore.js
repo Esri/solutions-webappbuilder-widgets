@@ -41,6 +41,11 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     //so if they flag single and multi on a single locator...that locator should actually be processed twice
     //once for multi and once for single is what I am thinking
 
+    //When storing address details need to store the locator index that was used to generate a given address in addition to
+    // the address so when feature views potentially re-geocode they use the same one
+
+    //TODO need to set this._currentAddressFields for XY fields
+
     file: null,
     map: null,
     spatialReference: null,
@@ -134,6 +139,11 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             }
           }));
 
+          //These need to be persisted to support additional locate operations but need to be avoided when going into theactual layer
+          array.forEach(this._currentAddressFields, lang.hitch(this, function (f) {
+            attributes["MatchField_" + f.keyField] = this.csvStore.getValue(si, f.value);
+          }));
+
           if (di && di.score > this.minScore) {
             attributes.ObjectID = i - unmatchedI - duplicateI;
             attributes.matchScore = di.score;
@@ -153,11 +163,11 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             duplicateI++;
           } else {
             attributes.ObjectID = unmatchedI;
-            attributes.matchScore = di.score;
+            attributes.matchScore = di.score ? di.score : 0;
             //need to handle the null location by doing something
             // not actually sure if this is the best way...may not store the geom...
             unmatchedFeatures.push({
-              "geometry": di.location ? di.location : new Point(0, 0, this.map.spatialReference),
+              "geometry": di.location && di.location.type ? di.location : new Point(0, 0, this.map.spatialReference),
               "attributes": lang.clone(attributes)
             });
             unmatchedI++;
@@ -207,11 +217,6 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
       this._getAllLayerFeatures(this.editLayer, this.fsFields).then(lang.hitch(this, function (layerFeatures) {
         this.keys = Object.keys(this.mappedArrayFields);
         this.oidField = this.editLayer.objectIdField;
-        ////TODO remove this when we allow the user to choose fields from the config...otherwise it will be forced to compare on all fields with no way to disable
-        //if (this.duplicateTestFields.length === 0) {
-        //  this.duplicateTestFields = this.keys;
-        //}
-
 
         //recursive function for testing for duplicate attribute values
         var _testFieldValues = lang.hitch(this, function (testFeatures, index) {
@@ -272,6 +277,16 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     _getAllLayerFeatures: function (lyr, fields) {
       var def = new Deferred();
 
+      var fieldNames = [this.editLayer.objectIdField];
+      array.forEach(fields, function (field) {
+        if (field.name) {
+          fieldNames.push(field.name);
+        }
+      });
+      if (fieldNames.length < 2) {
+        fieldNames = fields;
+      }
+
       var max = lyr.maxRecordCount;
 
       var q = new Query();
@@ -282,7 +297,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         if (ids.length > 0) {
           for (i = 0, j = ids.length; i < j; i += max) {
             var q = new Query();
-            q.outFields = fields;
+            q.outFields = fieldNames;
             q.objectIds = ids.slice(i, i + max);
             q.returnGeometry = true;
 
@@ -357,6 +372,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                   addr[oid] = csvID;
                   if (this.useMultiFields && locatorSource.multiEnabled) {
                     array.forEach(this.multiFields, lang.hitch(this, function (f) {
+                      this._currentAddressFields = this.multiFields;
                       if (f.value !== this.nls.noValue) {
                         var val = this.csvStore.getValue(item, f.value);
                         addr[f.keyField] = val;
@@ -364,6 +380,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                     }));
                   } else if (locatorSource.singleEnabled) {
                     if (this.singleFields[0].value !== this.nls.noValue) {
+                      this._currentAddressFields = this.singleFields;
                       var s_val = this.csvStore.getValue(item, this.singleFields[0].value);
                       if (typeof (s_val) === 'undefined') {
                         //otherwise multiple undefined values are seen as the same key
@@ -413,7 +430,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
               if (results) {
                 var minScore = this.minScore;
                 var idx = 0;
-                array.forEach(results, function (r) {
+                array.forEach(results, lang.hitch(this, function (r) {
                   var defResults = r[1];
                   array.forEach(defResults, function (result) {
                     result.ResultID = result.attributes.ResultID;
@@ -423,7 +440,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                     idProperty: "ResultID"
                   }));
                   var resultsSort = geocodeDataStore.query({}, { sort: [{ attribute: "ResultID" }] });
-                  array.forEach(resultsSort, function (_r) {
+                  array.forEach(resultsSort, lang.hitch(this, function (_r) {
                     for (var k in keys) {
                       var _i = keys[k];
                       if (finalResults[_i] && finalResults[_i].index === idx) {
@@ -435,6 +452,13 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                         } else {
                           finalResults[_i].location = _r.location;
                           finalResults[_i].score = _r.attributes.Score;
+
+                          ////These need to be persisted to support additional locate operations but need to be avoided when going into theactual layer
+                          //array.forEach(this._currentAddressFields, lang.hitch(this, function (f) {
+                          //  finalResults[_i]["MatchField_" + f.keyField] = _r.attributes[f.keyField];
+                          //}));
+
+                          //finalResults[_i].locatorAttributes = _r.attributes;
                           delete finalResults[_i].index;
                         }
                         delete keys[k];
@@ -442,8 +466,8 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                       }
                     }
                     idx += 1;
-                  });
-                });
+                  }));
+                }));
                 if (additionalLocators && unMatchedStoreItems.length > 0) {
                   _geocodeData(finalResults, unMatchedStoreItems, _idx, finalResults)
                     .then(lang.hitch(this, function (data) {
@@ -464,6 +488,15 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
           }));
         }));
       } else {
+        this._currentAddressFields = [{
+          keyField: this.xFieldName,
+          label: this.xFieldName,
+          value: this.xFieldName
+        }, {
+          keyField: this.yFieldName,
+          label: this.yFieldName,
+          value: this.yFieldName
+        }];
         this._xyData({
           storeItems: this.storeItems,
           csvStore: this.csvStore,
