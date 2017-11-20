@@ -188,7 +188,6 @@ define(['dojo/_base/declare',
             this.csvStore.handleCsv().then(lang.hitch(this, function (obj) {
               this._updatePageContainer(obj);
             }));
-            
           }
         }
       },

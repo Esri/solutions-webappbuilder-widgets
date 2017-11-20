@@ -55,22 +55,30 @@ define({
       reviewDuplicate: "Review Duplicate",
       reviewDuplicateHint: "Review Duplicate",
       reviewDuplicatePageHint: "Review Duplicate",
-      useGeometry: "Use geometry",
-      useValues: "Use values",
-      fromLayer: "from layer",
-      fromFile: "from file",
-      locationControlHint: "Review address information"
+      useGeometry: "Use location from:",
+      useValues: "Use field values from:",
+      fromLayer: "existing",
+      fromFile: "file",
+      locationControlHint: "Review address information",
+      isDuplicate: "Is Duplicate",
+      isDuplicateNoChange: "is duplicate no changes",
+      isDuplicateMakeChange: "is duplicate make changes",
+      isNotDuplicate: "is not duplicate",
+      item: "Item:"
     },
     warningsAndErrors: {
       loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",
       saveError: "Error saving features.",
       consumesCredits: "This tool consumes credits when used with the ArcGIS Online World Geocoding Service",
       noValue: "Select a field",
-      mappingTitle: "Some appropriate title goes here",
+      mappingTitle: "",
       locationMappingComplete: "Location Mapping Complete",
       fieldMappingComplete: "Field Mapping Complete",
       settingsCleared: "Settings will be cleared.",
-      proceed: "Do you want to proceed?"
+      proceed: "Do you want to proceed?",
+      itemMoveMatch: "Item was located and moved to the matched list",
+      itemMoveUnMatched: "Unable to locate item. Moved to the un-matched list.",
+      itemWillBeLocated: "Item will be removed from the duplicate locations list."
     },
     featureToolbar: {
       edit: "Edit location information",

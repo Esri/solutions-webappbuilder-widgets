@@ -112,7 +112,7 @@ define(['dojo/_base/declare',
       },
 
       _getLocator: function () {
-        //TODO need to have a backup if none of the locators support location to address 
+        //TODO need to have a backup if none of the locators support location to address
         var locator;
         for (var i = 0; i < this.csvStore._geocodeSources.length; i++) {
           var locatorSource = this.csvStore._geocodeSources[0];
@@ -161,7 +161,7 @@ define(['dojo/_base/declare',
       _reverseLocate: function (geometry) {
         if (this._isAddressFeature) {
           this.locator.locationToAddress(geometry, 100).then(lang.hitch(this, function (result) {
-            //TODO should this honor the configured match score limit...if 
+            //TODO should this honor the configured match score limit...if
             this.featureView._updateAddressFields(result.address);
           }));
         } else {
@@ -204,10 +204,10 @@ define(['dojo/_base/declare',
 
       _locate: function () {
         //locate feature
-        this._locateFeature();
-
-        //disable locate
-        this._updateLocate(true);
+        this._locateFeature().then(lang.hitch(this, function () {
+          //disable locate
+          this._updateLocate(true);
+        }));
       },
 
       _save: function () {
@@ -304,6 +304,8 @@ define(['dojo/_base/declare',
       },
 
       _locateFeature: function () {
+        var def = new Deferred();
+
         //return feature from locationToAddress
         var address = this.featureView._getAddressFieldsValues();
         if (this._isAddressFeature) {
@@ -320,6 +322,7 @@ define(['dojo/_base/declare',
                 }
               }
               this.featureView._updateFeature(highestScoreItem.location, highestScoreItem.address);
+              def.resolve(this.featureView.feature);
             }
           }));
         } else {
@@ -331,8 +334,6 @@ define(['dojo/_base/declare',
             isGeographic = /(?=^[-]?\d{1,3}\.)^[-]?\d{1,3}\.\d+|(?=^[-]?\d{4,})|^[-]?\d{1,3}/.exec(x) ? true : false;
           }
 
-          //TODO may want to consider some other tests here to make sure we avoid
-          // potential funky/bad corrds from passing through
           var geometry;
           if (!isNaN(x) && !isNaN(y)) {
             geometry = new Point(x, y);
@@ -342,9 +343,10 @@ define(['dojo/_base/declare',
               geometry.spatialReference = new SpatialReference({ wkid: this.map.spatialReference.wkid });
             }
           }
-        
           this.featureView._updateFeature(geometry, address);
+          def.resolve(this.featureView.feature);
         }
+        return def;
       },
 
       setStyleColor: function (styleColor) {

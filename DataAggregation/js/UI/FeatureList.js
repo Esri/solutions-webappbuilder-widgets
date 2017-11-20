@@ -62,6 +62,7 @@ define(['dojo/_base/declare',
 
       //TODO may need a loading shelter here to avoid see feature views while adding
 
+      //TODO add support for add/remove from the list
       //TODO this has to respond to changes to feature state
       // for example if they locate it needs to be able to transition from the un-matched to matched list for example
       //In that case this list would need to remove the feature

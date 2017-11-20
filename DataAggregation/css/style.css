@@ -69,6 +69,14 @@
   line-height: 48px;
 }
 
+.jimu-widget-critical-facilities-ui .field-label-row {
+  line-height: 30px;
+}
+
+.jimu-widget-critical-facilities-ui .field-label-value-row {
+  line-height: 30px;
+}
+
 .jimu-widget-critical-facilities-ui .bg-back-img {
   background-image: url('../images/nav_left_black.png');
 }

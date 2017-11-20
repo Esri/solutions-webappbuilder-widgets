@@ -19,8 +19,10 @@ define(['dojo/_base/declare',
   'dojo/_base/array',
   'dojo/dom-construct',
   'dojo/on',
+  'dojo/query',
+  'dojo/dom-class',
   'dijit/form/ValidationTextBox',
-  'dijit/form/RadioButton',
+  'dijit/form/Select',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dijit/_WidgetsInTemplateMixin',
@@ -38,6 +40,8 @@ define(['dojo/_base/declare',
   'esri/layers/FeatureLayer',
   'esri/tasks/query',
   'jimu/dijit/Message',
+  'jimu/dijit/CheckBox',
+  'jimu/dijit/Popup',
   'dojox/gfx/fx'
 ],
   function (declare,
@@ -45,8 +49,10 @@ define(['dojo/_base/declare',
     array,
     domConstruct,
     on,
+    query,
+    domClass,
     ValidationTextBox,
-    RadioButton,
+    Select,
     _WidgetBase,
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
@@ -64,6 +70,8 @@ define(['dojo/_base/declare',
     FeatureLayer,
     Query,
     Message,
+    CheckBox,
+    Popup,
     fx) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-feature',
@@ -113,6 +121,11 @@ define(['dojo/_base/declare',
         this._initToolbar(this.featureToolbar);
         this._initSkipFields();
         this._initRows(this.fields, this.featureControlTable);
+        if (this.isDuplicate) {
+          this._initDuplicateReview(this.fields);
+        } else {
+          domClass.remove(this.featureTable, 'display-none');
+        }
       },
 
       _initSkipFields: function () {
@@ -157,13 +170,7 @@ define(['dojo/_base/declare',
       },
 
       _updateAltIndexes: function () {
-        //if (this.pageContainer && !this._featureListView) {
-        //  this._featureListView = this.pageContainer.getViewByTitle();
 
-        //  if (this._featureListView) {
-        //    this.altBackIndex = this._featureListView.index;
-        //  }
-        //}
       },
 
       _getFeature: function () {
@@ -199,6 +206,218 @@ define(['dojo/_base/declare',
           def.resolve();
         }
         return def;
+      },
+
+      _initDuplicateReview: function (fields) {
+        //workflows
+
+        //        Feature is a duplicate and the user wants use the existing feature without changes
+        //        Feature is a duplicate and the user wants to make changes to the existing feature (update existing feature's location or attribution)
+        //Feature is NOT a duplicate > moves into normal review but the feature needs to be geocoded first to ensure a valid location can be found.If valid location - treated as normal feature feature review.if no valid location - treated as location not found workflow
+        //UI Feedback
+        //Initially, a feature and supporting attribute information is presented to the user.The user is given an option to indicate if the feature is a duplicate using a flag .
+        //        Attribute information will be presented first, then followed by action based tools
+
+        ////////////////////////////////////////////////////
+        //Just in case we go back to checkbox for any reason
+        //this._initCheckBox();
+        ////////////////////////////////////////////////////
+
+        this._initDuplicateSelect();
+
+        this._initDuplicateReviewRows(fields);
+      },
+
+      _initDuplicateSelect: function () {
+        var fromSelect = new Select({
+          style: {
+            display: "table",
+            width: "100%",
+            height: "28px"
+          },
+          options: [{
+            label: this.nls.review.isDuplicateNoChange,
+            value: 'no-change',
+            selected: true
+          }, {
+              label: this.nls.review.isDuplicateMakeChange,
+            value: 'make-change'
+            }, {
+              label: this.nls.review.isNotDuplicate,
+              value: 'not-duplicate'
+          }],
+          onChange: lang.hitch(this, this._updateDuplicateUI)
+        });
+        this._duplicateFlag.fromSelect = fromSelect;
+        domConstruct.place(fromSelect.domNode, this._duplicateFlag);
+        fromSelect.startup();
+      },
+
+      _updateDuplicateUI: function (v) {
+        if (v === 'no-change') {
+          //reset UI as it would be at the start
+          this._toggleDuplicateReview(false);
+        } else if (v === 'make-change') {
+          //show the standard duplicate page
+          this._toggleDuplicateReview(true);
+        } else if (v === 'not-duplicate') {
+          //locate and move to the match list row
+          this._showShouldLocateFeaturePopup().then(lang.hitch(this, function (shouldLocate) {
+            if (shouldLocate) {
+              this._featureToolbar._locateFeature().then(lang.hitch(this, function (feature) {
+                //move to the appropriate list and message the user about what happened
+                new Message({
+                  message: this.nls.warningsAndErrors.itemMoveMatch
+                });
+              }));
+            }
+          }));
+        }
+      },
+
+      _toggleDuplicateReview: function (v) {
+        var rows = this.reviewTableG.rows;
+        if (v) {
+          if (domClass.contains(this.featureTable, 'display-none')) {
+            domClass.remove(this.featureTable, 'display-none');
+          }
+
+          //hide review Fields
+          array.forEach(rows, lang.hitch(this, function (r) {
+            if (r.isLabelRow || r.isControlRow) {
+              domClass.add(r, 'display-none');
+            }
+          }));
+
+        } else {
+          domClass.add(this.featureTable, 'display-none');
+
+          //show review Fields
+          array.forEach(rows, lang.hitch(this, function (r) {
+            if (r.isLabelRow || r.isControlRow) {
+              if (domClass.contains(r, 'display-none')) {
+                domClass.remove(r, 'display-none');
+              }
+            }
+          }));
+        }
+      },
+
+      _showShouldLocateFeaturePopup: function () {
+        var def = new Deferred();
+        var content = domConstruct.create('div');
+
+        domConstruct.create('div', {
+          innerHTML: this.nls.warningsAndErrors.itemWillBeLocated,
+          style: "padding-bottom: 10px;"
+        }, content);
+
+        domConstruct.create('div', {
+          innerHTML: this.nls.warningsAndErrors.proceed
+        }, content);
+
+        var savePopup = new Popup({
+          titleLabel: "Locate Feature",
+          width: 400,
+          autoHeight: true,
+          content: content,
+          buttons: [{
+            label: this.nls.yes,
+            onClick: lang.hitch(this, function () {
+              savePopup.close();
+              savePopup = null;
+              def.resolve(true);
+            })
+          }, {
+            label: this.nls.no,
+            onClick: lang.hitch(this, function () {
+              savePopup.close();
+              savePopup = null;
+              def.resolve(false);
+            })
+          }],
+          onClose: function () {
+            savePopup = null;
+          }
+        });
+
+        return def;
+      },
+
+      _initCheckBox: function () {
+        //Just in case we go back to checkbox for any reason
+        //var _isDuplicateFlag = new CheckBox({
+        //  checked: true,
+        //  label: this.nls.review.isDuplicate,
+        //  onChange: lang.hitch(this, this._isDuplicateFlagChange)
+        //});
+        //_isDuplicateFlag.placeAt(this._duplicateFlag);
+
+        //var tdLabel = domConstruct.create('td', {
+        //  className: "label-td",
+        //  title: this.nls.featureToolbar.save
+        //}, this.reviewRow);
+        //domConstruct.create('div', {
+        //  className: "float-right bg-ft-img bg-save feature-toolbar-btn",
+        //  'data-dojo-attach-event': lang.hitch(this, this._save)
+        //}, tdLabel);
+      },
+
+      //_isDuplicateFlagChange: function (v) {
+      //  if (this.isDuplicate) {
+      //    if (v) {
+      //      if(domClass.contains(this.featureTable, 'display-none')){
+      //        domClass.remove(this.featureTable, 'display-none');
+      //      }
+      //      var reviewRow = query('.field-label-row');
+      //      for (var i = 0; i < reviewRow.length; i++) {
+      //        var r = reviewRow[i];
+      //        domClass.add(r, 'display-none');
+      //      }
+      //    } else {
+      //      domClass.add(this.featureTable, 'display-none');
+      //      var reviewRow = query('.field-label-row');
+      //      for (var i = 0; i < reviewRow.length; i++) {
+      //        var r = reviewRow[i];
+      //        domClass.remove(r, 'display-none');
+      //      }
+      //    }
+      //  }
+      //},
+
+      _initDuplicateReviewRows: function (fields) {
+        array.forEach(fields, lang.hitch(this, function (f) {
+          //if (f.duplicateFieldInfo && typeof (f.duplicateFieldInfo.value) !== 'undefined') {
+            if (this._skipFields.indexOf(f.name) === -1) {
+              var tr = domConstruct.create('tr', {
+                className: "field-label-row",
+                isLabelRow: true,
+                isControlRow: true
+              }, this.reviewTable);
+              tr.fieldName = f.name;
+              tr.parent = this;
+              var tdLabel = domConstruct.create('td', {
+                className: "label-td"
+              }, tr);
+              domConstruct.create('div', {
+                className: "main-text float-left",
+                innerHTML: f.label
+              }, tdLabel);
+
+              var _tr = domConstruct.create('tr', {
+                className: "field-label-row bottom-border pad-right-10",
+                isLabelRow: false,
+                isControlRow: true
+              }, this.reviewTable);
+              _tr.fieldName = f.name;
+              _tr.parent = this;
+
+              this._initLabel(_tr, f.duplicateFieldInfo.value, false, false);
+              this._initLabel(_tr, f.value, true, false);
+            }
+          //}
+        }));
+
       },
 
       _initPopup: function (fields) {
@@ -240,8 +459,8 @@ define(['dojo/_base/declare',
 
       _initRows: function (fields, table) {
         if (this.isDuplicate) {
-          this._initRadioButtonRows(this.nls.review.useGeometry, table);
-          this._initRadioButtonRows(this.nls.review.useValues, table);
+          this._initSelectRow(this.nls.review.useGeometry, table, this._useGeomChanged);
+          this._initSelectRow(this.nls.review.useValues, table, this._useValuesChanged);
         }
 
         var rowIndex = 0;
@@ -274,13 +493,7 @@ define(['dojo/_base/declare',
         }));
 
         //Create UI for location field control
-        //this.locationControlTable
-
-        //check and see if we can get the address field info we need from csvStore info
-        // check csvStore useMultiFields and multiFields
-
-
-
+        //TODO all of these should shift to _currentField...after fix issue with XY fields...
         this.addressFields = this.csvStore.useMultiFields ? this.csvStore.multiFields : this.csvStore.useAddr ?
           this.csvStore.singleFields : this.getXYFields(); //finally should be the xy fields
 
@@ -301,7 +514,7 @@ define(['dojo/_base/declare',
             className: "main-text float-left",
             innerHTML: f.label
           }, tdLabel);
-                 
+
           var field = this.feature.fieldInfo.filter(function (fieldInfo) {
             return fieldInfo.name === "MatchField_" + f.keyField;
           });
@@ -323,17 +536,19 @@ define(['dojo/_base/declare',
           label: xField.label,
           value: this.csvStore.xFieldName
         }, {
-            keyField: this.csvStore.yFieldName,
+          keyField: this.csvStore.yFieldName,
           label: yField.label,
           value: this.csvStore.yFieldName
         }];
       },
 
-      _updateAddressFields: function (address) {
+      _updateAddressFields: function (address)  {
         this._address = address;
         //use the located address to update whatever fileds we have displayed
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
-          row.addressValueTextBox.set('value', this._address[row.keyField]);
+          //TODO understand if this can be different or some safe way to know what it is
+          var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : row.keyField;
+          row.addressValueTextBox.set('value', this._address[keyField]);
         }));
       },
 
@@ -345,30 +560,63 @@ define(['dojo/_base/declare',
         //need to make sure the feature toolbar instances are updated as well
 
         //may be better to do this in the toolbar
+        console.log(address);
 
         this.feature.geometry = location;
         this._feature.geometry = location;
 
-        //apply the edits 
-        this.layer.applyEdits(null, [this._feature]).then(lang.hitch(this, function (result) {
-         // this._featureToolbar._hasAttributeEdit = false;
+        //apply the edits
+        this.layer.applyEdits(null, [this._feature]).then(lang.hitch(this, function () {
+          // this._featureToolbar._hasAttributeEdit = false;
           this._panToAndSelectFeature(this._feature);
           this.emit('address-located');
         }, lang.hitch(this, function (err) {
-            console.log(err);
-            new Message({
-              message: this.nls.warningsAndErrors.saveError
-            });
+          console.log(err);
+          new Message({
+            message: this.nls.warningsAndErrors.saveError
+          });
         })));
       },
 
       _getAddressFieldsValues: function () {
-        //get the address or coordinates from the 
+        //get the address or coordinates from the
         var address = {};
         array.forEach(this.locationControlTable.rows, function (row) {
           address[row.keyField] = row.addressValueTextBox.value;
         });
         return address;
+      },
+
+      _initLabel: function (tr, value, isFile, isAddress) {
+        var tdControl = domConstruct.create('td', {
+          className: !isFile ? 'pad-right-10' : '',
+          style: {'padding-bottom': "10px"}
+        }, tr);
+        var valueTextBox = new ValidationTextBox({
+          style: {
+            width: "100%",
+            height: "30px"
+          },
+          title: value
+        });
+        valueTextBox.set("value", value);
+        valueTextBox.set("readonly", true);
+        valueTextBox.placeAt(tdControl);
+        valueTextBox.startup();
+        valueTextBox.isFile = isFile;
+        valueTextBox.isAddress = isAddress;
+        valueTextBox.row = tr;
+        valueTextBox.parent = this;
+        if (isFile) {
+          tr.fileValueTextBox = valueTextBox;
+          tr.fileValue = value;
+        } else if (isAddress) {
+          tr.addressValueTextBox = valueTextBox;
+          tr.addressValue = value;
+        } else {
+          tr.layerValueTextBox = valueTextBox;
+          tr.layerValue = value;
+        }
       },
 
       _initValidationBox: function (tr, value, isFile, isAddress) {
@@ -401,12 +649,12 @@ define(['dojo/_base/declare',
         }
 
         valueTextBox.on("keyUp", function (v) {
-          //TODO update this to handle address change
-
+          var valueChanged;
+          var changeIndex;
           var newValue = v.srcElement.value;
           if (this.isAddress) {
-            var valueChanged = newValue !== this.row.addressValue;
-            var changeIndex = this.parent._changedAddressRows.indexOf(this.row.rowIndex);
+            valueChanged = newValue !== this.row.addressValue;
+            changeIndex = this.parent._changedAddressRows.indexOf(this.row.rowIndex);
             if (changeIndex === -1 && valueChanged) {
               this.parent._changedAddressRows.push(this.row.rowIndex);
             } else if (changeIndex > -1 && !valueChanged) {
@@ -414,8 +662,8 @@ define(['dojo/_base/declare',
             }
             this.parent.emit('address-change', this.parent._changedAddressRows.length > 0);
           } else {
-            var valueChanged = this.isFile ? newValue !== this.row.fileValue : newValue !== this.row.layerValue;
-            var changeIndex = this.parent._changedAttributeRows.indexOf(this.row.rowIndex);
+            valueChanged = this.isFile ? newValue !== this.row.fileValue : newValue !== this.row.layerValue;
+            changeIndex = this.parent._changedAttributeRows.indexOf(this.row.rowIndex);
             if (changeIndex === -1 && valueChanged) {
               this.parent._changedAttributeRows.push(this.row.rowIndex);
             } else if (changeIndex > -1 && !valueChanged) {
@@ -473,10 +721,10 @@ define(['dojo/_base/declare',
         }
       },
 
-      _initRadioButtonRows: function (useString, table) {
+      _initSelectRow: function (useString, table, func) {
         var tr = domConstruct.create('tr', {
           className: "radio-row task-instruction-row bottom-border",
-          isRadioRow: true,
+          isRadioRow: true, //TODO update all uses of this...leaving for now
           isEditRow: false
         }, table);
         tr.radioButtons = [];
@@ -486,65 +734,50 @@ define(['dojo/_base/declare',
           className: "main-text float-left pad-left-10",
           innerHTML: useString
         }, tdUseLabel);
-        var isGeom = useString === this.nls.review.useGeometry;
 
-        //from layer
-        this._initRadioButton(tr, useString, this.nls.review.fromLayer,
-          isGeom ? this._rdoGeomFromLayerChanged : this._rdoValuesFromLayerChanged);
-
-        //from file
-        this._initRadioButton(tr, useString, this.nls.review.fromFile,
-          isGeom ? this._rdoGeomFromFileChanged : this._rdoValuesFromFileChanged);
-
+        this._createSelect(tr, func);
       },
 
-      _initRadioButton: function (tr, useString, fromString, func) {
-        var tdFromControl = domConstruct.create('td', {}, tr);
-        var rdoFrom = new RadioButton({
-          title: useString + " " + fromString,
-          name: useString
+      _createSelect: function (tr, func) {
+        var td = domConstruct.create('td', {
+          colspan: 2
+        }, tr);
+
+        var fromSelect = new Select({
+          style: {
+            display: "table",
+            width: "100%",
+            height: "28px"
+          },
+          options: [{
+            label: this.nls.review.fromLayer,
+            value: 'layer',
+            selected: true
+          }, {
+            label: this.nls.review.fromFile,
+            value: 'file'
+            }],
+          onChange: lang.hitch(this, func)
         });
-        rdoFrom.placeAt(tdFromControl);
-        rdoFrom.startup();
-        tr.radioButtons.push(rdoFrom);
-
-        this.own(on(rdoFrom, 'change', lang.hitch(this, func)));
-        domConstruct.create('div', {
-          className: "main-text",
-          innerHTML: fromString
-        }, tdFromControl);
-
-        rdoFrom.set('checked', fromString === this.nls.review.fromLayer);
+        tr.fromSelect = fromSelect;
+        domConstruct.place(fromSelect.domNode, td);
+        fromSelect.startup();
       },
 
-      _rdoGeomFromFileChanged: function (v) {
+      _useGeomChanged: function (value) {
+        var v = value === 'file';
         this._useGeomFromFile = v;
-        if (v) {
-          this._panToAndSelectFeature(this._feature);
-        }
+        this._useGeomFromLayer = !v;
+        this._panToAndSelectFeature(v ? this._feature : this._editFeature);
         this._validateGeoms();
       },
 
-      _rdoGeomFromLayerChanged: function (v) {
-        this._useGeomFromLayer = v;
-        if (v) {
-          this._panToAndSelectFeature(this._editFeature);
-        }
-        this._validateGeoms();
-      },
-
-      _rdoValuesFromFileChanged: function (v) {
+      _useValuesChanged: function (value) {
+        var v = value === 'file';
         this._useValuesFromFile = v;
-        if (v && !this._featureToolbar._editDisabled) {
-          this._toggleEnabled(true);
-        }
-        this._validateValues();
-      },
-
-      _rdoValuesFromLayerChanged: function (v) {
-        this._useValuesFromLayer = v;
-        if (v && !this._featureToolbar._editDisabled) {
-          this._toggleEnabled(false);
+        this._useValuesFromLayer = !v;
+        if (!this._featureToolbar._editDisabled) {
+          this._toggleEnabled(v);
         }
         this._validateValues();
       },
@@ -558,12 +791,7 @@ define(['dojo/_base/declare',
         });
       },
 
-      _locateFileFeature: function (address) {
-        this._fileFeature = this._featureToolbar.locateFeature(address);
-      },
-
       _panToAndSelectFeature: function (feature) {
-        //this._featureToolbar.feature = this.feature;
         if (feature && feature.geometry) {
           var geom = feature.geometry;
           if (geom.type === 'polyline') {
@@ -574,7 +802,9 @@ define(['dojo/_base/declare',
           if (geom.type !== 'point') {
             geom = geom.getExtent().getCenter();
           }
-          this.map.centerAt(geom).then(lang.hitch(this, function () {
+          var maxZoom = this.map.getMaxZoom();
+
+          this.map.centerAndZoom(geom, Math.round(maxZoom / 2)).then(lang.hitch(this, function () {
             this._flashFeature(feature);
             if ((feature._layer && feature._layer.infoTemplate) || feature.infoTemplate) {
               this.map.infoWindow.setFeatures([feature]);
@@ -642,9 +872,7 @@ define(['dojo/_base/declare',
       _toggleEditControls: function (disabled) {
         array.forEach(this.featureControlTable.rows, function (row) {
           if (row.isRadioRow) {
-            array.forEach(row.radioButtons, function (btn) {
-              btn.set('disabled', disabled);
-            });
+            row.fromSelect.set('disabled', disabled);
           }
           if (row.isEditRow) {
             if (row.fileValueTextBox) {
@@ -695,10 +923,6 @@ define(['dojo/_base/declare',
           }
         });
         return edits;
-      },
-
-      _getAddressValues: function () {
-
       },
 
       _clearFeature: function (f) {
