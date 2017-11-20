@@ -386,6 +386,31 @@ define(['dojo/_base/declare',
       //},
 
       _initDuplicateReviewRows: function (fields) {
+
+        var tr = domConstruct.create('tr', {
+          className: "field-label-row",
+          isHeaderRow: true
+        }, this.reviewTable);
+        var tdLabel_ = domConstruct.create('td', {
+          className: "label-td"
+        }, tr);
+        var tdLabel = domConstruct.create('td', {
+          className: "label-td"
+        }, tr);
+        domConstruct.create('div', {
+          className: "main-text float-left",
+          innerHTML: this.nls.review.fromLayer1
+        }, tdLabel);
+
+        var _tdLabel = domConstruct.create('td', {
+          className: "label-td"
+        }, tr);
+        domConstruct.create('div', {
+          className: "main-text float-left",
+          innerHTML: this.nls.review.fromFile1
+        }, _tdLabel);
+
+
         array.forEach(fields, lang.hitch(this, function (f) {
           //if (f.duplicateFieldInfo && typeof (f.duplicateFieldInfo.value) !== 'undefined') {
             if (this._skipFields.indexOf(f.name) === -1) {
@@ -404,16 +429,16 @@ define(['dojo/_base/declare',
                 innerHTML: f.label
               }, tdLabel);
 
-              var _tr = domConstruct.create('tr', {
-                className: "field-label-row bottom-border pad-right-10",
-                isLabelRow: false,
-                isControlRow: true
-              }, this.reviewTable);
-              _tr.fieldName = f.name;
-              _tr.parent = this;
+              //var _tr = domConstruct.create('tr', {
+              //  className: "field-label-row bottom-border pad-right-10",
+              //  isLabelRow: false,
+              //  isControlRow: true
+              //}, this.reviewTable);
+              //_tr.fieldName = f.name;
+              //_tr.parent = this;
 
-              this._initLabel(_tr, f.duplicateFieldInfo.value, false, false);
-              this._initLabel(_tr, f.value, true, false);
+              this._initLabel(tr, f.duplicateFieldInfo.value, false, false);
+              this._initLabel(tr, f.value, true, false);
             }
           //}
         }));
@@ -461,6 +486,29 @@ define(['dojo/_base/declare',
         if (this.isDuplicate) {
           this._initSelectRow(this.nls.review.useGeometry, table, this._useGeomChanged);
           this._initSelectRow(this.nls.review.useValues, table, this._useValuesChanged);
+
+          var tr = domConstruct.create('tr', {
+            className: "field-label-row bottom-border",
+            isHeaderRow: true
+          }, table);
+          var tdLabel_ = domConstruct.create('td', {
+            className: "label-td"
+          }, tr);
+          var tdLabel = domConstruct.create('td', {
+            className: "label-td"
+          }, tr);
+          domConstruct.create('div', {
+            className: "main-text float-left",
+            innerHTML: this.nls.review.fromLayer1
+          }, tdLabel);
+
+          var _tdLabel = domConstruct.create('td', {
+            className: "label-td"
+          }, tr);
+          domConstruct.create('div', {
+            className: "main-text float-left",
+            innerHTML: this.nls.review.fromFile1
+          }, _tdLabel);
         }
 
         var rowIndex = 0;

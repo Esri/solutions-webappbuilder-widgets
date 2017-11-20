@@ -59,6 +59,8 @@ define({
       useValues: "Use field values from:",
       fromLayer: "existing",
       fromFile: "file",
+      fromLayer1: "Existing",
+      fromFile1: "File",
       locationControlHint: "Review address information",
       isDuplicate: "Is Duplicate",
       isDuplicateNoChange: "is duplicate no changes",
