@@ -270,6 +270,8 @@ define(['dojo/_base/declare',
           var value = r.cells[2].fieldsSelect.getValue();
           if (value !== noValue) {
             results[r.cells[0].targetField.name] = value;
+          } else {
+            results[r.cells[0].targetField.name] = undefined;
           }
         });
 

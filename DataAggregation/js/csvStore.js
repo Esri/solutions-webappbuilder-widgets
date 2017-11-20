@@ -135,13 +135,21 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
           var si = this.storeItems[di.csvIndex];
           array.forEach(this.fsFields, lang.hitch(this, function (f) {
             if (this.mappedArrayFields.hasOwnProperty(f.name)) {
-              attributes[f.name] = this.csvStore.getValue(si, this.mappedArrayFields[f.name]);
+              if (this.mappedArrayFields[f.name]) {
+                attributes[f.name] = this.csvStore.getValue(si, this.mappedArrayFields[f.name]);
+              } else {
+                attributes[f.name] = undefined;
+              }
             }
           }));
 
           //These need to be persisted to support additional locate operations but need to be avoided when going into theactual layer
           array.forEach(this._currentAddressFields, lang.hitch(this, function (f) {
-            attributes["MatchField_" + f.keyField] = this.csvStore.getValue(si, f.value);
+            if (typeof (f.value) !== 'undefined') {
+              attributes["MatchField_" + f.keyField] = this.csvStore.getValue(si, f.value);
+            } else {
+              attributes["MatchField_" + f.keyField] = undefined;
+            }
           }));
 
           if (di && di.score > this.minScore) {
@@ -376,6 +384,8 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                       if (f.value !== this.nls.noValue) {
                         var val = this.csvStore.getValue(item, f.value);
                         addr[f.keyField] = val;
+                      } else {
+                        addr[f.keyField] = undefined;
                       }
                     }));
                   } else if (locatorSource.singleEnabled) {

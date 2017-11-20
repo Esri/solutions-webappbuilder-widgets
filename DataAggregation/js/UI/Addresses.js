@@ -269,6 +269,13 @@ define(['dojo/_base/declare',
               label: targetField
             });
             mappedArrayFields[keyField] = sourceField;
+          } else {
+            fields.push({
+              keyField: keyField,
+              value: undefined,
+              label: targetField
+            });
+            mappedArrayFields[keyField] = undefined;
           }
         });
         return {
