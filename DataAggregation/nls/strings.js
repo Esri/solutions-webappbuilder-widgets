@@ -1,6 +1,6 @@
 define({
   root: ({
-    _widgetLabel: "Data Aggregation Beta",
+    _widgetLabel: "Data Aggregation (Beta)",
     startPage: {
       startPageInstructions: "This widget will assist with processing and submitting data from a file to the ${layer} layer in the map",
       startPageHint: "Values within the file must be delimited by comma, tab, semi-colon, or vertical bar.",
@@ -66,7 +66,8 @@ define({
       isDuplicateNoChange: "is duplicate no changes",
       isDuplicateMakeChange: "is duplicate make changes",
       isNotDuplicate: "is not duplicate",
-      item: "Item:"
+      item: "Item:",
+      locateFeature: "Locate Feature"
     },
     warningsAndErrors: {
       loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",

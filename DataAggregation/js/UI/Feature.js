@@ -18,8 +18,6 @@ define(['dojo/_base/declare',
   'dojo/_base/lang',
   'dojo/_base/array',
   'dojo/dom-construct',
-  'dojo/on',
-  'dojo/query',
   'dojo/dom-class',
   'dijit/form/ValidationTextBox',
   'dijit/form/Select',
@@ -40,7 +38,6 @@ define(['dojo/_base/declare',
   'esri/layers/FeatureLayer',
   'esri/tasks/query',
   'jimu/dijit/Message',
-  'jimu/dijit/CheckBox',
   'jimu/dijit/Popup',
   'dojox/gfx/fx'
 ],
@@ -48,8 +45,6 @@ define(['dojo/_base/declare',
     lang,
     array,
     domConstruct,
-    on,
-    query,
     domClass,
     ValidationTextBox,
     Select,
@@ -70,7 +65,6 @@ define(['dojo/_base/declare',
     FeatureLayer,
     Query,
     Message,
-    CheckBox,
     Popup,
     fx) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
@@ -240,11 +234,11 @@ define(['dojo/_base/declare',
             value: 'no-change',
             selected: true
           }, {
-              label: this.nls.review.isDuplicateMakeChange,
+            label: this.nls.review.isDuplicateMakeChange,
             value: 'make-change'
-            }, {
-              label: this.nls.review.isNotDuplicate,
-              value: 'not-duplicate'
+          }, {
+            label: this.nls.review.isNotDuplicate,
+            value: 'not-duplicate'
           }],
           onChange: lang.hitch(this, this._updateDuplicateUI)
         });
@@ -265,6 +259,7 @@ define(['dojo/_base/declare',
           this._showShouldLocateFeaturePopup().then(lang.hitch(this, function (shouldLocate) {
             if (shouldLocate) {
               this._featureToolbar._locateFeature().then(lang.hitch(this, function (feature) {
+                console.log(feature);
                 //move to the appropriate list and message the user about what happened
                 new Message({
                   message: this.nls.warningsAndErrors.itemMoveMatch
@@ -317,7 +312,7 @@ define(['dojo/_base/declare',
         }, content);
 
         var savePopup = new Popup({
-          titleLabel: "Locate Feature",
+          titleLabel: this.nls.review.locateFeature,
           width: 400,
           autoHeight: true,
           content: content,
@@ -391,7 +386,7 @@ define(['dojo/_base/declare',
           className: "field-label-row",
           isHeaderRow: true
         }, this.reviewTable);
-        var tdLabel_ = domConstruct.create('td', {
+        domConstruct.create('td', {
           className: "label-td"
         }, tr);
         var tdLabel = domConstruct.create('td', {
@@ -413,33 +408,33 @@ define(['dojo/_base/declare',
 
         array.forEach(fields, lang.hitch(this, function (f) {
           //if (f.duplicateFieldInfo && typeof (f.duplicateFieldInfo.value) !== 'undefined') {
-            if (this._skipFields.indexOf(f.name) === -1) {
-              var tr = domConstruct.create('tr', {
-                className: "field-label-row",
-                isLabelRow: true,
-                isControlRow: true
-              }, this.reviewTable);
-              tr.fieldName = f.name;
-              tr.parent = this;
-              var tdLabel = domConstruct.create('td', {
-                className: "label-td"
-              }, tr);
-              domConstruct.create('div', {
-                className: "main-text float-left",
-                innerHTML: f.label
-              }, tdLabel);
+          if (this._skipFields.indexOf(f.name) === -1) {
+            var tr = domConstruct.create('tr', {
+              className: "field-label-row",
+              isLabelRow: true,
+              isControlRow: true
+            }, this.reviewTable);
+            tr.fieldName = f.name;
+            tr.parent = this;
+            var tdLabel = domConstruct.create('td', {
+              className: "label-td"
+            }, tr);
+            domConstruct.create('div', {
+              className: "main-text float-left",
+              innerHTML: f.label
+            }, tdLabel);
 
-              //var _tr = domConstruct.create('tr', {
-              //  className: "field-label-row bottom-border pad-right-10",
-              //  isLabelRow: false,
-              //  isControlRow: true
-              //}, this.reviewTable);
-              //_tr.fieldName = f.name;
-              //_tr.parent = this;
+            //var _tr = domConstruct.create('tr', {
+            //  className: "field-label-row bottom-border pad-right-10",
+            //  isLabelRow: false,
+            //  isControlRow: true
+            //}, this.reviewTable);
+            //_tr.fieldName = f.name;
+            //_tr.parent = this;
 
-              this._initLabel(tr, f.duplicateFieldInfo.value, false, false);
-              this._initLabel(tr, f.value, true, false);
-            }
+            this._initLabel(tr, f.duplicateFieldInfo.value, false, false);
+            this._initLabel(tr, f.value, true, false);
+          }
           //}
         }));
 
@@ -491,7 +486,7 @@ define(['dojo/_base/declare',
             className: "field-label-row bottom-border",
             isHeaderRow: true
           }, table);
-          var tdLabel_ = domConstruct.create('td', {
+          domConstruct.create('td', {
             className: "label-td"
           }, tr);
           var tdLabel = domConstruct.create('td', {
@@ -804,7 +799,7 @@ define(['dojo/_base/declare',
           }, {
             label: this.nls.review.fromFile,
             value: 'file'
-            }],
+          }],
           onChange: lang.hitch(this, func)
         });
         tr.fromSelect = fromSelect;
