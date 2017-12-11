@@ -306,11 +306,13 @@
 }
 
 .jimu-widget-InfoSummary-setting .displayOptions {
-  padding-left: 40px !important;
+  padding-left: 40px;
+  padding-right: 0px;
 }
 
 .jimu-rtl .jimu-widget-InfoSummary-setting .displayOptions {
-  padding-right: 40px !important;
+  padding-right: 40px;
+  padding-left: 0px;
 }
 
 .jimu-widget-InfoSummary-setting .symPickers{

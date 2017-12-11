@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Copyright 2015 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the 'License');
@@ -140,8 +140,14 @@ define(['dojo/_base/declare',
         if (!this.hidePanel) {
           this.own(on(this.btnAddField, 'click', lang.hitch(this, this._addFieldRow,
             this.fieldOptionsTable, 'loSelect')));
-          html.removeClass(this.btnAddField, "btn-add-section-disabled");
-          html.addClass(this.btnAddField, "btn-add-section");
+          var fieldRows = this.fieldOptionsTable.getRows();
+          if (fieldRows && fieldRows.length >= 3) {
+            html.removeClass(this.btnAddField, "btn-add-section");
+            html.addClass(this.btnAddField, "btn-add-section-disabled");
+          } else {
+            html.removeClass(this.btnAddField, "btn-add-section-disabled");
+            html.addClass(this.btnAddField, "btn-add-section");
+          }
           html.removeClass(this.iconOptionsTextLabel, 'text-disabled');
           html.removeClass(this.featureOptionsTextLabel, 'text-disabled');
           html.removeClass(this.groupOptionsTextLabel, 'text-disabled');
@@ -297,12 +303,15 @@ define(['dojo/_base/declare',
             this._populateLayerRow(this.fieldOptionsTable, fdo.fields[i], 'loSelect');
           }
         } else {
-          //TDOO this add field to the group table here feels out of place
           this._addFieldRow(this.groupOptionsTable, 'goSelect');
+
           if (this.popupFields && this.popupFields.length > 0) {
-            this._populateLayerRow(this.fieldOptionsTable, {
-              name: this.popupFields[0]
-            }, 'loSelect');
+            var fieldLength = this.popupFields.length > 2 ? 3 : this.popupFields.length;
+            for (var fI = 0; fI < fieldLength; fI++) {
+              this._populateLayerRow(this.fieldOptionsTable, {
+                name: this.popupFields[fI]
+              }, 'loSelect');
+            }
           }
         }
 
@@ -362,8 +371,6 @@ define(['dojo/_base/declare',
       _addFieldRow: function (table, css) {
         if (table === this.fieldOptionsTable) {
           if (table.getRows().length >= 3) {
-            html.removeClass(this.btnAddField, "btn-add-section");
-            html.addClass(this.btnAddField, "btn-add-section-disabled");
             new Message({
               message: this.nls.max_records
             });
@@ -377,6 +384,13 @@ define(['dojo/_base/declare',
           var tr = result.tr;
           this._addFieldsOption(tr, css);
           this._addLabelOption(tr);
+        }
+
+        if (table === this.fieldOptionsTable) {
+          if (table.getRows().length >= 3) {
+            html.removeClass(this.btnAddField, "btn-add-section");
+            html.addClass(this.btnAddField, "btn-add-section-disabled");
+          }
         }
       },
 
@@ -777,7 +791,7 @@ define(['dojo/_base/declare',
 
       _chkClusterCntChanged: function(v){
         this.displayFeatureCount = v;
-        html.setStyle(this.featureFont, 'display', v ? "block" : "none");
+        html.setStyle(this.featureFont, 'display', (v && this.clusteringEnabled) ? "block" : "none");
       },
 
       _rdoLayerIconChanged: function (v) {

@@ -96,7 +96,6 @@ function (BaseWidget,
     baseClass: 'jimu-widget-InfoSummary',
 
     name: "InfoSummary",
-    opLayers: null,
     opLayerInfos: null,
     layerList: {},
     UNIQUE_APPEND_VAL_CL: "_CL",
@@ -114,47 +113,188 @@ function (BaseWidget,
       this.inPanelOverrides(this.appConfig.theme.name);
       this.configLayerInfos = this.config.layerInfos;
       this.layerList = {};
-      //populates this.opLayers from this.map and creates the panel
+      //populates this.layerInfos and creates the panel
       this._initWidget();
     },
 
-    _orientationChange: function () { },
+    _forceClose: function () {
+      var themeName = this.appConfig.theme.name;
+      var dcThemes = ['LaunchpadTheme', 'DartTheme', 'FoldableTheme',
+        'JewelryBoxTheme', 'BillboardTheme', 'TabTheme', 'DashboardTheme'];
+      var p = this.getPanel();
+      if (dcThemes.indexOf(themeName) > -1) {
+        p.containerNode.parentNode.style.display = 'none';
+        p.containerNode.style.display = 'none';
+        this.widgetManager.closeWidget(this.id);
+      } else if (themeName === 'BoxTheme') {
+        p.containerNode.parentNode.style.display = 'none';
+        p.containerNode.style.display = 'none';
+        if (p.getParent && p.getParent()._toggleBox) {
+          var ss = query('.icon-node-active');
+          for (var i = 0; i < ss.length; i++) {
+            if (ss[i].outerHTML.indexOf(this.id) > -1) {
+              p.getParent()._toggleBox();
+            }
+          }
+        }
+      } else if (themeName === 'PlateauTheme') {
+        p.containerNode.parentNode.style.display = 'none';
+        p.containerNode.style.display = 'none';
+        this.widgetManager.closeWidget(this.id);
+        if (!this.aw) {
+          var widgets = this.widgetManager.appConfig.widgetOnScreen.widgets;
+          for (var ii = 0; ii < this.widgetManager.appConfig.widgetOnScreen.widgets.length; ii++) {
+            if (widgets[ii].isThemeWidget) {
+              this.aw = this.widgetManager.getWidgetById(widgets[ii].id);
+              this.aw._switchNodeToClose(this.id);
+              this.aw._closeDropMenu();
+              break;
+            }
+          }
+        } else {
+          this.aw._switchNodeToClose(this.id);
+          this.aw._closeDropMenu();
+        }
+      }
+    },
 
     inPanelOverrides: function (themeName) {
-      this.isDartTheme = themeName === "DartTheme";
-      var add = this.isDartTheme ? true : false;
-      if (this.isDartTheme) {
-        if (domClass.contains(this.pageContent, 'pageContent')) {
-          domClass.remove(this.pageContent, 'pageContent');
+      if (typeof (this.iconClickHandler) !== 'undefined') {
+        this.iconClickHandler.remove();
+        this.iconClickHandler = undefined;
+      }
+
+      var p = this.getPanel();
+
+      if (this.config.hidePanel) {
+        var iconNodeThemes = ['DartTheme', 'BoxTheme', 'FoldableTheme', 'JewelryBoxTheme', 'PlateauTheme'];
+
+        var iconNodes;
+        if (themeName === 'LaunchpadTheme') {
+          this._forceClose();
+          iconNodes = query('.selected');
+          if (iconNodes.length > 0) {
+            if (iconNodes[0].parentNode.outerHTML.indexOf(this.id) > -1) {
+              this.iconClickHandler = on(iconNodes[0], 'click', lang.hitch(this, this._forceClose));
+            }
+          }
+        } else if (iconNodeThemes.indexOf(themeName) > -1) {
+          if (themeName === 'BoxTheme') {
+            this._forceClose(); //did this for box...make sure it doesn't jack others up
+          }
+          iconNodes = query('.icon-node');
+          for (var i = 0; i < iconNodes.length; i++) {
+            if (iconNodes[i].outerHTML.indexOf(this.id) > -1) {
+              this.iconClickHandler = on(iconNodes[i], 'click', lang.hitch(this, this._forceClose));
+            }
+          }
         }
       } else {
-        if (domClass.contains(this.pageContent, 'pageContent-dart')) {
-          domClass.remove(this.pageContent, 'pageContent-dart');
+        //TODO test if this has the class .jimu-widget-frame.jimu-container
+        if (p.containerNode && p.containerNode.firstChild && p.containerNode.firstChild.className) {
+          p.containerNode.firstChild.style.padding = '0px 0px 10px 0px';
+        }
+
+        //change associated with the tab theme...all others will show the background color behind refresh text and panel image
+        if (['TabTheme', 'BillboardTheme', 'PlateauTheme', 'DashboardTheme'].indexOf(themeName) === -1) {
+          this._updateBackgroundColors(true);
+        }
+
+        this.isDartTheme = themeName === "DartTheme";
+        this.isDashboardTheme = themeName === 'DashboardTheme';
+        if (domClass.contains(this.pageHeader, this.isDartTheme ? 'pageHeader-border' : 'pageHeader-border-dart')) {
+          domClass.remove(this.pageHeader, this.isDartTheme ? 'pageHeader-border' : 'pageHeader-border-dart');
+        }
+        domClass.add(this.pageHeader, this.isDartTheme ? 'pageHeader-border-dart' : 'pageHeader-border');
+
+        switch (themeName) {
+          case 'DartTheme':
+            this.updateForDartTheme(p);
+            break;
+          case 'BoxTheme':
+            this.updateForBoxTheme(p);
+            break;
+          case 'TabTheme':
+            this.updateForTabTheme(p);
+            break;
+          case 'LaunchpadTheme':
+            this.updateForLaunchpadTheme(p);
+            break;
+          case 'BillboardTheme':
+            this.updateForBillboardTheme(p);
+            break;
+          case 'PlateauTheme':
+            this.updateForPlateauTheme(p);
+            break;
+          case 'DashboardTheme':
+            this.updateForDashboardTheme(p);
+            break;
         }
       }
-      domClass.add(this.pageContent, add ? 'pageContent-dart' : 'pageContent');
     },
 
-    addResizeOrientationHandlers: function () {
-      if (typeof (this.resizeHandler) === 'undefined') {
-        this.resizeHandler = on(this.map, 'resize', lang.hitch(this, this._windowResize));
-      }
+    updateForLaunchpadTheme: function (p) {
+      p.containerNode.style.top = '30px';
+    },
 
-      if (window.hasOwnProperty('matchMedia')) {
-        var mql = window.matchMedia("(orientation: portrait)");
-        mql.addListener(lang.hitch(this, this._orientationChange));
+    updateForTabTheme: function (p) {
+      if (p.containerNode.children.length > 0) {
+        var fc = p.containerNode.children[0];
+        if (fc.children.length > 1) {
+          fc.children[1].style.padding = '14px 0px 14px 0px';
+        }
+      }
+      if (!p.config.isOnScreen) {
+        this._updateBackgroundColors(false);
       }
     },
 
-    removeResizeOrientationHandlers: function () {
-      if (typeof (this.resizeHandler) !== 'undefined') {
-        this.resizeHandler.remove();
-        this.resizeHandler = undefined;
-      }
+    updateForBoxTheme: function (p) {
+      p.containerNode.parentNode.style.top = '140px';
+    },
 
-      if (window.hasOwnProperty('matchMedia')) {
-        var mql = window.matchMedia("(orientation: portrait)");
-        mql.removeListener(lang.hitch(this, this._orientationChange));
+    updateForDartTheme: function (p) {
+      p.containerNode.style.right = '0px';
+      p.containerNode.style.left = '0px';
+    },
+
+    updateForBillboardTheme: function () {
+      this._updateBackgroundColors(false);
+    },
+
+    updateForPlateauTheme: function () {
+      this._updateBackgroundColors(false);
+    },
+
+    updateForDashboardTheme: function () {
+      this._updateBackgroundColors(false);
+    },
+
+    _updateBackgroundColors: function (add) {
+      //deal with text color
+      if (domClass.contains(this.lastUpdated, add ? 'lastUpdated-tab' : 'lastUpdated')) {
+        domClass.remove(this.lastUpdated, add ? 'lastUpdated-tab' : 'lastUpdated');
+      }
+      domClass.add(this.lastUpdated, add ? 'lastUpdated' : 'lastUpdated-tab');
+
+      add = add && this.appConfig.theme.name !== 'DashboardTheme';
+      this.useDarkText = !add;
+
+      //deal with background color for page header
+      if (domClass.contains(this.pageHeader, 'jimu-main-background') && !add) {
+        domClass.remove(this.pageHeader, 'jimu-main-background');
+      } else if (!domClass.contains(this.pageHeader, 'jimu-main-background') && add) {
+        domClass.add(this.pageHeader, 'jimu-main-background');
+      }
+      if (domClass.contains(this.pageHeader, 'dart-bgcolor') && !add) {
+        domClass.remove(this.pageHeader, 'dart-bgcolor');
+      } else if (!domClass.contains(this.pageHeader, 'dart-bgcolor') && add) {
+        domClass.add(this.pageHeader, 'dart-bgcolor');
+      }
+      if (domClass.contains(this.pageHeader, 'box-bgcolor') && !add) {
+        domClass.remove(this.pageHeader, 'box-bgcolor');
+      } else if (!domClass.contains(this.pageHeader, 'box-bgcolor') && add) {
+        domClass.add(this.pageHeader, 'box-bgcolor');
       }
     },
 
@@ -166,14 +306,18 @@ function (BaseWidget,
       } else if (this.showAllFeatures) {
         this._mapExtentChange();
       }
-      this.addResizeOrientationHandlers();
     },
 
     onOpen: function () {
+      this.widgetChange = false;
+
       if (!this.hidePanel) {
         this._updatePanelHeader();
+      } else {
+        if (this.appConfig.theme.name !== 'BoxTheme') {
+          this._forceClose();
+        }
       }
-
       if (this.appConfig.theme.styles && this.appConfig.theme.styles[0]) {
         this._updateStyleColor(this.appConfig.theme.styles[0]);
       }
@@ -196,7 +340,9 @@ function (BaseWidget,
           } else {
             console.log("Error setting the new renderer...will use the default rendering of the layer");
           }
-          lo.refresh();
+          if (typeof (lo.refresh) === 'function') {
+            lo.refresh();
+          }
         }
 
         var _Pl;
@@ -313,8 +459,6 @@ function (BaseWidget,
         }
       }
 
-      this.addResizeOrientationHandlers();
-
       //if refresh is enabled set refereshInterval on any widget source layers with refresh set to true
       //and call setInterval to refresh the static graphics
       if (this.config.refreshEnabled) {
@@ -329,6 +473,7 @@ function (BaseWidget,
     updatePanelVisibility: function (lo, key, layerListLayer) {
       if (!this.hidePanel) {
         if (typeof (lo.visible) !== 'undefined') {
+          var visScaleRange = this._inVisibleRange(layerListLayer, key);
           var c = dom.byId("recLabel_" + key);
           if (!lo.visible) {
             if (domClass.contains("recIcon_" + key, "active")) {
@@ -366,8 +511,10 @@ function (BaseWidget,
               domClass.remove(c.firstChild, "inActive");
             }
             if (!layerListLayer.listDisabled) {
-              if (domClass.contains("exp_" + key, "expandInActive")) {
-                domClass.remove("exp_" + key, "expandInActive");
+              if (typeof(visScaleRange) === 'undefined' || visScaleRange) {
+                if (domClass.contains("exp_" + key, "expandInActive")) {
+                  domClass.remove("exp_" + key, "expandInActive");
+                }
               }
             }
             if (domClass.contains("rec_" + key, "recDefault")) {
@@ -391,18 +538,10 @@ function (BaseWidget,
               checkedTime = true;
             }
           }
-
           layerListLayer = layerListLayer.layerObject;
         } else {
-          var id;
-          if (layerListLayer.li) {
-            id = layerListLayer.li.id;
-          } else if (layerListLayer.id) {
-            id = layerListLayer.id;
-          }
-
-          for (var i = 0; i < this.opLayers.length; i++) {
-            var l = this.opLayers[i];
+          for (var i = 0; i < this.layerInfos.length; i++) {
+            var l = this.layerInfos[i];
             if (l.layerObject) {
               layerListLayer = l.layerObject;
               break;
@@ -504,32 +643,59 @@ function (BaseWidget,
       var parentLayer;
       var list, fields;
       for (var k in this.layerList) {
-        if (this.layerList[k].pl && this.layerList[k].pl.layerDefinition) {
-          if (this.layerList[k].pl.layerDefinition.name === responseLayer.layerDefinition.name) {
-            layerListLayer = this.layerList[k];
-            parentLayer = layerListLayer.pl;
+        var lyr = this.layerList[k];
+        if (lyr.pl && lyr.pl.layerDefinition) {
+          if (lyr.pl.layerDefinition.name === responseLayer.layerDefinition.name) {
+            layerListLayer = lyr;
+            parentLayer = lyr.pl;
             break;
           }
-        } else if (this.layerList[k].layerObject._parentLayer) {
-          if (this.layerList[k].layerObject._parentLayer.name === responseLayer.layerDefinition.name) {
-            list = typeof (this.layerList[k].listDisabled) !== 'undefined' ? this.layerList[k].listDisabled : false;
-            fields = this.layerList[k].li.symbolData.featureDisplayOptions.fields &&
-              this.layerList[k].li.symbolData.featureDisplayOptions.fields.length > 0;
+        } else if (lyr.layerObject._parentLayer) {
+          if (lyr.layerObject._parentLayer.name === responseLayer.layerDefinition.name) {
+            list = typeof (lyr.listDisabled) !== 'undefined' ? lyr.listDisabled : false;
+            fields = lyr.li.symbolData.featureDisplayOptions.fields &&
+              lyr.li.symbolData.featureDisplayOptions.fields.length > 0;
             if (!list && fields) {
-              this.layerList[k].isLoaded = false;
+              lyr.isLoaded = false;
             }
-            this.layerList[k].layerObject.refreshFeatures(responseLayer);
-            if (this.layerList[k].layerObject) {
-              this._loadList(this.layerList[k], true);
+            lyr.layerObject.refreshFeatures(responseLayer);
+            if (lyr.layerObject) {
+              this._loadList(lyr, true);
             }
-            //break;
+          }
+        } else if (lyr.pl && lyr.pl.name) {
+          if (lyr.pl.name === responseLayer.layerDefinition.name) {
+            layerListLayer = lyr;
+            parentLayer = lyr.pl;
+            break;
           }
         }
       }
 
-      if (responseLayer && parentLayer) {
+      if (responseLayer && layerListLayer && parentLayer && (parentLayer.featureSet || parentLayer.graphics)) {
         var responseFeatureSetFeatures = responseLayer.featureSet.features;
-        var mapFeatureSetFeatures = parentLayer.featureSet.features;
+
+        var mapFeatureSetFeatures;
+        if (parentLayer.featureSet) {
+          mapFeatureSetFeatures = parentLayer.featureSet.features;
+        } else {
+          mapFeatureSetFeatures = [];
+          var responseSR = this._getSpatialReference(responseFeatureSetFeatures);
+          var mapSR = this._getSpatialReference(parentLayer.graphics);
+          array.forEach(parentLayer.graphics, function (gra) {
+            var g = gra.geometry;
+            var geom = g.rings ? { rings: g.rings } : g.paths ? { paths: g.paths } :
+              g.points ? { points: g.points } : (g.x && g.y) ? { x: g.x, y: g.y } : {};
+            if (geom !== {}) {
+              mapFeatureSetFeatures.push({
+                attributes: gra.attributes,
+                geometry: lang.mixin({
+                  spatialReference: (responseSR && mapSR && responseSR.wkid === mapSR.wkid) ? responseSR : mapSR
+                }, geom)
+              });
+            }
+          });
+        }
 
         //var transform;
         //if (responseLayer.featureSet.transform) {
@@ -554,7 +720,7 @@ function (BaseWidget,
           if (list) {
             layerListLayer.li.layerListExtentChanged = true;
           }
-          parentLayer.layerObject.clear();
+          layerListLayer.layerObject.clear();
           var sr = layerListLayer.layerObject.spatialReference;
           for (var j = 0; j < responseFeatureSetFeatures.length; j++) {
             var item = responseFeatureSetFeatures[j];
@@ -567,20 +733,32 @@ function (BaseWidget,
               if (this._infoTemplate) {
                 gra.setInfoTemplate(this._infoTemplate);
               }
-              parentLayer.layerObject.add(gra);
+              layerListLayer.layerObject.add(gra);
             } else {
               console.log("Null geometry skipped");
             }
           }
           layerListLayer.layerObject.refresh();
-          parentLayer.layerObject.refresh();
-          parentLayer.featureSet.features = responseFeatureSetFeatures;
+          if (parentLayer.featureSet) {
+            parentLayer.featureSet.features = responseFeatureSetFeatures;
+          }
           this.countFeatures(layerListLayer);
           if (layerListLayer.layerObject && layerListLayer.layerObject.visible) {
             this._loadList(layerListLayer, true);
           }
         }
       }
+    },
+
+    _getSpatialReference: function (features) {
+      var sr;
+      if (features && features.hasOwnProperty('length') && features.length > 0) {
+        var firstFeature = features[0];
+        if (firstFeature.geometry && firstFeature.geometry.spatialReference) {
+          sr = firstFeature.geometry.spatialReference;
+        }
+      }
+      return sr;
     },
 
     getGraphicOptions: function (item, sr, renderer) {
@@ -599,6 +777,13 @@ function (BaseWidget,
             "spatialReference": { "wkid": sr.wkid }
           }
         };
+      } else if (typeof (item.geometry.points) !== 'undefined') {
+        graphicOptions = {
+          geometry: {
+            points: item.geometry.points,
+            "spatialReference": { "wkid": sr.wkid }
+          }
+        };
       } else {
         graphicOptions = {
           geometry: new Point(item.geometry.x, item.geometry.y, item.geometry.spatialReference),
@@ -614,8 +799,8 @@ function (BaseWidget,
       if (this.map.itemId) {
         LayerInfos.getInstance(this.map, this.map.itemInfo)
           .then(lang.hitch(this, function (operLayerInfos) {
-            this.opLayers = operLayerInfos._operLayers;
-            this.opLayerInfos = operLayerInfos._layerInfos;
+            this.wmLayerInfos = operLayerInfos.getLayerInfoArrayOfWebmap();
+            this.layerInfos = operLayerInfos.getLayerInfoArray();
             this.operLayerInfos = operLayerInfos;
             this._updateLayerIDs();
             if (this.config.upgradeFields) {
@@ -624,115 +809,196 @@ function (BaseWidget,
             this._createPanelUI(this.configLayerInfos, operLayerInfos);
             this._addFilterChanged(operLayerInfos);
             this._addVisibleChanged(operLayerInfos);
+            this._addZoomChanged(operLayerInfos);
           }));
       }
     },
 
-    //added for backwards compatability
-    //TODO need to move away from _layerInfos and _operLayers at 5.3
     _updateLayerIDs: function () {
+      var removeIDs = [];
+      config_layer_loop:
       for (var i = 0; i < this.configLayerInfos.length; i++) {
         var configLayer = this.configLayerInfos[i];
         var jimuLayerInfo = this.operLayerInfos.getLayerInfoById(configLayer.id);
+
+        //If we cannot find the jimu layer info based on the stored ID we need to determine it
         if (!jimuLayerInfo) {
           var updated = false;
-          for (var ii = 0; ii < this.opLayerInfos.length; ii++) {
-            var _opLayer = this.opLayerInfos[ii];
+          wm_layer_loop:
+          for (var ii = 0; ii < this.wmLayerInfos.length; ii++) {
+            var _opLayer = this.wmLayerInfos[ii];
             var originOpLayer = _opLayer ? _opLayer.originOperLayer : undefined;
-            if ((_opLayer && _opLayer.subId && _opLayer.subId === configLayer.id) ||
-              (originOpLayer && originOpLayer.itemId === configLayer.itemId)) {
-              if (originOpLayer && originOpLayer.itemId === configLayer.itemId) {
-                if (originOpLayer.featureCollection && originOpLayer.featureCollection.layers &&
-                  originOpLayer.featureCollection.layers.hasOwnProperty('length')) {
-                  var id = originOpLayer.featureCollection.layers[0].id;
-                  jimuLayerInfo = this.operLayerInfos.getLayerInfoById(id);
-                  if (jimuLayerInfo) {
-                    this.configLayerInfos[i].id = id;
-                    this.configLayerInfos[i].layer = id;
-                    updated = true;
-                  }
-                }
-              }
-            } else if (originOpLayer && originOpLayer.url && configLayer.url && originOpLayer.url === configLayer.url) {
-              jimuLayerInfo = this.operLayerInfos.getLayerInfoById(originOpLayer.id);
-              if (jimuLayerInfo) {
-                this.configLayerInfos[i].id = originOpLayer.id;
-                this.configLayerInfos[i].layer = originOpLayer.id;
-                updated = true;
-              }
+
+            var urlId = this._compareURL(originOpLayer, configLayer);
+            var itemId = this._compareItemID(originOpLayer, configLayer);
+            var subId = this._compareSubId(_opLayer, configLayer);
+
+            var id = urlId ? urlId : itemId ? itemId : subId ? subId : undefined;
+            jimuLayerInfo = id ? this.operLayerInfos.getLayerInfoById(id) : jimuLayerInfo;
+
+            if (jimuLayerInfo) {
+              this.configLayerInfos[i].id = jimuLayerInfo.id;
+              this.configLayerInfos[i].layer = jimuLayerInfo.id;
+              updated = true;
+              break wm_layer_loop;
             }
           }
-          if (!updated) {
-            this.configLayerInfos.splice(i,1);
+
+          if (!updated && !jimuLayerInfo) {
+            removeIDs.push(i);
           }
         }
       }
+
+      //This needs to occur largest to smallest
+      if (removeIDs.length > 0) {
+        //removeIDs.sort((a, b) => (b - a));
+        removeIDs.sort(function (a, b) { return b - a; });
+        array.forEach(removeIDs, lang.hitch(this, function (id) {
+          this.configLayerInfos.splice(id, 1);
+        }));
+      }
+    },
+
+    _compareSubId: function (opLayer, configLayer) {
+      if (opLayer && opLayer.subId && opLayer.subId.indexOf(configLayer.id) > -1) {
+        if (opLayer.layerObject) {
+          var geomMatch = this._compareGeom(opLayer.layerObject, configLayer);
+          var fieldMatch = this._compareFields(opLayer.layerObject, configLayer);
+          if (geomMatch && fieldMatch) {
+            return opLayer.subId;
+          }
+        }
+      }
+      return undefined;
+    },
+
+    _compareItemID: function (originOpLayer, configLayer) {
+      if (originOpLayer && originOpLayer.itemId && originOpLayer.itemId === configLayer.itemId) {
+        if (originOpLayer.featureCollection && originOpLayer.featureCollection.layers &&
+          originOpLayer.featureCollection.layers.hasOwnProperty('length')) {
+          var fcLayers = originOpLayer.featureCollection.layers;
+          for (var i = 0; i < fcLayers.length; i++) {
+            var fcLayer = fcLayers[i];
+            if (this._compareGeom(fcLayer, configLayer)){
+              if (this._compareFields(fcLayer, configLayer)) {
+                return fcLayer.id;
+              }
+            }
+          }
+          return undefined;
+        } else {
+          console.log('error in checking item by itemID');
+        }
+      }
+    },
+
+    _compareURL: function (originOpLayer, configLayer) {
+      return (originOpLayer && originOpLayer.url && configLayer.url && originOpLayer.url === configLayer.url) ?
+        originOpLayer.id : undefined;
+    },
+
+    _compareGeom: function (layerObject, configLayer) {
+      return (layerObject && layerObject.geometryType && configLayer.geometryType) ?
+        layerObject.geometryType === configLayer.geometryType : undefined;
+    },
+
+    _compareFields: function (layerObject, configLayer) {
+      var fieldMatch;
+      if (layerObject && layerObject.fields && configLayer.fields &&
+        layerObject.fields.length === configLayer.fields.length) {
+        //test if Names match
+        var matchingFields = layerObject.fields.filter(function (f) {
+          for (var fn = 0; fn < configLayer.fields.length; fn++) {
+            var configField = configLayer.fields[fn];
+            if (f.name === configField.name) {
+              return f;
+            }
+          }
+        });
+        fieldMatch = matchingFields.length === layerObject.fields.length;
+      }
+      return fieldMatch;
     },
 
     //added for backwards compatability
     //could not handle directly in VersionManager as some stored layerInfos
     // do not have a valid infoTemplate saved
     _upgradeFields: function () {
-      if (this.config.layerInfos) {
-        for (var i = 0; i < this.config.layerInfos.length; i++) {
-          var li = this.config.layerInfos[i];
+      if (this.configLayerInfos) {
+        for (var i = 0; i < this.configLayerInfos.length; i++) {
+          var li = this.configLayerInfos[i];
           if (li && li.symbolData && li.symbolData.featureDisplayOptions) {
             var lyrInfo = this.operLayerInfos.getLayerInfoById(li.id);
-            var fields = li.symbolData.featureDisplayOptions.fields;
-            //At previous releases we would use the first field from the infoTemplate or
-            //the first non-OID field from the layer if no fields were selected by the user
-            if (typeof (fields) === 'undefined' || (fields.hasOwnProperty('length') && fields.length === 0)) {
-              //check layer fields
-              var oidFieldName = (lyrInfo && lyrInfo.layerObject && lyrInfo.layerObject.objectIdField) ?
-                lyrInfo.layerObject.objectIdField : undefined;
-              var firstLayerFieldName = "";
-              var firstLayerFieldAlias = "";
-              var layerFields = li.fields;
-              if (layerFields && layerFields.length > 0) {
-                layer_field_loop:
-                for (var _i = 0; _i < layerFields.length; _i++) {
-                  var f = layerFields[_i];
-                  if (firstLayerFieldName === "" && f.type !== "esriFieldTypeOID" &&
-                    f.type !== "esriFieldTypeGeometry" && f.name !== oidFieldName) {
-                    firstLayerFieldName = f.name;
-                    firstLayerFieldAlias = f.alias || f.name;
-                  }
-                  if (!oidFieldName) {
-                    oidFieldName = f.type === "esriFieldTypeOID" ? f.name : oidFieldName;
-                  }
-                  if (oidFieldName && firstLayerFieldName !== "") {
-                    break layer_field_loop;
+            if (lyrInfo) {
+              var fields = li.symbolData.featureDisplayOptions.fields;
+              //At previous releases we would use the first field from the infoTemplate or
+              //the first non-OID field from the layer if no fields were selected by the user
+              if (typeof (fields) === 'undefined' || (fields.hasOwnProperty('length') && fields.length === 0)) {
+                //check layer fields
+                var layerObject = (lyrInfo && lyrInfo.layerObject) ? lyrInfo.layerObject : undefined;
+                var oidFieldName = (layerObject && layerObject.objectIdField) ? layerObject.objectIdField : undefined;
+                var firstLayerFieldName = "";
+                var firstLayerFieldAlias = "";
+                var layerFields = li.fields ? li.fields : layerObject ? layerObject.fields : undefined;
+                if (layerFields && layerFields.length > 0) {
+                  layer_field_loop:
+                  for (var _i = 0; _i < layerFields.length; _i++) {
+                    var f = layerFields[_i];
+                    if (firstLayerFieldName === "" && f.type !== "esriFieldTypeOID" &&
+                      f.type !== "esriFieldTypeGeometry" && f.name !== oidFieldName) {
+                      firstLayerFieldName = f.name;
+                      firstLayerFieldAlias = f.alias || f.name;
+                    }
+                    if (!oidFieldName) {
+                      oidFieldName = f.type === "esriFieldTypeOID" ? f.name : oidFieldName;
+                    }
+                    if (oidFieldName && firstLayerFieldName !== "") {
+                      break layer_field_loop;
+                    }
                   }
                 }
-              }
 
-              //check popup fields
-              var keyFieldName = "";
-              var keyFieldAlias = "";
-              var infoTemplate = li.infoTemplate && li.infoTemplate.info && li.infoTemplate.info.fieldInfos ?
-                li.infoTemplate : lyrInfo ? lyrInfo.getInfoTemplate() : undefined;
-              var popupFields = infoTemplate ? infoTemplate.info.fieldInfos : [];
-              popup_field_loop:
-              for (var j = 0; j < popupFields.length; j++) {
-                var popupField = popupFields[j];
-                if (popupField && popupField.visible) {
-                  keyFieldName = popupField.fieldName;
-                  keyFieldAlias = popupField.label || popupField.fieldName;
-                  break popup_field_loop;
+                //check popup fields
+                var keyFieldName = "";
+                var keyFieldAlias = "";
+                var infoTemplate = li.infoTemplate && li.infoTemplate.info && li.infoTemplate.info.fieldInfos ?
+                  li.infoTemplate : lyrInfo ? lyrInfo.getInfoTemplate() : undefined;
+                if (!infoTemplate) {
+                  var subLayers = lyrInfo.getSubLayers();
+                  sub_layers_loop:
+                  for (var sli = 0; sli < subLayers.length; sli++) {
+                    var sl = subLayers[sli];
+                    if (sl.title && sl.layerObject && sl.layerObject.name && sl.title === sl.layerObject.name) {
+                      infoTemplate = sl.getInfoTemplate ? sl.getInfoTemplate() : infoTemplate;
+                      break sub_layers_loop;
+                    }
+                  }
                 }
-              }
+                var popupFields = infoTemplate ? infoTemplate.info.fieldInfos : [];
+                popup_field_loop:
+                for (var j = 0; j < popupFields.length; j++) {
+                  var popupField = popupFields[j];
+                  if (popupField && popupField.visible) {
+                    if (!oidFieldName || oidFieldName !== popupField.fieldName) {
+                      keyFieldName = popupField.fieldName;
+                      keyFieldAlias = popupField.label || popupField.fieldName;
+                      break popup_field_loop;
+                    }
+                  }
+                }
 
-              //update the config
-              this.config.layerInfos[i].symbolData.featureDisplayOptions.fields = [{
-                name: keyFieldName ? keyFieldName : firstLayerFieldName,
-                label: keyFieldName ? keyFieldAlias : firstLayerFieldAlias
-              }];
+                //update the config
+                this.configLayerInfos[i].symbolData.featureDisplayOptions.fields = [{
+                  name: keyFieldName ? keyFieldName : firstLayerFieldName,
+                  label: keyFieldName ? keyFieldAlias : firstLayerFieldAlias
+                }];
+              }
             }
           }
         }
       }
     },
-
 
     _addFilterChanged: function (layerInfos) {
       if (parseFloat(this.appConfig.wabVersion) >= 2.1) {
@@ -751,42 +1017,38 @@ function (BaseWidget,
       }
     },
 
+    _updateVisibility: function (layerInfo) {
+      if (layerInfo) {
+        var id = layerInfo.id;
+        var vis = layerInfo.isShowInMap();
+        if (this.layerList.hasOwnProperty(id)) {
+          var lyr = this.layerList[id];
+          if (id === lyr.li.id && lyr.visible !== vis) {
+            this._toggleLayerUI(lyr.li, vis);
+          } else if (id === lyr.id && lyr.visible !== vis) {
+            this._toggleLayerUI(layerInfo, vis);
+          }
+        }
+      }
+    },
+
     _addVisibleChanged: function (layerInfos) {
       this.own(layerInfos.on('layerInfosIsVisibleChanged', lang.hitch(this, function (changedLayerInfos) {
         array.forEach(changedLayerInfos, function (layerInfo) {
-          var id = layerInfo.id;
-          var vis = layerInfo.isShowInMap();
-          if (this.layerList.hasOwnProperty(id)) {
-            if (id === this.layerList[id].li.id && this.layerList[id].visible !== vis) {
-              this._toggleLayerUI(this.layerList[id].li, vis);
-            } else if (id === this.layerList[id].id && this.layerList[id].visible !== vis) {
-              this._toggleLayerUI(layerInfo, vis);
-            }
-          } else {
-            for (var key in this.layerList) {
-              var _vis = vis;
-              var layerListLayer = this.layerList[key];
-              if (layerListLayer.layerObject && layerListLayer.layerObject.id === id) {
-                var li = this.operLayerInfos.getLayerInfoById(key);
-                if (layerInfo.layerObject && layerInfo.layerObject.visibleLayers &&
-                  layerListLayer.hasOwnProperty('li') && layerListLayer.li.hasOwnProperty('subLayerId')) {
-                  _vis = vis && layerInfo.layerObject.visibleLayers.indexOf(layerListLayer.li.subLayerId) > -1;
-                } else {
-                  _vis = li ? vis && li._visible : vis;
-                }
-                if (layerListLayer.visible !== _vis) {
-                  this._toggleLayerUI(li, _vis);
-                }
-              }
-            }
-          }
+          this._updateVisibility(layerInfo);
         }, this);
       })));
     },
 
+    _addZoomChanged: function (layerInfos) {
+      this.own(on(this.map, 'zoom-end', lang.hitch(this, function () {
+        layerInfos.traversal(lang.hitch(this, function (layerInfo) {
+          this._updateVisibility(layerInfo);
+        }));
+      })));
+    },
+
     _updatePanelHeader: function () {
-      this.pageLabel.innerHTML = utils.stripHTML(this.label);
-      domStyle.set(this.pageLabel, "display", "block");
       var panelTitle;
       var w = this.map.width;
       if (this.config.displayPanelIcon && w > 750) {
@@ -823,9 +1085,12 @@ function (BaseWidget,
           html.addClass(this.pageTitle, "pageTitleWidth");
           if (this.config.refreshEnabled) {
             html.removeClass(this.pageTitle, "pageTitle");
-            html.addClass(this.pageTitle, "pageTitleRefresh");
+            html.removeClass(this.pageTitle, "pageTitleRefresh-tab");
+            html.removeClass(this.pageTitle, "pageTitleRefresh");
+            html.addClass(this.pageTitle, this.useDarkText ? "pageTitleRefresh-tab" : "pageTitleRefresh");
           } else {
             html.removeClass(this.pageTitle, "pageTitleRefresh");
+            html.removeClass(this.pageTitle, "pageTitleRefresh-tab");
             html.addClass(this.pageTitle, "pageTitle");
           }
         }
@@ -901,13 +1166,6 @@ function (BaseWidget,
         }
         this.pageTitle.innerHTML = panelTitle;
       }
-
-      if (this.windowWidth > 470) {
-        this._setMaxHeight();
-      } else {
-        this._setMobileMaxHeight();
-      }
-      this._setMaxWidth();
     },
 
     _createPanelUI: function (configLayerInfos, jimuLayerInfos) {
@@ -925,30 +1183,18 @@ function (BaseWidget,
         if (lyrInfo.symbolData.clusterType === 'ThemeCluster') {
           this.updateThemeClusterSymbol(lyrInfo, i);
         }
+
         var jimuLayerInfo = jimuLayerInfos.getLayerInfoById(lyrInfo.id);
-        if (!jimuLayerInfo) {
-          for (var ii = 0; ii < this.opLayerInfos.length; ii++) {
-            var _opLayer = this.opLayerInfos[ii];
-            if (_opLayer && _opLayer._subLayerInfoIndex) {
-              var subKeys = Object.keys(_opLayer._subLayerInfoIndex);
-              if (subKeys.length && subKeys.length > 0) {
-                configLayerInfos[i].id = subKeys[0];
-                configLayerInfos[i].layer = subKeys[0];
-                jimuLayerInfo = jimuLayerInfos.getLayerInfoById(lyrInfo.id);
-              }
-            }
-          }
-        }
         if (jimuLayerInfo) {
-          this._createLayerListItem(lyrInfo, jimuLayerInfo);
+          jimuLayerInfo.getLayerType().then(lang.hitch(this, function (layerType) {
+            jimuLayerInfo.getLayerObject().then(lang.hitch(this, function (layerObject) {
+              this.updateLayerList(layerObject, lyrInfo, layerType, jimuLayerInfo);
+            }));
+          }));
         }
       }
 
       if (!this.hidePanel) {
-        domConstruct.create("div", {
-          'class': "expandArrow roundedBottom jimu-main-background dart-bgcolor box-bgcolor"
-        }, this.pageMain);
-
         for (var k in this.layerList) {
           var lyr = this.layerList[k];
           if (lyr.type !== "ClusterLayer") {
@@ -964,16 +1210,30 @@ function (BaseWidget,
     },
 
     _updateEnd: function (results) {
-      var lid = this.layerList.hasOwnProperty(results.target.id) ? results.target.id : results.target.id + "_CL";
-      var lyr = this.layerList[lid];
-      lyr.isLoaded = false;
-      lyr.updating = false;
-      lyr.requiresReload = true;
-      if (lyr) {
-        if (lyr.legendOpen) {
-          this._loadList(lyr, this.config.countEnabled);
-        } else if (this.config.countEnabled) {
-          this.countFeatures(lyr);
+      var lid = this.layerList.hasOwnProperty(results.target.id) ? results.target.id :
+        this.layerList.hasOwnProperty(results.target.id + "_CL") ? results.target.id + "_CL" : "";
+
+      //For map service with sub layers...the results ID is for the parent layer
+      if (lid === "") {
+        for (var i in this.layerList) {
+          var l = this.layerList[i];
+          if (l && l.layerObject && l.layerObject.id === results.target.id) {
+            lid = l.li.id;
+            break;
+          }
+        }
+      }
+      if (this.layerList.hasOwnProperty(lid)) {
+        var lyr = this.layerList[lid];
+        lyr.isLoaded = false;
+        lyr.updating = false;
+        lyr.requiresReload = true;
+        if (lyr) {
+          if (lyr.legendOpen) {
+            this._loadList(lyr, this.config.countEnabled);
+          } else if (this.config.countEnabled) {
+            this.countFeatures(lyr);
+          }
         }
       }
     },
@@ -1042,59 +1302,6 @@ function (BaseWidget,
       }
     },
 
-    _createLayerListItem: function (lyrInfo, jimuLayerInfo) {
-      jimuLayerInfo = this.operLayerInfos.getLayerInfoById(lyrInfo.id);
-      var layerTypes = ["ArcGISFeatureLayer", "KML", "ArcGISStreamLayer", "CSV", "GeoRSS"];
-      for (var ii = 0; ii < this.opLayers.length; ii++) {
-        var layer = this.opLayers[ii];
-        if (layer.id === lyrInfo.id || layer.id === lyrInfo.parentLayerID ||
-          (layer.featureCollection && layer.featureCollection.layers && layer.featureCollection.layers.length > 0 &&
-            layer.featureCollection.layers[0].id === lyrInfo.id)) {
-          if (layer.layerType === "ArcGISMapServiceLayer") {
-            var l = this._getSubLayerByURL(lyrInfo.id);
-            if (typeof (l) !== 'undefined') {
-              this.updateLayerList(l, lyrInfo, "Feature Layer", jimuLayerInfo);
-              break;
-            }
-          } else if (layerTypes.indexOf(layer.layerType) > -1 ||
-            typeof (layer.layerType) === 'undefined') {
-            if (layer.layerObject && layer.id === lyrInfo.id) {
-              this.updateLayerList(layer, lyrInfo,
-                typeof (layer.layerType) === 'undefined' ? "Feature Layer" : layer.layerType, jimuLayerInfo);
-              break;
-            } else if (layer.featureCollection) {
-              for (var iii = 0; iii < layer.featureCollection.layers.length; iii++) {
-                var lyr = layer.featureCollection.layers[iii];
-                if (lyr.id === lyrInfo.id || layer.id === lyrInfo.id) {
-                  this.updateLayerList(lyr, lyrInfo, "Feature Collection", jimuLayerInfo);
-                  break;
-                }
-              }
-            } else if (layer.layerObject && layer.id === lyrInfo.parentLayerID) {
-              var featureLayers;
-              var lType;
-              if (layer.type === "GeoRSS") {
-                lType = "GeoRSS";
-                featureLayers = layer.layerObject.getFeatureLayers();
-              } else if (layer.type === "KML") {
-                lType = "KML";
-                featureLayers = layer.layerObject.getLayers();
-              }
-              if (featureLayers) {
-                for (var k = 0; k < featureLayers.length; k++) {
-                  var subLayer = featureLayers[k];
-                  if (subLayer.id === lyrInfo.id) {
-                    this.updateLayerList(subLayer, lyrInfo, lType, jimuLayerInfo);
-                    break;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-
     removeOldClusterLayers: function (lInfos) {
       //check if the widget was previously configured
       // with a layer that it no longer consumes...if so remove it
@@ -1103,24 +1310,37 @@ function (BaseWidget,
         var l = this.layerList[id];
         if (l.type === "ClusterLayer") {
           layer_info_loop:
-            for (var i = 0; i < lInfos.length; i++) {
-              var lo = lInfos[i];
-              var potentialNewClusterID = lo.id + this.UNIQUE_APPEND_VAL_CL;
-              if (potentialNewClusterID === id) {
-                if (lo.symbolData && !lo.symbolData.clusteringEnabled) {
-                  deleteLayers.push(id);
-                }
-                break layer_info_loop;
+          for (var i = 0; i < lInfos.length; i++) {
+            var lo = lInfos[i];
+            var potentialNewClusterID = lo.id + this.UNIQUE_APPEND_VAL_CL;
+            if (potentialNewClusterID === id) {
+              if (lo.symbolData && !lo.symbolData.clusteringEnabled) {
+                deleteLayers.push(id);
               }
+              break layer_info_loop;
             }
+          }
         }
       }
       if (deleteLayers.length > 0) {
         for (var dl in deleteLayers) {
           if (this.layerList.hasOwnProperty(deleteLayers[dl])) {
-            //  if (this.map.graphicsLayerIds.indexOf(deleteLayers[dl]) > -1) {
-            //    this.map.removeLayer(this.layerList[deleteLayers[dl]].layerObject);
-            //  }
+            if (this.map.graphicsLayerIds.indexOf(deleteLayers[dl]) > -1) {
+              var _dl = this.layerList[deleteLayers[dl]];
+              if (_dl && _dl.li) {
+                var jimuLayerInfo;
+                if (_dl.li.parentLayerID) {
+                  jimuLayerInfo = this.operLayerInfos.getLayerInfoById(_dl.li.parentLayerID);
+                }
+                if (!jimuLayerInfo && _dl.li.layer) {
+                  jimuLayerInfo = this.operLayerInfos.getLayerInfoById(_dl.li.layer);
+                }
+                if (jimuLayerInfo && _dl.hasOwnProperty('parentLayerVisible')) {
+                  jimuLayerInfo.setTopLayerVisible(_dl.parentLayerVisible);
+                }
+              }
+              this.map.removeLayer(this.layerList[deleteLayers[dl]].layerObject);
+            }
             this.layerList[deleteLayers[dl]].layerObject.destroy();
             delete this.layerList[deleteLayers[dl]];
           }
@@ -1141,159 +1361,112 @@ function (BaseWidget,
       }
     },
 
-    _getSubLayerByURL: function (id) {
-      var n = null;
-      for (var i = 0; i < this.opLayerInfos.length; i++) {
-        var OpLyr = this.opLayerInfos[i];
-        if (OpLyr.newSubLayers.length > 0) {
-          n = this._recurseOpLayers(OpLyr.newSubLayers, id);
-          if (n) {
-            break;
-          }
-        }
-      }
-      return n;
-    },
-
-    _recurseOpLayers: function (pNode, id) {
-      for (var i = 0; i < pNode.length; i++) {
-        var Node = pNode[i];
-        if (Node.newSubLayers.length > 0) {
-          this._recurseOpLayers(Node.newSubLayers, id);
-        } else {
-          if (Node.id === id) {
-            return Node;
-          }
-        }
-      }
-    },
-
     updateLayerList: function (lyr, lyrInfo, lyrType, jimuLayerInfo) {
-      var l = null;
-      var ll = null;
-      var id = null;
-      var _id = null;
-      jimuLayerInfo = jimuLayerInfo === null ? this.operLayerInfos.getLayerInfoById(lyr.id) : jimuLayerInfo;
-      var infoTemplate = jimuLayerInfo.getInfoTemplate() || lyrInfo.infoTemplate;
-      var vis = jimuLayerInfo && jimuLayerInfo.isShowInMap ? jimuLayerInfo.isShowInMap() : true;
-      var listDisabled = lyrInfo.symbolData.featureDisplayOptions.listDisabled ?
+      var l, ll  = null;
+      var type, id, layerObject, pl;
+
+      jimuLayerInfo = jimuLayerInfo || this.operLayerInfos.getLayerInfoById(lyr.id);
+
+      var selfType = this._checkSelfType(jimuLayerInfo, lyrInfo, lyrType, lyr);
+      var listDisabled = this._checkListDisabled(lyrInfo);
+
+      //Handle cluster layers
+      if (lyrInfo.symbolData.clusteringEnabled) {
+        l = this._getClusterLayer(lyrInfo, lyr, jimuLayerInfo, lyrType);
+        type = "ClusterLayer";
+        layerObject = l;
+        id = l.id;
+        if (!this.hidePanel) {
+          this.own(on(l, "update-end", lang.hitch(this, function () {
+            this._loadList(this.layerList[l.id], true);
+          })));
+        }
+        this.numClusterLayers += 1;
+      } else {
+        if (lyr.layerType === "ArcGISStreamLayer") {
+          type = "StreamLayer";
+          id = lyr.layerObject.id;
+          layerObject = lyr.layerObject;
+          pl = lyr;
+        } else {
+          id = lyrType === "FeatureLayer" ? lyrInfo.id : lyr.id;
+          var parentLayerInfo = this.operLayerInfos.getLayerInfoById(lyrInfo.parentLayerID) || lyr.parentLayerInfo;
+          if (parentLayerInfo) {
+            if (parentLayerInfo.layerObject) {
+              ll = parentLayerInfo.layerObject;
+              type = ll.type;
+              if (parentLayerInfo.originOperLayer && parentLayerInfo.originOperLayer.featureCollection) {
+                var layers = parentLayerInfo.originOperLayer.featureCollection.layers;
+                if (layers) {
+                  for (var j = 0; j < layers.length; j++) {
+                    var _lyr = layers[j];
+                    if (_lyr.id === id) {
+                      pl = _lyr;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          l = lyr.layerObject ? lyr.layerObject : lyr;
+          type = lyrType;
+          layerObject = (ll && !ll.empty) ? ll : l ? l : lyr;
+          if (selfType === 'geo_rss' && layerObject && layerObject.getFeatureLayers) {
+            var featureLayers = layerObject.getFeatureLayers();
+            for (var i = 0; i < featureLayers.length; i++) {
+              var fl = featureLayers[i];
+              if (fl.id === lyrInfo.id) {
+                layerObject = fl;
+              }
+            }
+          }
+          pl = pl ? pl : lyr;
+        }
+      }
+
+      this.layerList[id] = {
+        type: type,
+        layerObject: layerObject,
+        pl: pl,
+        id: id,
+        visible: jimuLayerInfo && jimuLayerInfo.isShowInMap ? jimuLayerInfo.isShowInMap() : true,
+        li: lyrInfo,
+        filter: jimuLayerInfo ? jimuLayerInfo.getFilter() : "1=1",
+        infoTemplate: jimuLayerInfo.getInfoTemplate() || lyrInfo.infoTemplate,
+        selfType: selfType,
+        listDisabled: listDisabled,
+        showAllFeatures: this.showAllFeatures
+      };
+
+      if (lyr.layerType !== "ArcGISStreamLayer") {
+        this.updateRenderer(id);
+      }
+
+      if (!this.hidePanel) {
+        this._addPanelItem(ll ? ll : l ? l : lyr, lyrInfo, listDisabled, jimuLayerInfo);
+      }
+    },
+
+    _checkListDisabled: function (lyrInfo) {
+      return lyrInfo.symbolData.featureDisplayOptions.listDisabled ?
         lyrInfo.symbolData.featureDisplayOptions.listDisabled : lyrInfo.symbolData.featureDisplayOptions.fields ?
           lyrInfo.symbolData.featureDisplayOptions.fields.length === 0 : true;
-      var originOpLayer = (jimuLayerInfo && jimuLayerInfo.originOperLayer) ? jimuLayerInfo.originOperLayer : undefined;
-      var selfType = (originOpLayer && originOpLayer.selfType) ? jimuLayerInfo.originOperLayer.selfType : '';
-      if (lyr.layerType === "ArcGISFeatureLayer") {
-        if (lyrInfo.symbolData.clusteringEnabled) {
-          l = this._getClusterLayer(lyrInfo, lyr, jimuLayerInfo, lyrType);
-          this.layerList[l.id] = {
-            type: "ClusterLayer",
-            layerObject: l,
-            visible: l.visible,
-            id: l.id,
-            li: lyrInfo,
-            filter: jimuLayerInfo ? jimuLayerInfo.getFilter() : "1=1",
-            infoTemplate: infoTemplate,
-            selfType: selfType,
-            listDisabled: listDisabled,
-            showAllFeatures: this.showAllFeatures
-          };
-          if (!this.hidePanel && !this.showAllFeatures) {
-            this.own(on(l, "update-end", lang.hitch(this, function () {
-              if (!this.layerList[l.id].listDisabled) {
-                this._loadList(this.layerList[l.id], true);
-              }
-            })));
-          }
-          this.numClusterLayers += 1;
-        } else {
-          if (lyr.parentLayerInfo) {
-            if (lyr.parentLayerInfo.layerObject) {
-              ll = lyr.parentLayerInfo.layerObject;
-              id = lyrInfo.id;
-            }
-          }
-          l = lyr.layerObject;
-          _id = id ? id : lyrInfo.id;
-          this.layerList[_id] = {
-            type: ll ? lyrType : l.type,
-            layerObject: ll ? ll : l,
-            visible: vis,
-            pl: lyr,
-            li: lyrInfo,
-            filter: jimuLayerInfo ? jimuLayerInfo.getFilter() : "1=1",
-            infoTemplate: infoTemplate,
-            selfType: selfType,
-            listDisabled: listDisabled
-          };
-          this.updateRenderer(_id);
-        }
-      } else if (lyr.layerType === "ArcGISStreamLayer") {
-        l = lyr.layerObject;
-        this.layerList[l.id] = {
-          type: "StreamLayer",
-          layerObject: l,
-          visible: vis,
-          id: l.id,
-          filter: jimuLayerInfo ? jimuLayerInfo.getFilter() : "1=1",
-          infoTemplate: infoTemplate,
-          selfType: selfType,
-          listDisabled: listDisabled
-        };
-      } else {
-        //These are the ones that are not marked as ArcGISFeatureLayer
-        if (lyrInfo.symbolData.clusteringEnabled) {
-          l = this._getClusterLayer(lyrInfo, lyr, jimuLayerInfo, lyrType);
-          this.layerList[l.id] = {
-            type: "ClusterLayer",
-            layerObject: l,
-            visible: l.visible,
-            id: l.id,
-            li: lyrInfo,
-            filter: jimuLayerInfo ? jimuLayerInfo.getFilter() : "1=1",
-            infoTemplate: infoTemplate,
-            selfType: (selfType && selfType !== '') ? selfType : (originOpLayer && originOpLayer.layerType &&
-              originOpLayer.layerType === "CSV") ? "collection" : lyrType === "Feature Collection" ? "collection" : '',
-            listDisabled: listDisabled,
-            showAllFeatures: this.showAllFeatures
-          };
-          if (!this.hidePanel && !this.showAllFeatures) {
-            this.own(on(l, "update-end", lang.hitch(this, function () {
-              if (!this.layerList[l.id].listDisabled) {
-                this._loadList(this.layerList[l.id], true);
-              }
-            })));
-          }
-          this.numClusterLayers += 1;
-        } else {
-          if (lyr.parentLayerInfo) {
-            if (lyr.parentLayerInfo.layerObject) {
-              ll = lyr.parentLayerInfo.layerObject;
-              if (ll.visibleLayers) {
-                id = lyr.id;
-              } else {
-                id = ll.id;
-              }
-            }
-          }
-          l = lyr.layerObject;
-          _id = id ? id : lyr.id;
-          this.layerList[_id] = {
-            type: ll ? lyrType : l ? l.type : lyrType,
-            layerObject: ll ? ll : l ? l : lyr,
-            visible: vis,
-            pl: lyr,
-            li: lyrInfo,
-            filter: jimuLayerInfo ? jimuLayerInfo.getFilter() : "1=1",
-            infoTemplate: infoTemplate,
-            selfType: (selfType && selfType !== '') ? selfType : (originOpLayer && originOpLayer.layerType &&
-              originOpLayer.layerType === "CSV") ? "collection" : lyrType === "Feature Collection" ? "collection" : '',
-            listDisabled: listDisabled
-          };
-          this.updateRenderer(_id);
-        }
+    },
+
+    _checkSelfType: function (jimuLayerInfo, lyrInfo, lyrType, lyr) {
+      var _lo = (lyrInfo.layerObject && !lyrInfo.layerObject.empty) ? lyrInfo.layerObject : lyr;
+      var originOpLayer = _lo && _lo.originOperLayer ? _lo.originOperLayer : lyr;
+
+      var selfType = (jimuLayerInfo.originOperLayer && jimuLayerInfo.originOperLayer.selfType) ?
+        jimuLayerInfo.originOperLayer.selfType : (originOpLayer && originOpLayer.selfType) ?
+          originOpLayer.selfType : '';
+
+      selfType = (selfType && selfType !== '') ? selfType : (originOpLayer && originOpLayer.layerType &&
+        originOpLayer.layerType === "CSV") ? "collection" : lyrType === "Feature Collection" ? "collection" : '';
+      if (!selfType && lyrType && lyrType === "KML") {
+        selfType = "kml";
       }
-      if (!this.hidePanel) {
-        this._addPanelItem(ll ? ll : l ? l : lyr, lyrInfo, listDisabled);
-      }
+      return selfType;
     },
 
     updateRenderer: function (id) {
@@ -1319,108 +1492,117 @@ function (BaseWidget,
         } else {
           console.log("Error setting the new renderer...will use the default rendering of the layer");
         }
-        l.layerObject.refresh();
+
+        if (typeof (l.layerObject.refresh) === 'function') {
+          l.layerObject.refresh();
+        }
       }
     },
 
     _onRecNodeMouseover: function (rec) {
-      domClass.add(rec, this.isDartTheme ? "layer-row-mouseover-dart" : "layer-row-mouseover");
+      domClass.add(rec, this.isDartTheme ? "layer-row-mouseover-dart" :
+        (this.isDashboardTheme && !this.isLightTheme) ? "layer-row-mouseover-dashboard" : "layer-row-mouseover");
     },
 
     _onRecNodeMouseout: function (rec) {
-      domClass.remove(rec, this.isDartTheme ? "layer-row-mouseover-dart" : "layer-row-mouseover");
+      domClass.remove(rec, this.isDartTheme ? "layer-row-mouseover-dart" :
+        (this.isDashboardTheme && !this.isLightTheme) ? "layer-row-mouseover-dashboard" : "layer-row-mouseover");
     },
 
-    _addPanelItem: function (layer, lyrInfo, listDisabled) {
-      var id = layer.visibleLayers ? lyrInfo.id : layer.id;
-      var lyrType = this.layerList[id].type;
-      var cssAry;
-      if (this.isDartTheme) {
-        cssAry = ['rec-dart', 'expand-dart', 'expandDown-dart', 'solidBorder-dart'];
-      }else {
-        cssAry = ['rec', 'expand', 'expandDown', 'solidBorder'];
-      }
-      var rec = domConstruct.create("div", {
-        'class': cssAry[0] + " " + cssAry[3],
-        id: 'rec_' + id
-      }, this.pageMain);
-
-      var expandClass;
-      if (!listDisabled) {
-        this.own(on(rec,
-          'mouseover',
-          lang.hitch(this, this._onRecNodeMouseover, rec)));
-        this.own(on(rec,
-          'mouseout',
-          lang.hitch(this, this._onRecNodeMouseout, rec)));
-        expandClass = cssAry[1] + " " + cssAry[2];
-      } else {
-        html.setStyle(rec, "cursor", "default");
-        expandClass = 'expand-empty';
-      }
-      domConstruct.create("div", {
-        'class': expandClass,
-        id: "exp_" + id
-      }, rec);
-
-      var recIcon = domConstruct.create("div", {
-        'class': "recIcon active",
-        id: "recIcon_" + id
-      }, rec);
-
-      if (lyrInfo.panelImageData && lyrInfo.panelImageData.toString().indexOf('<img') > -1) {
-        var img = document.createElement('div');
-        img.innerHTML = lyrInfo.panelImageData;
-        var icon = new PictureMarkerSymbol(img.children[0].src, 26, 26);
-        lyrInfo.panelImageData = this._createImageDataDiv(icon, 44, 44, undefined, true).innerHTML;
-      }
-      recIcon.innerHTML = lyrInfo.panelImageData;
-      domStyle.set(recIcon.firstChild, "border-radius", "41px");
-
-      var _append = this.isDartTheme ? ' darkThemeColor' : ' lightThemeColor';
-      var recLabel;
-      var recNum;
-      if (this.config.countEnabled) {
-        recLabel = domConstruct.create("div", {
-          'class': "recLabel" + _append,
-          id: "recLabel_" + id,
-          innerHTML: "<p>" + lyrInfo.label + "</p>"
-        }, rec);
-        html.setStyle(recLabel, "top", "20px");
-        recNum = domConstruct.create("div", {
-          'class': "recNum" + _append,
-          id: "recNum_" + id,
-          innerHTML: ""
-        }, rec);
-      } else {
-        recLabel = domConstruct.create("div", {
-          'class': "recLabelNoCount" + _append,
-          id: "recLabel_" + id,
-          innerHTML: "<p>" + lyrInfo.label + "</p>"
-        }, rec);
-      }
-
-      if (lyrType === "ClusterLayer") {
-        layer.node = recNum;
-        if (!listDisabled) {
-          this._addLegend(id, this.layerList[id]);
+    _addPanelItem: function (layer, lyrInfo, listDisabled, jimuLayerInfo) {
+      var potentialNewID = lyrInfo.id + this.UNIQUE_APPEND_VAL_CL;
+      var id = lyrInfo.id in this.layerList ? lyrInfo.id : potentialNewID in this.layerList ? potentialNewID : '';
+      var lyr = this.layerList[id];
+      if (lyr) {
+        var lyrType = lyr.type;
+        var cssAry;
+        if (this.isDashboardTheme) {
+          cssAry = ['rec', 'expand', 'expandDown-dashboard', 'solidBorder'];
+        } else if (this.isDartTheme) {
+          cssAry = ['rec-dart', 'expand-dart', 'expandDown-dart', 'solidBorder-dart'];
+        } else {
+          cssAry = ['rec', 'expand', 'expandDown', 'solidBorder'];
         }
-        layer._updateNode(layer.nodeCount);
-      } else if (lyrType === "StreamLayer") {
-        this.layerList[id].node = recNum;
-        this.countFeatures(this.layerList[id]);
+        var rec = domConstruct.create("div", {
+          'class': cssAry[0] + " " + cssAry[3],
+          id: 'rec_' + id
+        }, this.pageMain);
+
+        var expandClass;
         if (!listDisabled) {
-          this._addLegend(id, this.layerList[id]);
+          this.own(on(rec, 'mouseover', lang.hitch(this, this._onRecNodeMouseover, rec)));
+          this.own(on(rec,  'mouseout', lang.hitch(this, this._onRecNodeMouseout, rec)));
+          expandClass = cssAry[1] + " " + cssAry[2];
+          if (jimuLayerInfo && jimuLayerInfo.isInScale) {
+            expandClass += jimuLayerInfo.isInScale() ? "" : " expandInActive";
+          }
+        } else {
+          html.setStyle(rec, "cursor", "default");
+          expandClass = 'expand-empty';
         }
-      } else {
-        this.layerList[id].node = recNum;
-        this._addLegend(id, this.layerList[id]);
-      }
+        domConstruct.create("div", {
+          'class': expandClass,
+          id: "exp_" + id
+        }, rec);
 
-      on(recIcon, "click", lang.hitch(this, this._toggleLayerVisibility, this.layerList[id]));
+        var recIcon = domConstruct.create("div", {
+          'class': "recIcon active",
+          id: "recIcon_" + id
+        }, rec);
 
-      if (!listDisabled) {
-        this.layerList[id].toggleLegend = on(rec, "click", lang.hitch(this, this._toggleLegend, this.layerList[id]));
+        if (lyrInfo.panelImageData && lyrInfo.panelImageData.toString().indexOf('<img') > -1) {
+          var img = document.createElement('div');
+          img.innerHTML = lyrInfo.panelImageData;
+          var icon = new PictureMarkerSymbol(img.children[0].src, 26, 26);
+          lyrInfo.panelImageData = this._createImageDataDiv(icon, 44, 44, undefined, true).innerHTML;
+        }
+        recIcon.innerHTML = lyrInfo.panelImageData;
+        domStyle.set(recIcon.firstChild, "border-radius", "41px");
+
+        var recLabel;
+        var recNum;
+        if (this.config.countEnabled) {
+          recLabel = domConstruct.create("div", {
+            'class': "recLabel",
+            id: "recLabel_" + id,
+            innerHTML: "<p>" + lyrInfo.label + "</p>"
+          }, rec);
+          html.setStyle(recLabel, "top", "20px");
+          recNum = domConstruct.create("div", {
+            'class': "recNum",
+            id: "recNum_" + id,
+            innerHTML: ""
+          }, rec);
+        } else {
+          recLabel = domConstruct.create("div", {
+            'class': "recLabelNoCount",
+            id: "recLabel_" + id,
+            innerHTML: "<p>" + lyrInfo.label + "</p>"
+          }, rec);
+        }
+
+        if (lyrType === "ClusterLayer") {
+          layer.node = recNum;
+          if (!listDisabled) {
+            this._addLegend(id, lyr);
+          }
+          layer._updateNode(layer.nodeCount);
+        } else if (lyrType === "StreamLayer") {
+          lyr.node = recNum;
+          this.countFeatures(lyr);
+          if (!listDisabled) {
+            this._addLegend(id, lyr);
+          }
+        } else {
+          lyr.node = recNum;
+          this._addLegend(id, lyr);
+        }
+
+        on(recIcon, "click", lang.hitch(this, this._toggleLayerVisibility, lyr));
+
+        if (!listDisabled) {
+          lyr.toggleLegend = on(rec, "click", lang.hitch(this, this._toggleLegend, lyr));
+        }
       }
     },
 
@@ -1439,38 +1621,30 @@ function (BaseWidget,
 
     _getListFields: function (lyr) {
       var popupFields = [];
-      var _infoTemp = this._getInfoTemplate(lyr);
-      if (_infoTemp && _infoTemp.info) {
-        var fieldInfos = _infoTemp.info.fieldInfos;
-        if (typeof (fieldInfos) !== 'undefined') {
-          for (var i = 0; i < fieldInfos.length; i++) {
-            if (fieldInfos[i].visible) {
-              popupFields.push(fieldInfos[i].fieldName);
-            }
-          }
+      var infoTemp = this._getInfoTemplate(lyr);
+
+      var fieldInfos = (infoTemp && infoTemp.info && infoTemp.info.fieldInfos) ? infoTemp.info.fieldInfos : [];
+      array.forEach(fieldInfos, function (fieldInfo) {
+        if (fieldInfo.visible) {
+          popupFields.push(fieldInfo.fieldName);
+        }
+      });
+
+      var displayOptions = (lyr.li.symbolData && lyr.li.symbolData.featureDisplayOptions) ?
+        lyr.li.symbolData.featureDisplayOptions : {};
+      var fields = displayOptions.fields || [];
+      array.forEach(fields, function (field) {
+        if (popupFields.indexOf(field.name) === -1) {
+          popupFields.push(field.name);
+        }
+      });
+      if (displayOptions.groupField) {
+        if (popupFields.indexOf(displayOptions.groupField.name) === -1) {
+          popupFields.push(displayOptions.groupField.name);
         }
       }
 
-      var displayOptions;
-      if (lyr.li.symbolData) {
-        displayOptions = lyr.li.symbolData.featureDisplayOptions;
-        if (displayOptions) {
-          if (displayOptions.fields) {
-            for (var k = 0; k < displayOptions.fields.length; k++) {
-              if (popupFields.indexOf(displayOptions.fields[k].name) === -1) {
-                popupFields.push(displayOptions.fields[k].name);
-              }
-            }
-          }
-          if (displayOptions.groupField) {
-            if (popupFields.indexOf(displayOptions.groupField.name) === -1) {
-              popupFields.push(displayOptions.groupField.name);
-            }
-          }
-        }
-      }
-
-      if (popupFields.length === 0 || typeof (_infoTemp) === 'undefined') {
+      if (popupFields.length === 0 || typeof (infoTemp) === 'undefined') {
         popupFields = ['*'];
       }
 
@@ -1486,8 +1660,6 @@ function (BaseWidget,
 
     _loadList: function (lyr, updateCount) {
       if (!this.hidePanel) {
-        var queries = [];
-        var updateNodes = [];
         var id = lyr.layerObject.id in this.layerList ? lyr.layerObject.id : lyr.li.id;
         if (updateCount) {
           this._addSearching(id);
@@ -1495,6 +1667,10 @@ function (BaseWidget,
 
         var popupFields = this._getListFields(lyr);
         if (lyr.type === "ClusterLayer") {
+          if (lyr.li.layerListExtentChanged) {
+            lyr.layerObject.clusterFeatures();
+            lyr.li.layerListExtentChanged = false;
+          }
           var features = [];
           if (lyr.layerObject.clusterGraphics || lyr.layerObject._features) {
             if (this.showAllFeatures) {
@@ -1505,11 +1681,7 @@ function (BaseWidget,
                 var clusterGraphic = clusterGraphics[z];
                 if (clusterGraphic.graphics && clusterGraphic.graphics.length > 0) {
                   for (var f = 0; f < clusterGraphic.graphics.length; f++) {
-                    //Changed for a Sept fix...but it made upgrade not work
-                    // need to verify the new switch will work for the other issue
-                    //var g = new Graphic(clusterGraphic.graphics[f].toJson());
                     var g = clusterGraphic.graphics[f];
-                    //g.setSymbol(lyr.layerObject._getSym(g));
                     features.push(g);
                   }
                 }
@@ -1521,66 +1693,19 @@ function (BaseWidget,
           } else {
             this._removeSearching(id, lyr.legendNode ? !domClass.contains(lyr.legendNode, 'legendOff') : true);
           }
-        }
-
-        var countLayerTypes = ["StreamLayer", "GeoRSS", "KML", "Feature Layer"];
-        if (lyr.type !== 'ClusterLayer') {
-          if (lyr.pl && lyr.pl.featureSet) {
-            this.getFeatures(lyr, popupFields, updateCount);
-            return;
-          }
-          else if (countLayerTypes.indexOf(lyr.type) > -1 || lyr.pl.type === "CSV") {
-            this.getFeatures(lyr, popupFields, updateCount);
-            return;
-          }
-        }
-
-        if (lyr.li) {
-          if (lyr.li.url && lyr.type !== "ClusterLayer" && typeof (lyr.queryFeatures) === 'undefined') {
-            var url = lyr.li.url;
-            if (url.indexOf("MapServer") > -1 || url.indexOf("FeatureServer") > -1) {
-              if (this.promises) {
-                this.promises.cancel('redundant', false);
-                this.promises = undefined;
-              }
-              var q = new Query();
-              q.where = lyr.filter ? lyr.filter : "1=1";
-              q.geometry = this.map.extent;
-              q.returnGeometry = !lyr.listDisabled ? true : false;
-              q.outFields = popupFields;
-              var qt = new QueryTask(url);
-              queries.push(qt.execute(q));
-              updateNodes.push({
-                node: lyr.node,
-                legendNode: lyr.legendNode,
-                fields: popupFields,
-                updateCount: updateCount,
-                li: lyr.li
-              });
-            }
-          }
-        }
-        if (queries.length > 0) {
-          var promises = all(queries);
-          this.promises = promises.then(lang.hitch(this, function (results) {
-            this.promises = undefined;
-            if (results) {
-              for (var i = 0; i < results.length; i++) {
-                if (results[i]) {
-                  var un = updateNodes[i];
-                  this._updateList(results[i].features, un.legendNode, un.node, un.fields, un.updateCount, un.li);
-                }
-              }
-            }
-          }));
+        } else {
+          this.getFeatures(lyr, popupFields, updateCount);
+          return;
         }
       }
     },
 
     _addSearching: function (id) {
       var disabled = this.layerList[id].listDisabled;
-      var eD = disabled ? 'expand-empty' : this.isDartTheme ? 'expandDown-dart' : 'expandDown';
-      var eU = disabled ? 'expand-empty' : this.isDartTheme ? 'expandUp-dart' : 'expandUp';
+      var eD = disabled ? 'expand-empty' : this.isDartTheme ? 'expandDown-dart' :
+        (this.isDashboardTheme && !this.isLightTheme) ? 'expandDown-dashboard' : 'expandDown';
+      var eU = disabled ? 'expand-empty' : this.isDartTheme ? 'expandUp-dart' :
+        (this.isDashboardTheme && !this.isLightTheme) ? 'expandUp-dashboard' : 'expandUp';
       var eS = disabled ? "expandSearching-empty" : "expandSearching";
       if (domClass.contains("exp_" + id, eD)) {
         domClass.remove("exp_" + id, eD);
@@ -1594,8 +1719,10 @@ function (BaseWidget,
 
     _removeSearching: function (id, legendOpen) {
       var disabled = this.layerList[id].listDisabled;
-      var eD = disabled ? 'expand-empty' : this.isDartTheme ? 'expandDown-dart' : 'expandDown';
-      var eU = disabled ? 'expand-empty' : this.isDartTheme ? 'expandUp-dart' : 'expandUp';
+      var eD = disabled ? 'expand-empty' : this.isDartTheme ? 'expandDown-dart' :
+        (this.isDashboardTheme && !this.isLightTheme) ? 'expandDown-dashboard' : 'expandDown';
+      var eU = disabled ? 'expand-empty' : this.isDartTheme ? 'expandUp-dart' :
+        (this.isDashboardTheme && !this.isLightTheme) ? 'expandUp-dashboard' : 'expandUp';
       var eS = disabled ? "expandSearching-empty" : "expandSearching";
       if (domClass.contains("exp_" + id, eS)) {
         domClass.remove("exp_" + id, eS);
@@ -1725,8 +1852,8 @@ function (BaseWidget,
         var mySurface = gfx.createSurface(a, w, h);
         var descriptors = jsonUtils.getShapeDescriptors(symbol);
         var shape = mySurface.createShape(descriptors.defaultShape)
-                      .setFill(descriptors.fill)
-                      .setStroke(descriptors.stroke);
+          .setFill(descriptors.fill)
+          .setStroke(descriptors.stroke);
         shape.applyTransform({ dx: w / 2, dy: h / 2 });
       }
       return a;
@@ -1734,213 +1861,183 @@ function (BaseWidget,
 
     _updateUI: function (styleName) {
       this.styleName = styleName;
+
+      if (this.isDashboardTheme) {
+        this.isLightTheme = styleName ? styleName === 'light' : this.isLightTheme;
+
+        var removeDownClass = this.isLightTheme ? 'expandDown-dashboard' : 'expandDown';
+        var addDownClass = this.isLightTheme ? 'expandDown' : 'expandDown-dashboard';
+        this._updateNodes(removeDownClass, addDownClass);
+
+        var removeUpClass = this.isLightTheme ? 'expandUp-dashboard' : 'expandUp';
+        var addUpClass = this.isLightTheme ? 'expandUp' : 'expandUp-dashboard';
+        this._updateNodes(removeUpClass, addUpClass);
+
+        var removeExpandClass = this.isLightTheme ? 'expand-dashboard' : 'expand';
+        var addExpandClass = this.isLightTheme ? 'expand' : 'expand-dashboard';
+        this._updateNodes(removeExpandClass, addExpandClass);
+
+        var removeGroupItemUpClass = this.isLightTheme ? 'groupItemImageUp-dashboard' : 'groupItemImageUp';
+        var addGroupItemUpClass = this.isLightTheme ? 'groupItemImageUp' : 'groupItemImageUp-dashboard';
+        this._updateNodes(removeGroupItemUpClass, addGroupItemUpClass);
+
+        var removeGroupItemDownClass = this.isLightTheme ? 'groupItemImageDown-dashboard' : 'groupItemImageDown';
+        var addGroupItemDownClass = this.isLightTheme ? 'groupItemImageDown' : 'groupItemImageDown-dashboard';
+        this._updateNodes(removeGroupItemDownClass, addGroupItemDownClass);
+
+        var removeGroupItemClass = this.isLightTheme ? 'groupItemImage-dashboard' : 'groupItemImage';
+        var addGroupItemClass = this.isLightTheme ? 'groupItemImage' : 'groupItemImage-dashboard';
+        this._updateNodes(removeGroupItemClass, addGroupItemClass);
+      }
     },
 
-    _getLayerListLayerID: function (obj) {
-      var id = obj.id ? obj.id : obj.layerObject.id;
-      if (!this.layerList[id]) {
-        if (obj.pl) {
-          id = obj.pl.id;
-        }
-      }
-      return id;
+    _updateNodes: function (remove, add) {
+      var nodes = query('.' + remove);
+      array.forEach(nodes, function (node) {
+        domClass.remove(node, remove);
+        domClass.add(node, add);
+      });
     },
 
     _toggleLayerVisibility: function (obj, e) {
       e.stopPropagation();
       this.map.infoWindow.hide();
-      var id = this._getLayerListLayerID(obj);
+      var id = obj.id ? obj.id : obj.layerObject.id;
       var lyr = this.layerList[id];
-      if (lyr) {
-        var hasSubLayerId = false;
-        if (lyr.li) {
-          if (lyr.li.hasOwnProperty("subLayerId")) {
-            hasSubLayerId = typeof (lyr.li.subLayerId) !== 'undefined' && lyr.li.subLayerId.toString() !== "-1";
-          }
+      if (!lyr) {
+        if (obj.pl) {
+          id = obj.pl.id;
         }
-        var visLayers;
-        var l;
-        if (domClass.contains("recIcon_" + id, "active")) {
-          if (hasSubLayerId && lyr.type !== 'ClusterLayer') {
-            visLayers = lyr.layerObject.visibleLayers;
-            for (var i = visLayers.length; i--;){
-              if (visLayers[i] === -1) {
-                visLayers.splice(i, 1);
-              }
-            }
-            var lyrIndex = visLayers.indexOf(lyr.li.subLayerId);
-            if (lyrIndex > -1) {
-              visLayers.splice(lyrIndex, 1);
-            }
-            lyr.layerObject.setVisibleLayers(visLayers);
-            lyr.layerObject.setVisibility(true);
-          } else if (lyr) {
-            lyr.layerObject.setVisibility(false);
-            if (typeof (lyr.pl) !== 'undefined') {
-              lyr.pl.visibility = false;
-              if (this.map.graphicsLayerIds.indexOf(id) > -1) {
-                l = this.map.getLayer(id);
-                l.setVisibility(false);
-              }
-            }
-          }
-        } else {
-          if (hasSubLayerId && lyr.type !== 'ClusterLayer') {
-            visLayers = lyr.layerObject.visibleLayers;
-            visLayers.push(lyr.li.subLayerId);
-            for (var ii = visLayers.length; ii--;) {
-              if (visLayers[ii] === -1) {
-                visLayers.splice(ii, 1);
-              }
-            }
-            lyr.layerObject.setVisibleLayers(visLayers);
-            lyr.layerObject.setVisibility(true);
-          } else if (lyr) {
-            lyr.layerObject.setVisibility(true);
-            if (lyr.type === 'ClusterLayer') {
-              lyr.layerObject.handleMapExtentChange({ levelChange: true });
-              lyr.layerObject.flashFeatures();
-            }
-            if (typeof (lyr.pl) !== 'undefined') {
-              lyr.pl.visibility = true;
-              if (this.map.graphicsLayerIds.indexOf(id) > -1) {
-                l = this.map.getLayer(id);
-                l.setVisibility(true);
-              }
-            }
-          }
-        }
+        lyr = this.layerList[id];
       }
-      return false;
+
+      if (lyr) {
+        var hasSubLayerId = lyr.li && lyr.li.hasOwnProperty("subLayerId") ?
+          (typeof (lyr.li.subLayerId) !== 'undefined' && lyr.li.subLayerId.toString() !== "-1") : false;
+
+        var lyrInfo = this.operLayerInfos.getLayerInfoById(id);
+        var _vis = !domClass.contains("recIcon_" + id, "active");
+
+        if (hasSubLayerId && lyr.type !== 'ClusterLayer') {
+          if (_vis) {
+            var currentLayerInfo = lyrInfo.parentLayerInfo;
+            while (currentLayerInfo) {
+              currentLayerInfo.setTopLayerVisible(true);
+              currentLayerInfo = currentLayerInfo.parentLayerInfo;
+            }
+          }
+
+          lyrInfo.setTopLayerVisible(_vis);
+
+        } else if (lyr) {
+          lyr.layerObject.setVisibility(_vis);
+          if (lyr.type === 'ClusterLayer' && _vis) {
+            lyr.layerObject.handleMapExtentChange({ levelChange: true });
+            lyr.layerObject.flashFeatures();
+          }
+          if (typeof (lyr.pl) !== 'undefined') {
+            lyr.pl.visibility = _vis;
+            if (this.map.graphicsLayerIds.indexOf(id) > -1) {
+              var l = this.map.getLayer(id);
+              l.setVisibility(_vis);
+            }
+          }
+        }
+        //this._toggleLayerUI(lyr.li, _vis);
+      }
+      //return false;
     },
 
     _toggleLayerUI: function (obj, vis) {
-      var _append = this.isDartTheme ? ' darkThemeColor' : ' lightThemeColor';
-      var id = this._getLayerListLayerID(obj);
+      var id = obj.id ? obj.id : obj.layerObject.id;
       var lyr = this.layerList[id];
-      var visScaleRange = this._inVisibleRange(this.layerList[id], id);
-      var eD = this.isDartTheme ? 'expandDown-dart' : 'expandDown';
-      var eU = this.isDartTheme ? 'expandUp-dart' : 'expandUp';
+      if (!lyr) {
+        if (obj.pl) {
+          id = obj.pl.id;
+        }
+        lyr = this.layerList[id];
+      }
       if (lyr) {
-        var c = dom.byId("recLabel_" + id);
-        if (!vis) {
-          this.layerList[id].visible = false;
-          this.layerList[id].parentLayerVisible = false;
-          if (this.layerList[id].type === 'ClusterLayer') {
-            this.layerList[id].layerObject.parentLayerVisible = false;
-          }
-          if (!this.hidePanel) {
-            domClass.remove("recIcon_" + id, "active");
-            if (this.config.countEnabled) {
-              if (domClass.contains("recNum_" + id, "recNum")) {
-                domClass.remove("recNum_" + id, "recNum");
-                domClass.add("recNum_" + id, "recNumInActive" + _append);
-              }
-            }
-            if (c && c.firstChild) {
-              domClass.add(c.firstChild, "inActive");
-            }
-            if (!lyr.listDisabled) {
-              if (!domClass.contains("exp_" + id, "expandInActive")) {
-                domClass.add("exp_" + id, "expandInActive");
-              }
-              if (lyr.legendOpen) {
-                if (domClass.contains("legend_" + id, "legendOn")) {
-                  domClass.remove("legend_" + id, "legendOn");
-                  domClass.add("legend_" + id, "legendOff");
+        var lyrInfo = this.operLayerInfos.getLayerInfoById(id);
+        var visScalRange = lyrInfo.isCurrentScaleInTheScaleRange ? lyrInfo.isCurrentScaleInTheScaleRange() : true;
 
-                  if (domClass.contains("exp_" + id, eU)) {
-                    domClass.remove("exp_" + id, eU);
-                    domClass.add("exp_" + id, eD);
-                  }
-                }
-              }
-              if (lyr.toggleLegend) {
-                lyr.toggleLegend.remove();
+        var c = dom.byId("recLabel_" + id);
+
+        this.layerList[id].visible = vis;
+        this.layerList[id].parentLayerVisible = vis;
+        if (this.layerList[id].type === 'ClusterLayer') {
+          this.layerList[id].layerObject.parentLayerVisible = vis;
+        }
+        if (this.config.countEnabled) {
+          if (domClass.contains("recNum_" + id, !vis ? "recNum" : "recNumInActive")) {
+            var _append = this.isDartTheme ? ' darkThemeColor' : ' lightThemeColor';
+            domClass.remove("recNum_" + id, !vis ? "recNum" : "recNumInActive");
+            domClass.add("recNum_" + id, (!vis ? "recNumInActive" : "recNum") + _append);
+          }
+        }
+
+        var eD = this.isDartTheme ? 'expandDown-dart' :
+          (this.isDashboardTheme && !this.isLightTheme) ? 'expandDown-dashboard' : 'expandDown';
+        var eU = this.isDartTheme ? 'expandUp-dart' :
+          (this.isDashboardTheme && !this.isLightTheme) ? 'expandUp-dashboard' : 'expandUp';
+
+        if (!vis) {
+          domClass.remove("recIcon_" + id, "active");
+          //this._clearList(this.layerList[id]);
+          if (c && c.firstChild) {
+            domClass.add(c.firstChild, "inActive");
+          }
+          if (!domClass.contains("exp_" + id, "expandInActive")) {
+            domClass.add("exp_" + id, "expandInActive");
+          }
+          if (lyr.legendOpen) {
+            if (domClass.contains("legend_" + id, "legendOn")) {
+              //this.layerList[id].legendOpen = false;
+              domClass.remove("legend_" + id, "legendOn");
+              domClass.add("legend_" + id, "legendOff");
+              if (domClass.contains("exp_" + id, eU)) {
+                domClass.remove("exp_" + id, eU);
+                domClass.add("exp_" + id, eD);
               }
             }
-            if (domClass.contains("rec_" + id, "rec")) {
-              domClass.add("rec_" + id, "recDefault");
-            }
+          }
+          if (lyr.toggleLegend) {
+            lyr.toggleLegend.remove();
+          }
+          if (domClass.contains("rec_" + id, "rec")) {
+            domClass.add("rec_" + id, "recDefault");
           }
         } else {
-          if (lyr) {
-            this.layerList[id].visible = true;
-            this.layerList[id].parentLayerVisible = true;
+          domClass.add("recIcon_" + id, "active");
+          if (c && c.firstChild) {
+            domClass.remove(c.firstChild, "inActive");
           }
-          this.layerList[id].visible = true;
-          this.layerList[id].parentLayerVisible = true;
-          if (lyr.type === 'ClusterLayer') {
-            this.layerList[id].layerObject.parentLayerVisible = true;
+          if (domClass.contains("exp_" + id, "expandInActive") && visScalRange) {
+            domClass.remove("exp_" + id, "expandInActive");
           }
-
-          if (!this.hidePanel) {
-            if (dom.byId("recIcon_" + id)) {
-              domClass.add("recIcon_" + id, "active");
-            }
-            if (this.config.countEnabled) {
-              if (domClass.contains("recNum_" + id, "recNumInActive")) {
-                domClass.remove("recNum_" + id, "recNumInActive");
-                domClass.add("recNum_" + id, "recNum" + _append);
-              }
-            }
-            if (c && c.firstChild && visScaleRange) {
-              domClass.remove(c.firstChild, "inActive");
-            }
-            if (!lyr.listDisabled) {
-              if (lyr.toggleLegend) {
-                lyr.toggleLegend.remove();
-              }
-              var rec = dom.byId('rec_' + id);
-              if (rec) {
-                lyr.toggleLegend = on(rec, "click", lang.hitch(this, this._toggleLegend, lyr));
-              }
-
-              if (lyr.legendOpen) {
-                if (domClass.contains("legend_" + id, "legendOff")) {
-                  domClass.remove("legend_" + id, "legendOff");
-                  domClass.add("legend_" + id, "legendOn");
-                  if (domClass.contains("exp_" + id, eD)) {
-                    domClass.remove("exp_" + id, eD);
-                    domClass.add("exp_" + id, eU);
-                  }
-                }
-              } else {
-                if (domClass.contains("exp_" + id, eU)) {
-                  domClass.remove("exp_" + id, eU);
-                }
-                if (visScaleRange) {
-                  domClass.add("exp_" + id, eD);
-                }
-              }
-
-              if (!lyr.isLoaded && ((lyr.li && lyr.li.layerListExtentChanged) || !lyr.isLoaded) &&
-                lyr.legendOpen && !this.hidePanel && visScaleRange) {
-                this._loadList(lyr, true);
-              } else {
-                if (lyr.type === 'ClusterLayer') {
-                  lyr.layerObject.clusterFeatures();
-                }
-                if (visScaleRange) {
-                  this.countFeatures(lyr);
-                }
-              }
-            } else if (this.config.countEnabled && (lyr.li && lyr.li.layerListExtentChanged)) {
-              if (lyr.type === 'ClusterLayer') {
-                lyr.layerObject.clusterFeatures();
-              }
-              this.countFeatures(lyr);
-            }
-
-            if (domClass.contains("rec_" + id, "recDefault")) {
-              domClass.remove("rec_" + id, "recDefault");
-            }
-          } else {
-            if (lyr.type === 'ClusterLayer') {
-              lyr.layerObject.clusterFeatures();
-            }
+          if (lyr.toggleLegend) {
+            lyr.toggleLegend.remove();
+          }
+          var rec = dom.byId('rec_' + id);
+          if (rec) {
+            lyr.toggleLegend = on(rec, "click", lang.hitch(this, this._toggleLegend, lyr));
           }
 
+          if (domClass.contains("rec_" + id, "recDefault")) {
+            domClass.remove("rec_" + id, "recDefault");
+          }
+
+          if (!lyr.listDisabled) {
+            this._loadList(lyr, true);
+            if (lyr.legendOpen) {
+              domClass.add("legend_" + id, "legendOn");
+              domClass.remove("legend_" + id, "legendOff");
+              if (domClass.contains("exp_" + id, eD)) {
+                domClass.remove("exp_" + id, eD);
+                domClass.add("exp_" + id, eU);
+              }
+            }
+          }
         }
       }
       return false;
@@ -1969,17 +2066,16 @@ function (BaseWidget,
         } else {
           if (domClass.contains("legend_" + id, "legendOn")) {
             this.layerList[id].legendOpen = false;
-            var eD = this.isDartTheme ? 'expandDown-dart' : 'expandDown';
-            var eU = this.isDartTheme ? 'expandUp-dart' : 'expandUp';
+            var eD = this.isDartTheme ? 'expandDown-dart' :
+              (this.isDashboardTheme && !this.isLightTheme) ? 'expandDown-dashboard' : 'expandDown';
+            var eU = this.isDartTheme ? 'expandUp-dart' :
+              (this.isDashboardTheme && !this.isLightTheme) ? 'expandUp-dashboard' : 'expandUp';
             if (domClass.contains("exp_" + id, eU)) {
               domClass.remove("exp_" + id, eU);
               domClass.add("exp_" + id, eD);
             }
             domClass.remove("legend_" + id, "legendOn");
             domClass.add("legend_" + id, "legendOff");
-            if (window.innerWidth < 470) {
-              this._setMobileMaxHeight();
-            }
           }
         }
       }
@@ -2004,9 +2100,12 @@ function (BaseWidget,
         }
       }
 
-      var gII = this.isDartTheme ? "groupItemImage-dart" : "groupItemImage";
-      var gIIUp = this.isDartTheme ? "groupItemImageUp-dart" : "groupItemImageUp";
-      var gIIDown = this.isDartTheme ? "groupItemImageDown-dart" : "groupItemImageDown";
+      var gII = this.isDartTheme ? "groupItemImage-dart" :
+        (this.isDashboardTheme && !this.isLightTheme) ? "groupItemImage-dashboard" : "groupItemImage";
+      var gIIUp = this.isDartTheme ? "groupItemImageUp-dart" :
+        (this.isDashboardTheme && !this.isLightTheme) ? "groupItemImageUp-dashboard" : "groupItemImageUp";
+      var gIIDown = this.isDartTheme ? "groupItemImageDown-dart" :
+        (this.isDashboardTheme && !this.isLightTheme) ? "groupItemImageDown-dashboard" : "groupItemImageDown";
       if (toggle) {
         var lId = obj.layerObject.id in this.layerList ? obj.layerObject.id : obj.li.id;
         var node = document.getElementById(e.currentTarget.id);
@@ -2059,7 +2158,8 @@ function (BaseWidget,
           this.destroy();
           break;
         case 'layoutChange':
-          this.destroy();
+          this.inPanelOverrides(changedData);
+          //this.destroy();
           break;
         case 'styleChange':
           if (!this.hidePanel) {
@@ -2084,20 +2184,33 @@ function (BaseWidget,
     _updateStyleColor: function (changedData) {
       setTimeout(lang.hitch(this, function () {
         var p = this.getPanel();
-        if (!this.hidePanel) {
-          var node;
-          switch (this.appConfig.theme.name) {
-            default:
-              node = this.pageHeader;
-              break;
-          }
-          var bc = window.getComputedStyle(node, null).getPropertyValue('background-color');
-          this._styleColor = Color.fromRgb(bc).toHex();
-          for (var k in this.layerList) {
-            var l = this.layerList[k];
-            if (l.type === "ClusterLayer") {
-              l.layerObject.setStyleColor(this._styleColor);
-            }
+        var node;
+        switch (this.appConfig.theme.name) {
+          case 'BoxTheme':
+            node = p.containerNode.parentNode.parentNode.children[0];
+            break;
+          case 'DartTheme':
+            node = p.containerNode.parentNode;
+            break;
+          case 'TabTheme':
+            node = p.containerNode;
+            break;
+          case 'BillboardTheme':
+            node = p.containerNode.parentNode;
+            break;
+          case 'FoldableTheme':
+            node = p.containerNode.parentNode.firstChild;
+            break;
+          default:
+            node = this.pageHeader;
+            break;
+        }
+        var bc = window.getComputedStyle(node, null).getPropertyValue('background-color');
+        this._styleColor = Color.fromRgb(bc).toHex();
+        for (var k in this.layerList) {
+          var l = this.layerList[k];
+          if (l.type === "ClusterLayer") {
+            l.layerObject.setStyleColor(this._styleColor);
           }
         }
         this._updateUI(changedData);
@@ -2120,160 +2233,6 @@ function (BaseWidget,
           }
         }
         this.layerList = {};
-      }
-    },
-
-    _updateHeight: function (h) {
-      if (window.innerWidth < 470) {
-        var m = dom.byId('map');
-        domStyle.set(m, "bottom", h + "px");
-        domStyle.set(this.domNode, "top", window.innerHeight - h + "px");
-      }
-    },
-
-    _windowResize: function () {
-      this.windowWidth = window.innerWidth;
-      if (this.windowWidth > 470) {
-        if (this.isSmall) {
-          this._close();
-          this.widgetManager.triggerWidgetOpen(this.id);
-        } else {
-          this._resetMapDiv();
-          this._setMaxHeight();
-        }
-      } else {
-        if (!this.isSmall) {
-          this._close();
-          this.widgetManager.triggerWidgetOpen(this.id);
-        } else {
-          this.maxHeight = window.innerHeight * 0.35;
-          this._updateHeight(this.maxHeight);
-          this._setMobileMaxHeight();
-          this.halfWidth = window.innerWidth / 2;
-        }
-      }
-      this._setMaxWidth();
-    },
-
-    _setMaxHeight: function () {
-      var mapHeight = this.map.height - this.pageHeader.clientHeight;
-      var mh;
-      switch (this.appConfig.theme.name) {
-        case "BoxTheme":
-          mh = mapHeight - 70;
-          break;
-        case "DartTheme":
-          mh = mapHeight - 90;
-          break;
-        case "LaunchpadTheme":
-          mh = mapHeight - 55;
-          break;
-        default:
-          mh = mapHeight - 20;
-          break;
-      }
-
-      if (this.pageBody && mh) {
-        domStyle.set(this.pageBody, 'maxHeight', mh + "px");
-      }
-    },
-
-    _setMobileMaxHeight: function () {
-      var ch = this.pageHeader.clientHeight;
-      var mh = this.maxHeight - ch;
-      var height = mh;
-      if (this.pageHeader.clientHeight > 0 && window.innerWidth <= 470) {
-        var testHeight = this.config.layerInfos.length * 70;
-        var maxNumRows = Math.floor(mh / 70);
-        height = (maxNumRows > 1 && testHeight > 70) ? testHeight + 10 : 80;
-        height = (height + ch) < this.maxHeight ? height + ch : testHeight > 70 ? (testHeight - 70) + ch + 10 : 80 + ch;
-        if (this.pageMain.clientHeight > height) {
-          height = mh;
-        }
-      }
-      if (this.pageBody && height) {
-        domStyle.set(this.pageBody, 'maxHeight', height + "px");
-      }
-      this._updateHeight(this.pageMain.clientHeight > height ? this.maxHeight : height);
-    },
-
-    _setMaxWidth: function () {
-      this.mw = this.halfWidth;
-      var _mw = this.mw < 360 && window.innerWidth > window.innerHeight;
-
-      domStyle.set(this.panelMain, 'maxWidth', _mw ? this.mw + "px": "none");
-      domStyle.set(this.panelMain, 'minWidth', _mw ? "100px" : "none");
-
-      domStyle.set(this.panelPage, 'maxWidth', _mw ? this.mw + "px" : "none");
-      domStyle.set(this.panelPage, 'minWidth', _mw ? "100px" : "none");
-
-      domStyle.set(this.pageBody, 'maxWidth', _mw ? this.mw + "px" : "none");
-      domStyle.set(this.pageBody, 'minWidth', _mw ? "100px" : "none");
-    },
-
-    setPosition: function (position, containerNode) {
-      var pos;
-      var style;
-      if (!this.hidePanel) {
-        this.inherited(arguments);
-        this.position = {
-          right: 0,
-          bottom: 0,
-          top: 0,
-          height: "auto",
-          'z-index': "auto"
-        };
-
-        this.windowWidth = window.innerWidth;
-
-        if (this.windowWidth > 470) {
-          this.isSmall = false;
-          style = utils.getPositionStyle(this.position);
-          style.position = 'static';
-          html.place(this.domNode, this.map.id);
-          style.width = '';
-          html.setStyle(this.domNode, style);
-
-          if (this.appConfig.theme.name === "LaunchpadTheme") {
-            domStyle.set(this.pageContent, "top", "25px");
-          }
-          if (this.appConfig.theme.name === "DartTheme") {
-            domStyle.set(this.panelMain, window.isRTL ? "left" : "right", "10px");
-          }
-          this._setMaxHeight();
-        } else {
-          this.isSmall = true;
-          this.maxHeight = window.innerHeight * 0.35;
-          this.position = {
-            right: 0,
-            bottom: 0,
-            height: "none",
-            'z-index': "auto",
-            relativeTo: "browser",
-            top: window.innerHeight - this.maxHeight,
-            left: 0
-          };
-
-          this.position.relativeTo = "browser";
-          style = utils.getPositionStyle(this.position);
-          html.place(this.domNode, window.jimuConfig.layoutId);
-
-          var m = dom.byId('map');
-          m.style.bottom = this.maxHeight + "px";
-
-          domStyle.set(this.domNode, "top", window.innerHeight - this.maxHeight + "px");
-          domStyle.set(this.domNode, "left", "0px");
-          domStyle.set(this.domNode, "right", "0px");
-
-          if (this.appConfig.theme.name === "DartTheme") {
-            domStyle.set(this.panelMain, window.isRTL ? "left" : "right", "0px");
-          }
-
-          this._setMobileMaxHeight();
-        }
-
-        this.halfWidth = window.innerWidth / 2;
-        this._setMaxWidth();
       }
     },
 
@@ -2314,15 +2273,13 @@ function (BaseWidget,
         if (typeof (this.mapExtentChangedHandler) !== 'undefined') {
           this.mapExtentChangedHandler.remove();
           this.mapExtentChangedHandler = undefined;
+        } else {
+          if (typeof (this.iconClickHandler) !== 'undefined') {
+            this.iconClickHandler.remove();
+            this.iconClickHandler = undefined;
+          }
         }
-        this.removeResizeOrientationHandlers();
-        this._resetMapDiv();
       }
-    },
-
-    _resetMapDiv: function () {
-      var m = dom.byId('map');
-      m.style.bottom = "0px";
     },
 
     _clearChildNodes: function (parentNode) {
@@ -2346,7 +2303,6 @@ function (BaseWidget,
     _mapExtentChange: function () {
       var countEnabled = this.config.countEnabled;
       var queries = [];
-      var updateNodes = [];
       for (var key in this.layerList) {
         var lyr = this.layerList[key];
         var visScaleRange = this._inVisibleRange(lyr, key);
@@ -2358,31 +2314,6 @@ function (BaseWidget,
             lyr.li.layerListExtentChanged = true;
           }
           if (lyr.visible && visScaleRange) {
-            if (lyr.li) {
-              if (lyr.li.url && lyr.type !== "ClusterLayer" && typeof (lyr.layerObject.queryCount) === 'undefined') {
-                var url = lyr.li.url;
-                if (url.indexOf("MapServer") > -1 || url.indexOf("FeatureServer") > -1) {
-                  if (this.promises) {
-                    this.promises.cancel('redundant', false);
-                    this.promises = undefined;
-                  }
-                  var q = new Query();
-                  q.where = (lyr.filter && !this.showAllFeatures) ? lyr.filter : "1=1";
-                  if (!this.showAllFeatures) {
-                    q.geometry = this.map.extent;
-                  }
-                  q.returnGeometry = false;
-
-                  var qt = new QueryTask(url);
-                  queries.push(qt.executeForIds(q));
-                  if (countEnabled) {
-                    updateNodes.push(lyr.node);
-                  } else {
-                    updateNodes.push(lyr.legendNode);
-                  }
-                }
-              }
-            }
             if (lyr.type === "ClusterLayer" && lyr.layerObject.initalLoad && this.config.countEnabled) {
               lyr.layerObject._updateNode(lyr.layerObject.node.innerHTML);
             }
@@ -2407,93 +2338,7 @@ function (BaseWidget,
           }
         }
       }
-      if (queries.length > 0) {
-        var promises = all(queries);
-        this.promises = promises.then(function (results) {
-          this.promises = undefined;
-          if (results) {
-            for (var i = 0; i < results.length; i++) {
-              var r;
-              if (results[i]) {
-                if (domClass.contains(updateNodes[i].id, 'searching')) {
-                  domClass.remove(updateNodes[i].id, 'searching');
-                }
-                r = results[i].length;
-              } else {
-                r = 0;
-              }
-
-              var parent;
-              if (countEnabled) {
-                updateNodes[i].innerHTML = utils.localizeNumber(r);
-                parent = updateNodes[i].parentNode;
-              }else{
-                parent = updateNodes[i].previousSibling;
-              }
-
-              var id;
-              var en;
-              if (parent.id.indexOf('rec_') > -1) {
-                id = parent.id.replace('rec_', '');
-                en = dom.byId("exp_" + id);
-              }
-              if (r === 0) {
-                if (parent) {
-                  html.addClass(parent, "recDefault");
-                  html.addClass(parent, "inActive");
-                }
-                if (en && !lyr.listDisabled) {
-                  html.addClass(en, "expandInActive");
-                }
-              } else {
-                if (parent) {
-                  html.removeClass(parent, "recDefault");
-                  html.removeClass(parent, "inActive");
-                }
-                if (en && !lyr.listDisabled) {
-                  html.removeClass(en, "expandInActive");
-                }
-              }
-            }
-          }
-        });
-      }
     },
-
-    _chunkRequest: function (lyr, url, IDs, max, fields, needsGeom) {
-      var def = new Deferred();
-      var queries = [];
-      var i, j;
-      for (i = 0, j = IDs.length; i < j; i += max) {
-        var ids = IDs.slice(i, i + max);
-
-        var q = new Query();
-        q.outFields = fields;
-        q.objectIds = ids;
-        q.returnGeometry = needsGeom;
-
-        if (lyr.queryFeatures) {
-          queries.push(lyr.queryFeatures(q));
-        } else if (url) {
-          var qt = new QueryTask(url);
-          queries.push(qt.execute(q));
-        }
-      }
-      var queryList = new DeferredList(queries);
-      queryList.then(lang.hitch(this, function (queryResults) {
-        if (queryResults) {
-          var allFeatures = [];
-          for (var i = 0; i < queryResults.length; i++) {
-            if (queryResults[i][1].features) {
-              allFeatures.push.apply(allFeatures, queryResults[i][1].features);
-            }
-          }
-          def.resolve(allFeatures);
-        }
-      }));
-      return def;
-    },
-
 
     getFeatures: function (lyrInfo, fields, updateCount) {
       var lyr = lyrInfo.layerObject;
@@ -2504,17 +2349,7 @@ function (BaseWidget,
       var maxRecordCount = (lyr && lyr.maxRecordCount) ? lyr.maxRecordCount : undefined;
       var url;
       var queries = [];
-      var q = new Query();
-      q.geometry = !this.showAllFeatures ? this.map.extent : null;
-      q.outFields = fields;
-      var collectionTypes = ['collection', 'kml', 'geo_rss'];
-      var isCollection = lyrInfo.selfType ? collectionTypes.indexOf(lyrInfo.selfType) > -1 : false;
-      if (!isCollection) {
-        q.where = lyrInfo.filter ? lyrInfo.filter : "1=1";
-      } else if (this.showAllFeatures && lyr && lyr.fullExtent) {
-        q.geometry = lyr.fullExtent;
-      }
-      q.returnGeometry = _needsGeom;
+      var q = this._getQuery(lyrInfo, fields, _needsGeom);
       if (lyrInfo.visible && visScaleRange) {
         if (lyr.queryFeatures) {
           //get the first set of features
@@ -2576,6 +2411,40 @@ function (BaseWidget,
       }
     },
 
+    _chunkRequest: function (lyr, url, IDs, max, fields, needsGeom) {
+      var def = new Deferred();
+      var queries = [];
+      var i, j;
+      for (i = 0, j = IDs.length; i < j; i += max) {
+        var ids = IDs.slice(i, i + max);
+
+        var q = new Query();
+        q.outFields = fields;
+        q.objectIds = ids;
+        q.returnGeometry = needsGeom;
+
+        if (lyr.queryFeatures) {
+          queries.push(lyr.queryFeatures(q));
+        } else if (url) {
+          var qt = new QueryTask(url);
+          queries.push(qt.execute(q));
+        }
+      }
+      var queryList = new DeferredList(queries);
+      queryList.then(lang.hitch(this, function (queryResults) {
+        if (queryResults) {
+          var allFeatures = [];
+          for (var i = 0; i < queryResults.length; i++) {
+            if (queryResults[i][1].features) {
+              allFeatures.push.apply(allFeatures, queryResults[i][1].features);
+            }
+          }
+          def.resolve(allFeatures);
+        }
+      }));
+      return def;
+    },
+
     _clearList: function (lyrInfo) {
       if (!lyrInfo.isLoaded && lyrInfo.legendNode) {
         lyrInfo.isLoaded = false;
@@ -2584,6 +2453,8 @@ function (BaseWidget,
     },
 
     _updateList: function (features, legendNode, node, fields, updateCount, lyrInfo, countOnly) {
+      var li = lyrInfo.li ? lyrInfo.li : lyrInfo;
+
       if (lyrInfo.type === 'ClusterLayer') {
         if (lyrInfo.layerObject.node) {
           if (domClass.contains(lyrInfo.layerObject.node.id, 'searching')) {
@@ -2591,8 +2462,11 @@ function (BaseWidget,
           }
         }
       }
+
+
       var infoTemplate = lyrInfo.infoTemplate;
-      var displayOptions = lyrInfo.li.symbolData.featureDisplayOptions;
+      var displayOptions = lyrInfo.symbolData ? lyrInfo.symbolData.featureDisplayOptions : (li && li.symbolData) ?
+        li.symbolData.featureDisplayOptions : {};
 
       if (node || legendNode) {
         if (legendNode && (lyrInfo.hasOwnProperty('isLoaded') ? !lyrInfo.isLoaded : true)) {
@@ -2612,16 +2486,15 @@ function (BaseWidget,
 
       if (!lyrInfo.listDisabled && !lyrInfo.isLoaded) {
         if (features.length > 0) {
-          var renderer;
-          if (lyrInfo.type === "ClusterLayer") {
-            renderer = lyrInfo.layerObject.renderer;
-          } else if (features[0]._graphicsLayer) {
-            renderer = features[0]._graphicsLayer.renderer;
-          } else if (lyrInfo.layerObject.renderer) {
-            renderer = lyrInfo.layerObject.renderer;
-          } else if (lyrInfo.li.renderer) {
-            renderer = jsonUtil.fromJson(lyrInfo.li.renderer) || lyrInfo.li.renderer;
-          }
+          var jimuLayerInfo = this.operLayerInfos.getLayerInfoById(lyrInfo.id);
+
+          var renderer = (lyrInfo.type === "ClusterLayer") ? lyrInfo.layerObject.renderer :
+            (jimuLayerInfo && jimuLayerInfo.layerObject && jimuLayerInfo.layerObject.renderer) ?
+              jimuLayerInfo.layerObject.renderer :
+              features[0]._graphicsLayer ? features[0]._graphicsLayer.renderer :
+                (lyrInfo.layerObject && lyrInfo.layerObject.renderer) ? lyrInfo.layerObject.renderer :
+                  (li && li.renderer) ? jsonUtil.fromJson(li.renderer) || li.renderer :
+                    lyrInfo.renderer ? jsonUtil.fromJson(lyrInfo.renderer) || lyrInfo.renderer : undefined;
 
           var groupNodes = [];
           var finalGroupNodes = [];
@@ -2632,44 +2505,25 @@ function (BaseWidget,
             if (typeof (feature.infoTemplate) === 'undefined' && infoTemplate) {
               feature.infoTemplate = infoTemplate;
             }
-            var symbol;
-            if (renderer && renderer.getSymbol) {
-              symbol = renderer.getSymbol(feature);
-            } else if (feature.symbol) {
-              symbol = jsonUtils.fromJson(feature.symbol);
-            }
 
-            var id;
-            var oidName;
-            if (feature._layer && feature._layer.objectIdField) {
-              id = feature.attributes[feature._layer.objectIdField];
-              oidName = feature._layer.objectIdField;
-            } else if (lyrInfo.li && lyrInfo.li.oidFieldName) {
-              id = feature.attributes[lyrInfo.li.oidFieldName.name];
-              oidName = lyrInfo.li.oidFieldName.name;
-            } else if (lyrInfo.layerObject && lyrInfo.layerObject.objectIdField) {
-              id = feature.attributes[lyrInfo.layerObject.objectIdField];
-              oidName = lyrInfo.layerObject.objectIdField;
-            } else {
-              id = legendNode.id + i;
-            }
-            var flds;
-            var isNames = false;
-            if (fields[0] === '*') {
-              flds = feature.attributes;
-            } else {
-              flds = fields;
-              isNames = true;
-            }
+            var symbol = (renderer && renderer.getSymbol) ? renderer.getSymbol(feature) :
+              (feature.symbol) ? jsonUtils.fromJson(feature.symbol) : undefined;
+
+            var oidName = (feature._layer && feature._layer.objectIdField) ? feature._layer.objectIdField :
+              (li && li.oidFieldName && li.oidFieldName.name) ? li.oidFieldName.name :
+                (lyrInfo.layerObject && lyrInfo.layerObject.objectIdField) ? lyrInfo.layerObject.objectIdField :
+                  (lyrInfo && lyrInfo.oidFieldName) ? lyrInfo.oidFieldName : undefined;
+
+            var id = oidName ? feature.attributes[oidName] : legendNode.id + i;
+
+            var flds = (fields[0] === '*') ? feature.attributes : fields;
+            var isNames = (fields[0] === '*') ? false : true;
+
             var displayStringObj = this.getDisplayString(feature, lyrInfo, flds, displayOptions, oidName, isNames);
             var displayString = displayStringObj.displayString;
             var aliasNames = displayStringObj.aliasNames;
             var firstValue = displayStringObj.firstValue;
-            var groupField;
-            var groupNode;
-            var groupContainer;
-            var displayValue;
-            var groupType;
+            var groupField, groupNode, groupContainer, displayValue, groupType;
             if (displayOptions.groupEnabled) {
               var featureValue;
               var _value;
@@ -2707,7 +2561,7 @@ function (BaseWidget,
                   }
                 }
               }
-              var gId = 'group_' + lyrInfo.li.id + "_" + groupField.name + "_" + appendVal;
+              var gId = 'group_' + li.id + "_" + groupField.name + "_" + appendVal;
               var addGroup = true;
               var n;
               if (groupNodes.length > 0) {
@@ -2783,8 +2637,7 @@ function (BaseWidget,
                 }
 
                 domConstruct.create('div', {
-                  'class': groupType === 'byField' ? this.isDartTheme ? 'groupField-dart' : 'groupField' :
-                    this.isDartTheme ? 'groupFieldImage' : 'groupFieldImage',
+                  'class': groupType === 'byField' ? 'groupField' : 'groupFieldImage',
                   innerHTML: groupType === 'byField' ? label + displayValue : label,
                   title: groupType === 'byField' ? title + displayValue : title
                 }, groupTitle);
@@ -2795,16 +2648,23 @@ function (BaseWidget,
                 }
                 var _append = this.isDartTheme ? ' darkThemeColor' : ' lightThemeColor';
                 var groupCountNode = domConstruct.create('div', {
-                  'class': this.isDartTheme ? 'groupCountLabel-dart' : 'groupCountLabel' + _append
+                  'class': this.isDartTheme ? 'groupCountLabel' : 'groupCountLabel' + _append
                 }, groupTitle);
 
                 var imageContainer = domConstruct.create('div', {
-                  'class': this.isDartTheme ? 'expandImageContainer-dart' : 'expandImageContainer'
+                  'class': (this.isDartTheme || (this.isDashboardTheme && !this.isLightTheme)) ?
+                    'expandImageContainer-dart' : 'expandImageContainer'
                 }, groupTitle);
 
-                var gIIUp = this.isDartTheme ? "groupItemImageUp-dart" : "groupItemImageUp";
-                var gIIDown = this.isDartTheme ? "groupItemImageDown-dart" : "groupItemImageDown";
-                var cNames = this.isDartTheme ? 'groupItemImage-dart' : 'groupItemImage';
+                var gIIUp = this.isDartTheme ? "groupItemImageUp-dart" :
+                  (this.isDashboardTheme && !this.isLightTheme) ?
+                    "groupItemImageUp-dashboard" : "groupItemImageUp";
+                var gIIDown = this.isDartTheme ? "groupItemImageDown-dart" :
+                  (this.isDashboardTheme && !this.isLightTheme) ?
+                    "groupItemImageDown-dashboard" : "groupItemImageDown";
+                var cNames = this.isDartTheme ? 'groupItemImage-dart' :
+                  (this.isDashboardTheme && !this.isLightTheme) ?
+                    "groupItemImage-dashboard" : 'groupItemImage';
                 cNames += inGrpList ? ' ' + gIIUp : ' ' + gIIDown;
                 domConstruct.create('div', {
                   'class': cNames
@@ -2818,7 +2678,7 @@ function (BaseWidget,
                 }, groupContainer);
 
                 groupNodes.push({
-                  id: 'group_' + lyrInfo.li.id + "_" + groupField.name + "_" + appendVal,
+                  id: 'group_' + li.id + "_" + groupField.name + "_" + appendVal,
                   node: groupNode,
                   parent: groupContainer,
                   value: featureValue
@@ -2845,12 +2705,12 @@ function (BaseWidget,
             }
             var featureItem = domConstruct.create('div', {
               'class': this.isDartTheme ? 'featureItem-dart' : 'featureItem',
-              id: 'feature_' + lyrInfo.li.id + "_" + id
+              id: 'feature_' + li.id + "_" + id
             });
 
             var isCustom = false;
-            if (lyrInfo.li && lyrInfo.li.symbolData) {
-              isCustom = lyrInfo.li.symbolData.symbolType === "CustomSymbol";
+            if (li && li.symbolData) {
+              isCustom = li.symbolData.symbolType === "CustomSymbol";
             }
             if (symbol) {
               if (displayOptions.groupEnabled && groupType === 'byRenderer') {
@@ -2865,7 +2725,7 @@ function (BaseWidget,
             if (displayString.indexOf(" - ") > -1) {
               displayString = displayString.slice(0, -3);
             }
-            var _margin = displayOptions.groupEnabled && groupType === 'byRenderer' ? "15px" : "35px";
+            var _margin = displayOptions.groupEnabled && groupType === 'byRenderer' ? "15px" : "50px";
             var _txtAlign = window.isRTL ? "right" : "left";
             domConstruct.create('div', {
               style: "padding: 7px 5px 5px " + _margin + "; text-align: " + _txtAlign + ";",
@@ -2922,28 +2782,28 @@ function (BaseWidget,
           }
         }
       }
-      lyrInfo.li.layerListExtentChanged = false;
+      li.layerListExtentChanged = false;
 
-      var s_id = lyrInfo.layerObject.id in this.layerList ? lyrInfo.layerObject.id : lyrInfo.li.id;
-      if (this.showAllFeatures) {
-        lyrInfo.isLoaded = true;
-      }
-
-      if (window.innerWidth < 470) {
-        this._setMobileMaxHeight();
+      var s_id = (lyrInfo.layerObject && lyrInfo.layerObject.id && lyrInfo.layerObject.id in this.layerList) ?
+        lyrInfo.layerObject.id : li.id;
+      if (this.showAllFeatures && lyrInfo.visible) {
+        var loaded = true;
+        if (lyrInfo.layerObject && lyrInfo.type === 'ClusterLayer') {
+          loaded = !lyrInfo.layerObject.queryPending;
+          if (lyrInfo.layerObject.hasOwnProperty('requiresReload')) {
+            loaded = loaded && !lyrInfo.layerObject.requiresReload;
+            lyrInfo.layerObject.requiresReload = false;
+          }
+        }
+        lyrInfo.isLoaded = loaded;
       }
 
       this._removeSearching(s_id, lyrInfo.legendOpen);
     },
 
     updateDomainValues: function (feature, isNames, fields, lyrInfo) {
-      var includeField;
-      var dateField;
-      var domainField;
+      var includeField, dateField, domainField, append, featureValue, fieldName;
       var displayString = "";
-      var append;
-      var featureValue;
-      var fieldName;
       for (var a in fields) {
         fieldName = isNames ? fields[a] : a;
         domainField = this._checkDomainField(lyrInfo, fieldName);
@@ -3093,7 +2953,7 @@ function (BaseWidget,
     },
 
     _checkAliasName: function (lyrInfo, fieldName) {
-      var fields = lyrInfo.li.fields;
+      var fields = (lyrInfo.li && lyrInfo.li.fields) ? lyrInfo.li.fields : lyrInfo.fields;
       if (fields) {
         for (var i = 0; i < fields.length; i++) {
           var field = fields[i];
@@ -3106,7 +2966,7 @@ function (BaseWidget,
     },
 
     _checkDomainField: function (lyrInfo, fieldName) {
-      var fields = lyrInfo.li.fields;
+      var fields = (lyrInfo.li && lyrInfo.li.fields) ? lyrInfo.li.fields : lyrInfo.fields;
       if (fields) {
         for (var i = 0; i < fields.length; i++) {
           var field = fields[i];
@@ -3119,7 +2979,7 @@ function (BaseWidget,
     },
 
     _checkDateField: function(lyrInfo, fieldName){
-      var fields = lyrInfo.li.fields;
+      var fields = (lyrInfo.li && lyrInfo.li.fields) ? lyrInfo.li.fields : lyrInfo.fields;
       if (fields) {
         for (var i = 0; i < fields.length; i++) {
           var field = fields[i];
@@ -3244,21 +3104,29 @@ function (BaseWidget,
       return def;
     },
 
+    _getQuery: function (layerListLayer, fields, needsGeom) {
+      var layerObject = layerListLayer.layerObject;
+      var q = new Query();
+      q.geometry = !this.showAllFeatures ? this.map.extent : null;
+      q.outFields = fields;
+      q.returnGeometry = needsGeom;
+      var collectionTypes = ['collection', 'kml', 'geo_rss'];
+      var isCollection = layerListLayer.selfType ? collectionTypes.indexOf(layerListLayer.selfType) > -1 :  false;
+      //layer types from feature collection don't support where
+      if (!isCollection && layerObject.url) {
+        q.where = layerListLayer.filter ? layerListLayer.filter : "1=1";
+      } else if (this.showAllFeatures && layerObject && layerObject.fullExtent) {
+        //still need a way to support showing of all features
+        q.geometry = layerObject.fullExtent;
+      }
+      return q;
+    },
+
     countFeatures: function (layerListLayer) {
       if (!this.hidePanel) {
         var lyr = layerListLayer.layerObject;
         var node = this.config.countEnabled ? layerListLayer.node : layerListLayer.legendNode;
-        var q = new Query();
-        q.geometry = !this.showAllFeatures ? this.map.extent : null;
-        var collectionTypes = ['collection', 'kml', 'geo_rss'];
-        var isCollection = layerListLayer.selfType ? collectionTypes.indexOf(layerListLayer.selfType) > -1 : false;
-        //layer types from feature collection don't support where
-        if (!isCollection) {
-          q.where = layerListLayer.filter ? layerListLayer.filter : "1=1";
-        } else if (this.showAllFeatures && lyr && lyr.fullExtent) {
-          //still need a way to support showing of all features
-          q.geometry = lyr.fullExtent;
-        }
+        var q = this._getQuery(layerListLayer);
         if (lyr.queryCount && lyr.visible) {
           lyr.queryCount(q, lang.hitch(this, function (r) {
             if (node) {
@@ -3272,7 +3140,7 @@ function (BaseWidget,
               this.updateExpand(updateNode, r === 0);
             }
           }));
-        } else if (layerListLayer.li && layerListLayer.li.url) {
+        } else if (layerListLayer && layerListLayer.li && layerListLayer.li.url) {
           var url = layerListLayer.li.url;
           if (url.indexOf("MapServer") > -1 || url.indexOf("FeatureServer") > -1) {
             var qt = new QueryTask(url);

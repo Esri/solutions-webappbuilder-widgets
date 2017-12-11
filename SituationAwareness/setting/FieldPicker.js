@@ -260,11 +260,13 @@ function (declare,
         }
       }));
       if (this.layerList.layerObject.empty) {
-        var tempFL = new FeatureLayer(this.layerList.layerObject.url);
-        on(tempFL, "load", lang.hitch(this, function () {
-          this._completeMapLayers(tempFL, test);
-          def.resolve('sucess');
-        }));
+        if (this.layerList.layerObject.url) {
+          var tempFL = new FeatureLayer(this.layerList.layerObject.url);
+          on(tempFL, "load", lang.hitch(this, function () {
+            this._completeMapLayers(tempFL, test);
+            def.resolve('sucess');
+          }));
+        }
       } else {
         this._completeMapLayers(this.layerList, test);
         def.resolve('sucess');
@@ -354,29 +356,29 @@ function (declare,
                 var maxCount = this.callerTab.type === 'summary' ? 21 : 4;
                 var x = 0;
                 field_loop:
-                  for (var i = 0; i < fll; i++) {
-                    var add = false;
-                    var f = this.fieldsList[i];
-                    if (hasPopupFields) {
-                      var popupField = this.popUpFields[i];
-                      popup_field_loop:
-                        for (var ii = 0; ii < this.fieldsList.length; ii++) {
-                          f = this.fieldsList[ii];
-                          if (f.value === popupField) {
-                            add = true;
-                            break popup_field_loop;
-                          }
-                        }
-                    }
-                    if (add) {
-                      x += 1;
-                      if (x < maxCount) {
-                        this._addTabRow(f);
-                      } else {
-                        break field_loop;
+                for (var i = 0; i < fll; i++) {
+                  var add = false;
+                  var f = this.fieldsList[i];
+                  if (hasPopupFields) {
+                    var popupField = this.popUpFields[i];
+                    popup_field_loop:
+                    for (var ii = 0; ii < this.fieldsList.length; ii++) {
+                      f = this.fieldsList[ii];
+                      if (f.value === popupField) {
+                        add = true;
+                        break popup_field_loop;
                       }
                     }
                   }
+                  if (add) {
+                    x += 1;
+                    if (x < maxCount) {
+                      this._addTabRow(f);
+                    } else {
+                      break field_loop;
+                    }
+                  }
+                }
               } else {
                 domClass.add(this.btnAddField, 'btn-add-disabled');
                 this.hasFields = false;
@@ -398,13 +400,13 @@ function (declare,
         for (var i = 0; i < this.popUpFields.length; i++) {
           var pf = this.popUpFields[i];
           field_loop:
-            for (var ii = 0; ii < this.fields.length; ii++) {
-              var f = this.fields[ii];
-              if (pf === f.name) {
-                temp_fields.push(f);
-                break field_loop;
-              }
+          for (var ii = 0; ii < this.fields.length; ii++) {
+            var f = this.fields[ii];
+            if (pf === f.name) {
+              temp_fields.push(f);
+              break field_loop;
             }
+          }
         }
 
         //force summary type checks

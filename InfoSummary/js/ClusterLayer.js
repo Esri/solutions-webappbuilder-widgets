@@ -161,7 +161,7 @@ define([
       var loading = true;
       var q = new Query();
       var staticLayers = ["CSV", "Feature Collection", "GeoRSS", "KML"];
-      if (staticLayers.indexOf(this.lyrType) > -1 || this.url === null) {
+      if ((staticLayers.indexOf(this.lyrType) > -1 || !this.url) && lyr.graphics) {
         this._getSourceFeatures(lyr.graphics);
         this.clusterFeatures();
       } else if (typeof (this.url) !== 'undefined') {
@@ -338,12 +338,14 @@ define([
               html.addClass(en, "expandInActive");
             }
           } else {
-            if (node) {
-              html.removeClass(node, "recDefault");
-              html.removeClass(node, "inActive");
-            }
-            if (en) {
-              html.removeClass(en, "expandInActive");
+            if (this.visible) {
+              if (node) {
+                html.removeClass(node, "recDefault");
+                html.removeClass(node, "inActive");
+              }
+              if (en) {
+                html.removeClass(en, "expandInActive");
+              }
             }
           }
         }
@@ -412,6 +414,7 @@ define([
                       shouldUpdate = JSON.stringify(this._features) !== JSON.stringify(fs);
                     }
                     if (shouldUpdate) {
+                      this.requiresReload = true;
                       this._features = fs;
                       this.clusterFeatures();
 
@@ -535,6 +538,13 @@ define([
         graphicOptions = {
           geometry: {
             paths: item.geometry.paths,
+            "spatialReference": { "wkid": sr.wkid }
+          }
+        };
+      } else if (typeof (item.geometry.points) !== 'undefined') {
+        graphicOptions = {
+          geometry: {
+            points: item.geometry.points,
             "spatialReference": { "wkid": sr.wkid }
           }
         };

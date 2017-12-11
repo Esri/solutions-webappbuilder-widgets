@@ -56,5 +56,5 @@ define({
   "chkFeatureDisplay": "Feature-Liste deaktivieren",
   "showAllFeaturesHelp": "Anzeige aller Features ungeachtet der Ausdehnung aktivieren/deaktivieren",
   "showAllFeatures": "Alle Features anzeigen",
-  "fieldsWarning": "Im Pop-up sind keine Felder definiert. Verwenden Sie die Aktion \"Bearbeiten\", um die Optionen der Fensteranzeige zu definieren."
+  "fieldsWarning": "Im Pop-up sind keine Felder definiert. Verwenden Sie die Aktion  \"Bearbeiten \", um die Optionen der Anzeige im Bereich zu definieren."
 });

@@ -20,6 +20,9 @@ define([
     'dojo/_base/lang',
     'dojo/_base/Color',
     'dojo/dom-style',
+    'dojo/promise/all',
+    'dojo/Deferred',
+    'dojo/Evented',
     'dojo/on',
     'dojo/query',
     'dojo/dom-attr',
@@ -29,6 +32,7 @@ define([
     'dijit/_WidgetsInTemplateMixin',
     'dijit/focus',
     './FieldPicker',
+    'jimu/dijit/FeaturelayerChooserFromMap',
     'jimu/BaseWidgetSetting',
     'jimu/dijit/Message',
     'jimu/dijit/Popup',
@@ -40,19 +44,18 @@ define([
     'dijit/registry',
     'jimu/dijit/ImageChooser',
     'jimu/portalUtils',
-    './LayerCheckedMultiSelect',
+    'jimu/dijit/LayerChooserFromMapWithDropbox',
     'jimu/dijit/RadioBtn',
     'jimu/dijit/SimpleTable',
     'jimu/dijit/ColorPicker'
 ],
   function(
-    declare, array, lang, Color, domStyle, on, query, domAttr, string,
+    declare, array, lang, Color, domStyle, all, Deferred, Evented, on, query, domAttr, string,
     Select, ValidationTextBox, _WidgetsInTemplateMixin, focusUtil,
-    FieldPicker, BaseWidgetSetting, Message, Popup, TabContainer3, GpSource,
-    LayerInfos, domClass, domConstruct, registry, ImageChooser, portalUtils,
-    LayerCheckedMultiSelect
+    FieldPicker, FeatureLayerChooserFromMap, BaseWidgetSetting, Message, Popup, TabContainer3, GpSource,
+    LayerInfos, domClass, domConstruct, registry, ImageChooser, portalUtils, LayerChooserFromMapWithDropbox
   ) {
-    return declare([BaseWidgetSetting, _WidgetsInTemplateMixin], {
+    return declare([BaseWidgetSetting, _WidgetsInTemplateMixin, Evented], {
 
       baseClass: 'jimu-widget-SAT-setting',
       opLayers: [],
@@ -60,27 +63,99 @@ define([
       validFields: [],
       saveValid: true,
       textValid: true,
+      skipLayers: [],
+      _selectedLayerIds: [],
+      _allLayers: [],
 
       _highLightColor: '#0f96cc',
 
       postCreate: function() {
         this.inherited(arguments);
+        this.updateTabs();
         this._initTabs();
         this._initReport();
         this.nls = lang.mixin(lang.mixin(this.nls, window.jimuNls.units), window.jimuNls.temperature);
-        this.chk_celsius.set('title', this.nls.celsius + "-" + this.nls.kilometers);
-        this.chk_celsius_label.innerHTML = this.nls.celsius + "-" + this.nls.kilometers;
+        //this.chk_celsius.set('title', this.nls.celsius + "-" + this.nls.kilometers);
+        //this.chk_celsius_label.innerHTML = this.nls.celsius + "-" + this.nls.kilometers;
+        this._initLayerChooser();
         this.addSelectUnitOptions();
         this._getAllLayers();
-        this.own(on(this.btnAddTab, 'click', lang.hitch(this, this._addTabRow)));
-        this.own(on(this.tabTable, 'actions-edit', lang.hitch(this, function(tr) {
-          this._onEditLayerClicked(tr);
-        })));
+
+        this.own(on(this.tabTable, 'actions-edit', lang.hitch(this, this._onEditLayerClicked)));
         this.own(on(this.tabTable, 'row-delete', lang.hitch(this, this._rowDeleted)));
+        this.own(on(this.tabTable, 'row-up', lang.hitch(this, this._moveRow, true)));
+        this.own(on(this.tabTable, 'row-down', lang.hitch(this, this._moveRow, false)));
+
+        this.tabTable.onBeforeRowDelete = lang.hitch(this, this._onBeforeDelete);
 
         this._addValidator(this.incident_label, this.checkSmallString);
         this._addValidator(this.locate_incident_label, this.checkLargeString);
         this._addValidator(this.buffer_lbl, this.checkLargeString);
+      },
+
+      _initLayerChooser: function () {
+        this._selectedLayerIds = [];
+        this._allLayers = [];
+
+        this.layerChooserFromMap = new FeatureLayerChooserFromMap({
+          multiple: false,
+          showLayerFromFeatureSet: false,
+          showTable: false,
+          onlyShowVisible: false,
+          createMapResponse: this.map.webMapResponse
+        });
+        this.layerChooserFromMap.startup();
+
+        var layerInfosArray = this.layerChooserFromMap.layerInfosObj.getLayerInfoArray();
+
+        var defList = [];
+        this._getAllFilteredLayers(layerInfosArray, defList);
+
+        all(defList).then(lang.hitch(this, function () {
+          if (this._allLayers.length > 0) {
+            this.own(on(this.btnAddTab, 'click', lang.hitch(this, this._addTabRow)));
+          } else {
+            domStyle.set(this.btnAddTab, "display", "none");
+            domStyle.set(this.tabOptionsTab, "margin-top", "10px");
+            new Message({
+              message: this.nls.missingLayerInWebMap
+            });
+            this.noValidLayers = true;
+            return;
+          }
+        }));
+      },
+
+      _getAllFilteredLayers: function (layerInfosArray, defList) {
+        array.forEach(layerInfosArray, lang.hitch(this, function (currentLayer) {
+          var layerDef;
+          if (!currentLayer.isLeaf()) {
+            this._getAllFilteredLayers(currentLayer.newSubLayers, defList);
+          }
+          else {
+            layerDef = new Deferred();
+            this.layerChooserFromMap.filter(currentLayer).then(
+              lang.hitch(this, function (isValid) {
+                if (isValid) {
+                  this._allLayers.push(currentLayer);
+                }
+                layerDef.resolve();
+              }));
+            defList.push(layerDef);
+          }
+        }));
+      },
+
+      updateTabs: function () {
+        if (this.config && this.config.tabs && this.config.tabs.length) {
+          var tabs = this.config.tabs;
+          for (var i = 0; i < tabs.length; i++) {
+            var tab = tabs[i];
+            if (tab.type && tab.type === 'weather') {
+              tabs.splice(i, 1);
+            }
+          }
+        }
       },
 
       _addValidator: function (n, f) {
@@ -88,75 +163,66 @@ define([
         n.validator = lang.hitch(this, f, n);
       },
 
-      _initWeather: function () {
-        this._addMapWeatherLayersSelect();
-      },
+      //_initWeather: function () {
+      //  this._addMapWeatherLayersSelect();
+      //},
 
-      _addMapWeatherLayersSelect: function () {
-        this.chk_weather.onChange = lang.hitch(this, function (v) {
-          this._updateDisplay(this.selectMapWeatherLayers, v);
-          this._updateDisplay(this.chkCelsius, v);
-        });
+      //_addMapWeatherLayersSelect: function () {
+      //  this.chk_weather.onChange = lang.hitch(this, function (v) {
+      //    this._updateDisplay(this.selectMapWeatherLayers, v);
+      //    this._updateDisplay(this.chkCelsius, v);
+      //  });
 
-        var opLayers = this.layer_options;
-        var options = [];
+      //  var opLayers = this.layer_options;
+      //  var options = [];
 
-        if (opLayers.length === 0) {
-          new Message({
-            message: this.nls.missingLayerInWebMap
-          });
-        }
+      //  if (opLayers.length === 0) {
+      //    new Message({
+      //      message: this.nls.missingLayerInWebMap
+      //    });
+      //  }
 
-        this.mapWeatherLayersSelect = new LayerCheckedMultiSelect({
-          name: "selectMapWeatherLayers",
-          multiple: true,
-          dropDown: true,
-          style: "width:100%;",
-          label: this.nls.weather_map_layers,
-          nlsValue: this.nls.selected_map_layers,
-          required: false
-        }).placeAt(this.selectMapWeatherLayers);
-        this.mapWeatherLayersSelect.on('click', lang.hitch(this, function (evt) {
-          if (evt.target.nodeName === "INPUT") {
-            this.mapWeatherLayersSelect.dropDownButton.toggleDropDown();
-          }
-        }));
+      //  this.mapWeatherLayersSelect = new LayerCheckedMultiSelect({
+      //    name: "selectMapWeatherLayers",
+      //    multiple: true,
+      //    dropDown: true,
+      //    style: "width:100%;",
+      //    label: this.nls.weather_map_layers,
+      //    nlsValue: this.nls.selected_map_layers,
+      //    required: false
+      //  }).placeAt(this.selectMapWeatherLayers);
+      //  this.mapWeatherLayersSelect.on('click', lang.hitch(this, function (evt) {
+      //    if (evt.target.nodeName === "INPUT") {
+      //      this.mapWeatherLayersSelect.dropDownButton.toggleDropDown();
+      //    }
+      //  }));
 
-        this.mapWeatherLayersSelect.startup();
+      //  this.mapWeatherLayersSelect.startup();
 
-        /*jshint loopfunc: true */
-        for (var i = 0; i < opLayers.length; i++) {
-          var filteredArr = array.filter(options, function (item) {
-            return item.label === opLayers[i].label;
-          });
-          if (filteredArr === null || filteredArr.length === 0) {
-            this.mapWeatherLayersSelect.addOption({
-              label: opLayers[i].label,
-              value: opLayers[i].label,
-              id: opLayers[i].value
-            });
-          }
-        }
-      },
+      //  /*jshint loopfunc: true */
+      //  for (var i = 0; i < opLayers.length; i++) {
+      //    var filteredArr = array.filter(options, function (item) {
+      //      return item.label === opLayers[i].label;
+      //    });
+      //    if (filteredArr === null || filteredArr.length === 0) {
+      //      this.mapWeatherLayersSelect.addOption({
+      //        label: opLayers[i].label,
+      //        value: opLayers[i].label,
+      //        id: opLayers[i].value
+      //      });
+      //    }
+      //  }
+      //},
 
-      _getSelectedLayers: function (options) {
-        var layers = [];
-        array.forEach(options, lang.hitch(this, function (option) {
-          if (option.selected) {
-            layers.push(option);
-          }
-        }));
-        return layers;
-      },
-
-      //TODO need to update this to deal with potential changes to the options...
-      // for example if one of them is removed...make sure all stays good
-      _setSelectedLayers: function (domNode, options) {
-        // var s = domNode;
-        array.forEach(options, function (option) {
-          domNode.updateOption(option);
-        });
-      },
+      //_getSelectedLayers: function (options) {
+      //  var layers = [];
+      //  array.forEach(options, lang.hitch(this, function (option) {
+      //    if (option.selected) {
+      //      layers.push(option);
+      //    }
+      //  }));
+      //  return layers;
+      //},
 
       _initReport: function () {
         this.chk_report.onChange = lang.hitch(this, function (v) {
@@ -273,36 +339,36 @@ define([
         }
 
         this.tabTable.clear();
-        var weatherEnabled = false;
+        //var weatherEnabled = false;
         for (var i = 0; i < this.config.tabs.length; i++) {
           var aTab = this.config.tabs[i];
-          if (aTab.type === this.config.special_layer.value) {
-            this.chk_weather.set('value', true);
-            weatherEnabled = true;
-            var weatherLayers = (aTab.layers && aTab.layers.split) ? aTab.layers.split(',') : [];
-            var _weatherLayers = [];
-            if (aTab.mapLayers) {
-              /*jshint loopfunc: true */
-              array.forEach(aTab.mapLayers, function (ml) {
-                if (weatherLayers.indexOf(ml.value) > -1 || weatherLayers.indexOf(ml.id) > -1) {
-                  _weatherLayers.push(ml.value);
-                }
-              });
-            } else {
-              _weatherLayers = weatherLayers;
-            }
-            this.mapWeatherLayersSelect.set("value", _weatherLayers);
-            this._setSelectedLayers(this.mapWeatherLayersSelect, _weatherLayers);
-          } else {
-            this._populateTabTableRow(aTab);
-          }
+          //if (aTab.type === this.config.special_layer.value) {
+          //  this.chk_weather.set('value', true);
+          //  weatherEnabled = true;
+          //  var weatherLayers = (aTab.layers && aTab.layers.split) ? aTab.layers.split(',') : [];
+          //  var _weatherLayers = [];
+          //  if (aTab.mapLayers) {
+          //    /*jshint loopfunc: true */
+          //    array.forEach(aTab.mapLayers, function (ml) {
+          //      if (weatherLayers.indexOf(ml.value) > -1 || weatherLayers.indexOf(ml.id) > -1) {
+          //        _weatherLayers.push(ml.value);
+          //      }
+          //    });
+          //  } else {
+          //    _weatherLayers = weatherLayers;
+          //  }
+          //  this.mapWeatherLayersSelect.set("value", _weatherLayers);
+          //  this._setSelectedLayers(this.mapWeatherLayersSelect, _weatherLayers);
+          //} else {
+          this._populateTabTableRow(aTab);
+          //}
         }
-        this._updateDisplay(this.selectMapWeatherLayers, weatherEnabled);
-        this._updateDisplay(this.chkCelsius, weatherEnabled);
+        //this._updateDisplay(this.selectMapWeatherLayers, weatherEnabled);
+        //this._updateDisplay(this.chkCelsius, weatherEnabled);
 
-        if (this.config.celsius) {
-          this.chk_celsius.set('value', true);
-        }
+        //if (this.config.celsius) {
+        //  this.chk_celsius.set('value', true);
+        //}
 
         this.incident_label.set("value", this.config.incidentLabel ?
           this.config.incidentLabel : this.nls.incident);
@@ -376,6 +442,10 @@ define([
         this._setFootnote();
         this._setReportTextColor();
         this._createLogoPreview();
+
+        if (this.noValidLayers) {
+          this._disableOk();
+        }
       },
 
       _updateEditUI: function (editLayers, cb, div, configOpt, select, configLayer) {
@@ -419,12 +489,9 @@ define([
       _validateRows: function () {
         var isValid = true;
         var rows = this.tabTable.getRows();
-        for (var i = 0; i < rows.length; i++) {
-          var row = rows[i];
-          if (row.isValid === false) {
-            isValid = false;
-          }
-        }
+        array.forEach(rows, function (row) {
+          isValid = row.isValid === false ? row.isValid : isValid;
+        });
         return isValid;
       },
 
@@ -444,32 +511,32 @@ define([
         var tabs = [];
 
         var aTab = {};
-        if (this.chk_weather.checked) {
-          aTab.label = this.config.special_layer.label;
-          aTab.type = this.config.special_layer.value;
-          aTab.url = this.config.special_layer.url;
-          aTab.mapLayers = this.mapWeatherLayersSelect !== this.nls.selected_map_layers ?
-            this._getSelectedLayers(this.mapWeatherLayersSelect.options) : [];
-          var _layers = [];
-          array.forEach(aTab.mapLayers, function (ml) {
-            _layers.push(ml.id);
-          });
-          aTab.layers = _layers.join(",");
-          aTab.layerTitle = true;
-          tabs.push(aTab);
-        }
+        //if (this.chk_weather.checked) {
+        //  aTab.label = this.config.special_layer.label;
+        //  aTab.type = this.config.special_layer.value;
+        //  aTab.url = this.config.special_layer.url;
+        //  aTab.mapLayers = this.mapWeatherLayersSelect !== this.nls.selected_map_layers ?
+        //    this._getSelectedLayers(this.mapWeatherLayersSelect.options) : [];
+        //  var _layers = [];
+        //  array.forEach(aTab.mapLayers, function (ml) {
+        //    _layers.push(ml.id);
+        //  });
+        //  aTab.layers = _layers.join(",");
+        //  aTab.layerTitle = true;
+        //  tabs.push(aTab);
+        //}
 
         var trs = this.tabTable.getRows();
         array.forEach(trs, lang.hitch(this, function(tr) {
           var selectLayers = tr.selectLayers;
           var selectTypes = tr.selectTypes;
           var labelText = tr.labelText;
+          var item = selectLayers.getSelectedItem();
           aTab = {};
           aTab.label = labelText.value;
           aTab.type = selectTypes.value;
-          aTab.layers = selectLayers.value;
-          //new prop for title/id switch
-          aTab.layerTitle = selectLayers._getSelectedOptionsAttr().label;
+          aTab.layerTitle = item.layerInfo.title;
+          aTab.layers = item.layerInfo.id;
           if(tr.tabInfo && tr.tabInfo.advStat) {
             aTab.advStat = tr.tabInfo.advStat;
           } else {
@@ -494,7 +561,7 @@ define([
         this.config.bufferRange.maximum = this.buffer_max.value;
         this.config.bufferRange.minimum = this.buffer_min.value;
         this.config.distanceUnits = this.selectUnits.value;
-        this.config.celsius = this.chk_celsius.checked;
+        //this.config.celsius = this.chk_celsius.checked;
         this.config.disableVisibilityManagement = this.chk_visibility.checked;
         this.config.enableRouting = this.chk_routing.checked;
         this.config.saveEnabled = this.chk_save.checked;
@@ -537,39 +604,23 @@ define([
               this.opLayers = operLayerInfos;
               this._setLayers();
               this._setTypes();
-              this._initWeather();
+              //this._initWeather();
               this.setConfig(this.config);
             }));
         }
       },
 
       _setLayers: function () {
-        var supportedLayerTypes = ["ArcGISFeatureLayer", "ArcGISMapServiceLayer", "CSV",
-                           "KML", "GeoRSS", "Feature Layer", "FeatureCollection"];
         var options = [];
         var pointSaveOptions = [];
         var lineSaveOptions = [];
         var polySaveOptions = [];
+        this.skipLayers = [];
         array.forEach(this.opLayers._layerInfos, lang.hitch(this, function (OpLyr) {
-          var skipLayer = false;
-          if (OpLyr.layerObject && OpLyr.layerObject.hasOwnProperty('tileInfo')) {
-            skipLayer = true;
-          } else if (OpLyr.newSubLayers.length > 0) {
+          if (OpLyr.newSubLayers.length > 0) {
             this._recurseOpLayers(OpLyr.newSubLayers, options, pointSaveOptions, lineSaveOptions, polySaveOptions);
           } else {
-            if (OpLyr.layerObject) {
-              if (OpLyr.layerObject.url && (OpLyr.layerObject.url.indexOf('ImageServer') > -1)) {
-                skipLayer = true;
-              }
-              if (OpLyr.layerObject.type && supportedLayerTypes.indexOf(OpLyr.layerObject.type) === -1) {
-                skipLayer = true;
-              }
-            }
-            if (skipLayer) {
-              new Message({
-                message: this.nls.layer_type_not_supported + OpLyr.title
-              });
-            }
+            var skipLayer = this._checkSkipLayer(OpLyr);
             if (!skipLayer) {
               options.push({
                 label: OpLyr.title,
@@ -583,12 +634,19 @@ define([
           }
         }));
 
-        if (options.length === 0) {
-          domStyle.set(this.btnAddTab, "display", "none");
-          new Message({
-            message: this.nls.missingLayerInWebMap
+        if (this.skipLayers.length > 0) {
+          var msg = "";
+          array.forEach(this.skipLayers, function (l) {
+            //TODO update nls for 5.4
+            var _type = l.type === 'collection' ? 'Feature Collection' : l.type;
+            msg += "Layer Name: " + l.name + "\r\nLayer Type: " + _type + "\r\n\r\n";
           });
-          return;
+
+          new Message({
+            titleLabel: this.nls.layer_type_not_supported,
+            message: "<div style='max-height: 500px; overflow: auto;'>" + msg + "</div>",
+            maxWidth: 450
+          });
         }
 
         this.layer_options = lang.clone(options);
@@ -625,16 +683,48 @@ define([
           if (opLyr.newSubLayers.length > 0) {
             this._recurseOpLayers(opLyr.newSubLayers, options, pointSaveOptions, lineSaveOptions, polySaveOptions);
           } else {
-            options.push({
-              label: opLyr.title,
-              value: opLyr.id
-            });
-
-            if (opLyr.layerObject) {
-              this._updateEditOptions(opLyr, pointSaveOptions, lineSaveOptions, polySaveOptions);
+            var skipLayer = this._checkSkipLayer(opLyr);
+            if (!skipLayer) {
+              options.push({
+                label: opLyr.title,
+                value: opLyr.id
+              });
+              if (opLyr.layerObject) {
+                this._updateEditOptions(opLyr, pointSaveOptions, lineSaveOptions, polySaveOptions);
+              }
             }
           }
         }));
+      },
+
+      _checkSkipLayer: function (opLyr) {
+        var supportedLayerTypes = ["ArcGISFeatureLayer", "ArcGISMapServiceLayer", "Feature Layer"];
+        var skipLayer = false;
+
+        if (opLyr.layerObject) {
+          if (opLyr.layerObject.hasOwnProperty('tileInfo')) {
+            skipLayer = true;
+          }
+          if (opLyr.layerObject.url && (opLyr.layerObject.url.indexOf('ImageServer') > -1 ||
+            opLyr.layerObject.url.indexOf('.csv') > -1)) {
+            skipLayer = true;
+          }
+          if (opLyr.layerObject.type && supportedLayerTypes.indexOf(opLyr.layerObject.type) === -1) {
+            skipLayer = true;
+          }
+          if (!opLyr.layerObject.url) {
+            skipLayer = true;
+          }
+        }
+        if (skipLayer) {
+          this.skipLayers.push({
+            name: opLyr.title,
+            type: (opLyr.originOperLayer && opLyr.originOperLayer.selfType) ?
+              opLyr.originOperLayer.selfType : (opLyr.originOperLayer && opLyr.originOperLayer.type) ?
+                opLyr.originOperLayer.type : opLyr.layerObject.type
+          });
+        }
+        return skipLayer;
       },
 
       _updateEditOptions: function (opLyr, pointSaveOptions, lineSaveOptions, polySaveOptions) {
@@ -689,15 +779,20 @@ define([
           //layerTitle is only set for configs after this change...old configs will not have it
           var id = typeof (tabInfo.layerTitle) !== 'undefined' ? tabInfo.layers : this.getLayerID(tabInfo.layers);
           if (!this.layerExists(tr.selectLayers.options, tabInfo)) {
-            tr.selectLayers.addOption({
-              label: typeof (tabInfo.layerTitle) !== 'undefined' ? tabInfo.layerTitle : tabInfo.layers,
-              value: tabInfo.layers,
-              disabled: 'disabled'
-            });
+            //tr.selectLayers.addOption({
+            //  label: typeof (tabInfo.layerTitle) !== 'undefined' ? tabInfo.layerTitle : tabInfo.layers,
+            //  value: tabInfo.layers,
+            //  disabled: 'disabled'
+            //});
             tr.selectLayers.invalidValues.push(tabInfo.layers);
           }
-          console.log(id);
-          tr.selectLayers.set("value", id);
+          var layerInfo = this.opLayers.getLayerInfoById(id);
+          if (layerInfo) {
+            layerInfo.getLayerObject().then(lang.hitch(this, function (layer) {
+              tr.selectLayers.setSelectedLayer(layer);
+            }));
+          }
+
           tr.selectTypes.set("value", tabInfo.type, false);
           tr.type = tabInfo.type;
           tr.labelText.set("value", tabInfo.label);
@@ -713,7 +808,16 @@ define([
         }
       },
 
-      _rowDeleted: function () {
+      _onBeforeDelete: function (row) {
+        this._selectedLayerIds.splice(row.rowIndex, 1);
+        return true;
+      },
+
+      _rowDeleted: function (row) {
+        if (row.selectLayers) {
+          row.selectLayers.destroy();
+        }
+
         var trs = this.tabTable.getRows();
         var allValid = true;
         for (var i = 0; i < trs.length; i++) {
@@ -727,51 +831,90 @@ define([
         domStyle.set(s.children[3], "display", allValid ? "none" : "inline-block");
       },
 
+      _moveRow: function (up, row) {
+        var v = this._selectedLayerIds[row.rowIndex];
+        var i = up ? row.rowIndex + 1 : row.rowIndex - 1;
+        var _v = this._selectedLayerIds[i];
+        this._selectedLayerIds.splice(up ? row.rowIndex : i, 2, up ? _v : v, up ? v : _v);
+      },
+
+      _getLayerList: function () {
+        var layersIds;
+        if (this._selectedLayerIds.length < this._allLayers.length) {
+          layersIds = array.filter(this._allLayers, lang.hitch(this, function (layer) {
+            return this._selectedLayerIds.indexOf(layer.id) < 0;
+          }));
+        }
+        else {
+          layersIds = this._allLayers;
+        }
+        return layersIds;
+      },
+
       _addTabRow: function() {
         var result = this.tabTable.addRow({});
         if (result.success && result.tr) {
           var tr = result.tr;
-          this._addTabLayers(tr);
+          var layerList = this._getLayerList();
+          this._addTabLayers(tr, layerList[0]);
           this._addTabTypes(tr);
           this._addTabLabel(tr);
         }
       },
 
-      _addTabLayers: function(tr) {
+      _addTabLayers: function(tr, layerInfo) {
         var lyrOptions = lang.clone(this.layer_options);
         var td = query('.simple-table-cell', tr)[0];
         if (td) {
-          var tabLayers = new Select({
-            style: {
-              width: "100%",
-              height: "26px"
-            },
-            "class": "medSelect",
+          var layerChooserFromMap = new FeatureLayerChooserFromMap({
+            multiple: false,
+            showLayerFromFeatureSet: false,
+            showTable: false,
+            onlyShowVisible: false,
+            createMapResponse: this.map.webMapResponse
+          });
+          layerChooserFromMap.startup();
+
+          var tabLayers = new LayerChooserFromMapWithDropbox({
+            layerChooser: layerChooserFromMap,
             options: lyrOptions,
             isValid: this.validateLayer,
             required: true,
             invalidValues: [],
             row: tr
           });
+
           tabLayers.placeAt(td);
           tabLayers.startup();
           tr.selectLayers = tabLayers;
           tabLayers._missingMsg = this.nls.layer_error;
-          tabLayers.on("change", function () {
+
+          this.own(on(tabLayers, 'selection-change', function (layer) {
+            this.emit('used-layer-change', { layer: layer[0], rowIndex: this.row.rowIndex});
+
             var p = this.domNode.parentNode;
-            //validate layers
-            p.parentNode.selectLayers.validate();
-            focusUtil.focus(p.parentNode.selectLayers.domNode);
-            p.parentNode.selectLayers.domNode.blur();
             //validate types
-            p.parentNode.selectTypes.validate();
-            focusUtil.focus(p.parentNode.selectTypes.domNode);
-            p.parentNode.selectTypes.domNode.blur();
+            if (p.parentNode.selectTypes) {
+              p.parentNode.selectTypes.validate();
+              focusUtil.focus(p.parentNode.selectTypes.domNode);
+              p.parentNode.selectTypes.domNode.blur();
+            }
             //focus on table node
             var table = query(".jimu-simple-table")[0];
             focusUtil.focus(table);
             focusUtil.focus(this.domNode);
-          });
+          }));
+
+          this.own(on(tabLayers, 'used-layer-change', lang.hitch(this, function (changedData) {
+            this._selectedLayerIds[changedData.rowIndex] = changedData.layer.id;
+          })));
+
+          if (layerInfo) {
+            layerInfo.getLayerObject().then(lang.hitch(this, function (layer) {
+              tr.selectLayers.setSelectedLayer(layer);
+            }));
+          }
+
           focusUtil.focus(tabLayers.domNode);
           tabLayers.domNode.blur();
           var table = query(".jimu-simple-table")[0];
@@ -873,51 +1016,54 @@ define([
         }
         for (var i = 0; i < this.validFields.length; i++) {
           var vf = this.validFields[i];
-          if (vf.layer === row.selectLayers.value) {
-            row.validFields = vf;
+          var item = row.selectLayers.getSelectedItem();
+          if (item) {
+            if (vf.layer === item.layerInfo.id) {
+              row.validFields = vf;
 
-            //if no stats and no tabinfo it's the inital load
-            //all is good if it has appropriate popupfields as they will be selected automatically
-            //otherwise we need the user to define
-            //the exception is grouped as it will not do any auto select of fields
+              //if no stats and no tabinfo it's the inital load
+              //all is good if it has appropriate popupfields as they will be selected automatically
+              //otherwise we need the user to define
+              //the exception is grouped as it will not do any auto select of fields
 
-            if (analysisType === 'summary') {
-              if (stats) {
-                if (!stats.hasOwnProperty('min') && !stats.hasOwnProperty('max') &&
-                  !stats.hasOwnProperty('avg') && !stats.hasOwnProperty('sum') &&
-                  !stats.hasOwnProperty('count') && !stats.hasOwnProperty('area') &&
-                  !stats.hasOwnProperty('length')) {
-                  hasStats = false;
+              if (analysisType === 'summary') {
+                if (stats) {
+                  if (!stats.hasOwnProperty('min') && !stats.hasOwnProperty('max') &&
+                    !stats.hasOwnProperty('avg') && !stats.hasOwnProperty('sum') &&
+                    !stats.hasOwnProperty('count') && !stats.hasOwnProperty('area') &&
+                    !stats.hasOwnProperty('length')) {
+                    hasStats = false;
+                  }
+                }
+                if (!hasStats) {
+                  if (typeof (tabInfo) === 'undefined' && !vf.hasSummaryPopupFields) {
+                    //if no numeric popup fields but it does have other numeric fields
+                    this._missingMsg = vf.hasSummaryFields ? this.nls.no_valid_popup_fields : this.nls.no_valid_fields;
+                    isValid = false;
+                  } else if (tabInfo) {
+                    this._missingMsg = !vf.hasSummaryPopupFields ? this.nls.no_valid_popup_fields :
+                      this.nls.no_valid_fields;
+                    isValid = false;
+                  }
+                }
+              } else if (analysisType === 'groupedSummary') {
+                this._missingMsg = this.nls.need_group_field;
+                if (stats && !stats.hasOwnProperty('pre') && !stats.hasOwnProperty('suf') || !hasStats) {
+                  isValid = false;
+                }
+              } else {
+                //proximity or closest
+                hasStats = (stats && stats.outFields) ? stats.outFields.length > 0 : false;
+                if (!hasStats && typeof (tabInfo) === 'undefined' && !vf.hasPopupFields) {
+                  this._missingMsg = this.nls.no_valid_popup_fields;
+                  isValid = false;
+                } else if (!hasStats && !vf.hasPopupFields) {
+                  this._missingMsg = !vf.hasPopupFields ? this.nls.no_valid_popup_fields : this.nls.no_valid_fields;
+                  isValid = false;
                 }
               }
-              if (!hasStats) {
-                if (typeof (tabInfo) === 'undefined' && !vf.hasSummaryPopupFields) {
-                  //if no numeric popup fields but it does have other numeric fields
-                  this._missingMsg = vf.hasSummaryFields ? this.nls.no_valid_popup_fields : this.nls.no_valid_fields;
-                  isValid = false;
-                } else if (tabInfo) {
-                  this._missingMsg = !vf.hasSummaryPopupFields ? this.nls.no_valid_popup_fields :
-                    this.nls.no_valid_fields;
-                  isValid = false;
-                }
-              }
-            } else if (analysisType === 'groupedSummary') {
-              this._missingMsg = this.nls.need_group_field;
-              if (stats && !stats.hasOwnProperty('pre') && !stats.hasOwnProperty('suf') || !hasStats) {
-                isValid = false;
-              }
-            } else {
-              //proximity or closest
-              hasStats = (stats && stats.outFields) ? stats.outFields.length > 0 : false;
-              if (!hasStats && typeof (tabInfo) === 'undefined' && !vf.hasPopupFields) {
-                this._missingMsg = this.nls.no_valid_popup_fields;
-                isValid = false;
-              } else if (!hasStats && !vf.hasPopupFields) {
-                this._missingMsg = !vf.hasPopupFields ? this.nls.no_valid_popup_fields : this.nls.no_valid_fields;
-                isValid = false;
-              }
+              break;
             }
-            break;
           }
         }
         row.isValid = isValid;
@@ -1002,25 +1148,26 @@ define([
       _onEditLayerClicked: function(tr) {
         this.curRow = tr;
         if (tr.isEditable) {
+          var selectedItem = tr.selectLayers.getSelectedItem();
           var aTab = tr.tabInfo;
           if (!aTab) {
             aTab = {};
             aTab.label = tr.labelText.value;
             aTab.type = tr.selectTypes.value;
-            aTab.layers = tr.selectLayers.value;
+            aTab.layers = selectedItem.layerInfo.id;
             aTab.advStat = {};
             tr.tabInfo = aTab;
           }
           var id = typeof (aTab.layerTitle) !== 'undefined' ? aTab.layers : this.getLayerID(aTab.layers);
-          if (aTab.type !== tr.selectTypes.value || id !== tr.selectLayers.value) {
+          if (aTab.type !== tr.selectTypes.value || id !== selectedItem.layerInfo.id) {
             aTab.type = tr.selectTypes.value;
-            aTab.layers = tr.selectLayers.value;
+            aTab.layers = selectedItem.layerInfo.id;
             aTab.advStat = {};
           }
 
           var args = {
             nls: this.nls,
-            callerLayer: tr.selectLayers.value,
+            callerLayer: selectedItem.layerInfo.id,
             callerTab: aTab,
             callerOpLayers: this.opLayers._layerInfos,
             map: this.map
@@ -1032,7 +1179,7 @@ define([
             width: 830,
             height: 560,
             content: sourceDijit,
-            titleLabel: this.nls.selectFields + ": " + tr.selectLayers._getSelectedOptionsAttr().label
+            titleLabel: this.nls.selectFields + ": " + selectedItem.layerInfo.title
           });
 
           this.own(on(sourceDijit, 'ok', lang.hitch(this, function (items) {

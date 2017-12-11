@@ -4,13 +4,12 @@
   'dojo/dom-class',
   'dojo/dom-geometry',
   'dojo/dom-style',
-  'dojo/has',
   'esri/tasks/query',
   'esri/geometry/geometryEngine',
   "esri/geometry/Polyline",
   './CSVUtils',
   'jimu/utils'
-], function (array, lang, domClass, domGeom, domStyle, has, Query, geometryEngine, Polyline, CSVUtils, utils) {
+], function (array, lang, domClass, domGeom, domStyle, Query, geometryEngine, Polyline, CSVUtils, utils) {
 
   var mo = {};
 
@@ -677,7 +676,7 @@
     l.spatialReference = geom1.spatialReference;
     var dist;
     units = units === "nauticalMiles" ? "nautical-miles" : units;
-    if ((geom1.spatialReference.wkid === 4326 || geom1.spatialReference.isWebMercator()) && !has("safari")) {
+    if (geom1.spatialReference.wkid === 4326 || geom1.spatialReference.isWebMercator()) {
       dist = geometryEngine.geodesicLength(l, units);
     } else {
       dist = geometryEngine.planarLength(l, units);

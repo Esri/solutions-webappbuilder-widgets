@@ -78,7 +78,6 @@ define([
     'esri/request',
     './js/SummaryInfo',
     './js/GroupedCountInfo',
-    './js/WeatherInfo',
     './js/ClosestInfo',
     './js/ProximityInfo',
     './js/SnapShotUtils',
@@ -132,7 +131,6 @@ define([
     esriRequest,
     SummaryInfo,
     GroupedCountInfo,
-    WeatherInfo,
     ClosestInfo,
     ProximityInfo,
     SnapshotUtils,
@@ -193,6 +191,7 @@ define([
 
       startup: function() {
         this.inherited(arguments);
+        this.updateTabs();
         this.btnNodes = [];
         this.panelNodes = [];
         this.tabNodes = [];
@@ -211,7 +210,6 @@ define([
         }
         this.reportEnabled = typeof (this.config.reportEnabled) !== 'undefined' ? this.config.reportEnabled : false;
         this.allEnabled = this.saveEnabled && this.snapshotEnabled && this.reportEnabled;
-        this.isSafari = has("safari");
         this._getStyleColor();
         this._createUI();
         this._loadUI();
@@ -225,6 +223,18 @@ define([
         this.opLayers = this.map.itemInfo.itemData.operationalLayers;
 
         this._mapLoaded();
+      },
+
+      updateTabs: function () {
+        if (this.config && this.config.tabs && this.config.tabs.length) {
+          var tabs = this.config.tabs;
+          for (var i = 0; i < tabs.length; i++) {
+            var tab = tabs[i];
+            if (tab.type && tab.type === 'weather') {
+              tabs.splice(i, 1);
+            }
+          }
+        }
       },
 
       onOpen: function() {
@@ -1092,7 +1102,7 @@ define([
           var t = this.config.tabs[i];
           if (t.layers && t.layers !== "") {
             this.hasLayerTitle = typeof (t.layerTitle) !== 'undefined';
-            t.layers = (t.type === "weather" && t.layers.split) ? t.layers.split(',') : t.layers;
+            //t.layers = (t.type === "weather" && t.layers.split) ? t.layers.split(',') : t.layers;
             t.tabLayers = this._getTabLayers(t.layers);
           }
         }
@@ -1140,9 +1150,9 @@ define([
         for (var i = 0; i < this.config.tabs.length; i++) {
           var obj = this.config.tabs[i];
           var label = obj.label;
-          if (obj.type === "weather") {
-            label = this.nls.weather;
-          }
+          //if (obj.type === "weather") {
+          //  label = this.nls.weather;
+          //}
           if (!label || label === "") {
             //layerTitle is only set for configs after the title/id switch
             label = obj.layerTitle ? obj.layerTitle : obj.layers;
@@ -1171,9 +1181,9 @@ define([
               obj.groupedSummaryInfo = new GroupedCountInfo(obj, panel, this);
               this.own(on(obj.groupedSummaryInfo, "summary-complete", lang.hitch(this, this.restore)));
             }
-            if (obj.type === "weather") {
-              obj.weatherInfo = new WeatherInfo(obj, panel, this);
-            }
+            //if (obj.type === "weather") {
+            //  obj.weatherInfo = new WeatherInfo(obj, panel, this);
+            //}
             if (obj.type === "closest") {
               obj.closestInfo = new ClosestInfo(obj, panel, this);
             }
@@ -1680,9 +1690,9 @@ define([
           case "groupedSummary":
             hasFeatures = tab.groupedSummaryInfo.featureCount > 0;
             break;
-          case "weather":
-            hasFeatures = this.incidents.length > 0;
-            break;
+          //case "weather":
+          //  hasFeatures = this.incidents.length > 0;
+          //  break;
           case "closest":
             hasFeatures = tab.closestInfo.featureCount > 0;
             break;
@@ -1822,42 +1832,42 @@ define([
               this.currentGrpLayer = num;
             }
             break;
-          case "weather":
-            var _mapLayers = (tab.mapLayers && tab.mapLayers.length > 0) ?
-              tab.mapLayers : tab.tabLayers && tab.tabLayers.length > 0 ? tab.tabLayers : [];
-            if (_mapLayers && _mapLayers.length > 0) {
-              var opLayers = this.opLayers;
-              var rootLayerIDs = [];
-              array.forEach(_mapLayers, function (mapLayer) {
-                var layerInfo = opLayers.getLayerInfoById(mapLayer.id);
-                mapLayer.layerOptions = {};
-                var rootLayerInfo = layerInfo.getRootLayerInfo();
-                //only need to do this once per rootLayer
-                if (rootLayerIDs.indexOf(rootLayerInfo.id) === -1) {
-                  rootLayerIDs.push(rootLayerInfo.id);
-                  rootLayerInfo.traversal(lang.hitch(this, function (subLayerInfo) {
-                    mapLayer.layerOptions[subLayerInfo.id] = { visible: subLayerInfo.isVisible() };
-                  }));
-                }
-                layerInfo.show();
-              });
-            }
-            if (this.incidents.length > 0 && tab.updateFlag === true) {
-              //TODO consider using combined extent when multiple incidents are involved
-              var incident = this.incidents[0];
-              var geom = incident.geometry;
-              var pt = geom;
-              if (geom.type !== "point") {
-                pt = geom.getExtent().getCenter();
-              }
-              this._getPoint(pt).then(lang.hitch(this, function (_point) {
-                tab.weatherInfo.updateForIncident(_point);
-              }), function (err) {
-                console.log(err);
-              });
-              tab.updateFlag = false;
-            }
-            break;
+          //case "weather":
+          //  var _mapLayers = (tab.mapLayers && tab.mapLayers.length > 0) ?
+          //    tab.mapLayers : tab.tabLayers && tab.tabLayers.length > 0 ? tab.tabLayers : [];
+          //  if (_mapLayers && _mapLayers.length > 0) {
+          //    var opLayers = this.opLayers;
+          //    var rootLayerIDs = [];
+          //    array.forEach(_mapLayers, function (mapLayer) {
+          //      var layerInfo = opLayers.getLayerInfoById(mapLayer.id);
+          //      mapLayer.layerOptions = {};
+          //      var rootLayerInfo = layerInfo.getRootLayerInfo();
+          //      //only need to do this once per rootLayer
+          //      if (rootLayerIDs.indexOf(rootLayerInfo.id) === -1) {
+          //        rootLayerIDs.push(rootLayerInfo.id);
+          //        rootLayerInfo.traversal(lang.hitch(this, function (subLayerInfo) {
+          //          mapLayer.layerOptions[subLayerInfo.id] = { visible: subLayerInfo.isVisible() };
+          //        }));
+          //      }
+          //      layerInfo.show();
+          //    });
+          //  }
+          //  if (this.incidents.length > 0 && tab.updateFlag === true) {
+          //    //TODO consider using combined extent when multiple incidents are involved
+          //    var incident = this.incidents[0];
+          //    var geom = incident.geometry;
+          //    var pt = geom;
+          //    if (geom.type !== "point") {
+          //      pt = geom.getExtent().getCenter();
+          //    }
+          //    this._getPoint(pt).then(lang.hitch(this, function (_point) {
+          //      tab.weatherInfo.updateForIncident(_point);
+          //    }), function (err) {
+          //      console.log(err);
+          //    });
+          //    tab.updateFlag = false;
+          //  }
+          //  break;
           case "closest":
             if (!this.disableVisibilityManagement) {
               if (tab.tabLayers) {
@@ -2067,7 +2077,7 @@ define([
           if (dist1 > 0) {
             var wkid = gra.geometry.spatialReference.wkid;
             var g;
-            if ((wkid === 4326 || gra.geometry.spatialReference.isWebMercator()) && !this.isSafari) {
+            if (wkid === 4326 || gra.geometry.spatialReference.isWebMercator()) {
               g = geometryEngine.geodesicBuffer(gra.geometry, dist1, unitCode);
               this.buffers.push(g);
             } else {
@@ -2159,9 +2169,10 @@ define([
             ao = t.summaryInfo;
           } else if (t.type === 'groupedSummary') {
             ao = t.groupedSummaryInfo;
-          } else if (t.type === 'weather') {
-            ao = t.weatherInfo;
           }
+          //else if (t.type === 'weather') {
+          //  ao = t.weatherInfo;
+          //}
           if (ao) {
             if (clear) {
               if (typeof(ao.incidentCount) !== 'undefined') {
@@ -2169,11 +2180,11 @@ define([
               }
               ao.updateTabCount(0, n, displayCount);
             } else {
-              if (t.type === 'weather') {
-                ao.queryTabCount(this.incidents, this.buffers, n, displayCount);
-              } else {
-                defArray.push(ao.queryTabCount(this.incidents, this.buffers, n, displayCount));
-              }
+              //if (t.type === 'weather') {
+              //  ao.queryTabCount(this.incidents, this.buffers, n, displayCount);
+              //} else {
+              defArray.push(ao.queryTabCount(this.incidents, this.buffers, n, displayCount));
+              //}
             }
           }
         }

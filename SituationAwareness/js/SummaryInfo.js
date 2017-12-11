@@ -641,11 +641,12 @@ define([
           } else if (this.summaryLayer.renderer && this.summaryLayer.renderer.getSymbol) {
             gra.symbol = this.summaryLayer.renderer.getSymbol(gra);
           }
+          var g = gra.toJson ? new Graphic(gra.toJson()) : gra;
           if (!snapShot && gl) {
-            this.graphicsLayer.add(gra);
-            this.tab.tabLayers[1].add(gra);
+            this.graphicsLayer.add(g);
+            this.tab.tabLayers[1].add(g);
           } else {
-            snapShotGraphics.push(gra);
+            snapShotGraphics.push(g);
           }
         }
       }
@@ -778,26 +779,26 @@ define([
 
       if (this.allFields) {
         layer_field_loop:
-          for (var j = 0; j < layer.fields.length; j++) {
-            var f = layer.fields[j];
-            //need to verify that this field is not in the list
-            // may be a cleaner way to do this test but this should work for POC
-            var addField = true;
-            add_loop:
-              for (var k = 0; k < fields.length; k++) {
-                if (f.name === fields[k].field) {
-                  addField = false;
-                  break add_loop;
-                }
-              }
-            if (skipFields.indexOf(f.name) === -1 && addField) {
-              fields.push({
-                field: f.name,
-                alias: f.alias,
-                type: f.type
-              });
+        for (var j = 0; j < layer.fields.length; j++) {
+          var f = layer.fields[j];
+          //need to verify that this field is not in the list
+          // may be a cleaner way to do this test but this should work for POC
+          var addField = true;
+          add_loop:
+          for (var k = 0; k < fields.length; k++) {
+            if (f.name === fields[k].field) {
+              addField = false;
+              break add_loop;
             }
           }
+          if (skipFields.indexOf(f.name) === -1 && addField) {
+            fields.push({
+              field: f.name,
+              alias: f.alias,
+              type: f.type
+            });
+          }
+        }
       }
 
       var spFields = analysisUtils.getSpecialFields(layer);

@@ -243,12 +243,14 @@ define([
       var isSnapShot = typeof (snapShot) !== 'undefined';
       var def;
       array.forEach(this.tab.tabLayers, lang.hitch(this, function (tab) {
-        if (typeof (tab.empty) !== 'undefined' && tab.url) {
-          var tempFL = new FeatureLayer(tab.url);
+        if (isSnapShot) {
+          def = new Deferred();
+        }
+        if(tab.url){
+          var tempFL = new FeatureLayer(tab.url, { mode: FeatureLayer.MODE_ONDEMAND, infoTemplate: tab.infoTemplate });
           on(tempFL, "load", lang.hitch(this, function () {
             this.tab.tabLayers = [tempFL];
             if (isSnapShot) {
-              def = new Deferred();
               this.processIncident(incidents, distance, graphicsLayer, snapShot).then(lang.hitch(this, function (r) {
                 def.resolve(r);
               }), lang.hitch(this, function (err) {
@@ -261,7 +263,6 @@ define([
           }));
         } else {
           if (isSnapShot) {
-            def = new Deferred();
             this.processIncident(incidents, distance, graphicsLayer, snapShot).then(lang.hitch(this,
               function (results) {
               def.resolve(results);

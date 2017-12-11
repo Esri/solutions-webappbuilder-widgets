@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Copyright © 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -688,11 +688,12 @@ define([
           } else if (this.summaryLayer.renderer && this.summaryLayer.renderer.getSymbol) {
             gra.symbol = this.summaryLayer.renderer.getSymbol(gra);
           }
+          var g = gra.toJson ? new Graphic(gra.toJson()) : gra;
           if (!snapShot && gl) {
-            this.graphicsLayer.add(gra);
-            this.tab.tabLayers[1].add(gra);
+            this.graphicsLayer.add(g);
+            this.tab.tabLayers[1].add(g);
           } else {
-            snapShotGraphics.push(gra);
+            snapShotGraphics.push(g);
           }
         }
       }
