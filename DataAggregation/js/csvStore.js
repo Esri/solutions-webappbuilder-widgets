@@ -182,10 +182,9 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
           }
         }
 
-        var use;
+        //This layer will always be created to support save of unmatched or duplicate even when none are matched up front
+        this.matchedFeatureLayer = this._initLayer(matchedFeatures, this.file.name);
         if (matchedFeatures.length > 0) {
-          this.matchedFeatureLayer = this._initLayer(matchedFeatures, this.file.name);
-          use = "matched";
           //feature list should support zoom to its children
           this._zoomToData(this.matchedFeatureLayer);
         }
@@ -230,39 +229,49 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         var _testFieldValues = lang.hitch(this, function (testFeatures, index) {
           var def = new Deferred();
           var matchValues = [];
-          var layerFieldName = this.keys[index];
-          if (layerFieldName === this.oidField || this.duplicateTestFields.indexOf(layerFieldName) === -1) {
-            def.resolve(testFeatures);
-          } else {
-            var fileFieldName = this.mappedArrayFields[layerFieldName];
-            for (var ii = 0; ii < this.storeItems.length; ii++) {
-              var item = this.storeItems[ii];
-              var fileValue = this.csvStore.getValue(item, fileFieldName);
-              var fileId = item._csvId;
-              array.forEach(testFeatures, function (feature) {
-                //first time trough features will be from layer query...additional times through they will
-                // be from our result object
-                var _feature = feature.attributes ? feature : feature.feature;
-                var featureValue = _feature.attributes[layerFieldName];
-                if (fileValue === featureValue) {
-                  matchValues.push({
-                    feature: _feature,
-                    featureId: _feature.attributes[this.oidField],
-                    fileId: fileId
-                  });
-                }
-              });
-            }
-
-            if (matchValues.length > 0) {
+          if (this.keys && index < this.keys.length) {
+            var layerFieldName = this.keys[index];
+            if (layerFieldName === this.oidField || this.duplicateTestFields.indexOf(layerFieldName) === -1) {
+              //def.resolve(testFeatures);
               index += 1;
-              _testFieldValues(matchValues, index).then(lang.hitch(this, function (results) {
+              _testFieldValues(testFeatures, index).then(lang.hitch(this, function (results) {
                 def.resolve(results);
               }));
             } else {
-              def.resolve(matchValues);
-              return def.promise;
+              var fileFieldName = this.mappedArrayFields[layerFieldName];
+              if (fileFieldName) {
+                for (var ii = 0; ii < this.storeItems.length; ii++) {
+                  var item = this.storeItems[ii];
+                  var fileValue = this.csvStore.getValue(item, fileFieldName);
+                  var fileId = item._csvId;
+                  array.forEach(testFeatures, function (feature) {
+                    //first time trough features will be from layer query...additional times through they will
+                    // be from our result object
+                    var _feature = feature.attributes ? feature : feature.feature;
+                    var featureValue = _feature.attributes[layerFieldName];
+                    if (fileValue === featureValue) {
+                      matchValues.push({
+                        feature: _feature,
+                        featureId: _feature.attributes[this.oidField],
+                        fileId: fileId
+                      });
+                    }
+                  });
+                }
+              }
+
+              if (matchValues.length > 0) {
+                index += 1;
+                _testFieldValues(matchValues, index).then(lang.hitch(this, function (results) {
+                  def.resolve(results);
+                }));
+              } else {
+                def.resolve(matchValues);
+                return def.promise;
+              }
             }
+          } else {
+            def.resolve(testFeatures);
           }
 
           return def;

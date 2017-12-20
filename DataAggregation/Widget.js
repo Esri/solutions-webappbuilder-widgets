@@ -41,6 +41,23 @@ define([
         this._initConfigInfo();
       },
 
+      /*jshint unused:false*/
+      onAppConfigChanged: function (appConfig, reason, changedData) {
+        switch (reason) {
+          case 'themeChange':
+            break;
+          case 'layoutChange':
+            break;
+          case 'styleChange':
+            break;
+          case 'widgetChange':
+            this._clearResults();
+            break;
+          case 'mapChange':
+            break;
+        }
+      },
+
       _setThemeAndColors: function () {
         this.theme = this.appConfig.theme.name;
         this.styleColor = this._getStyleColor();
@@ -208,6 +225,16 @@ define([
           isDarkTheme: this.isDarkTheme,
           styleColor: this.styleColor
         });
+      },
+
+      _clearResults: function () {
+        if (this._pageContainer) {
+          var startView = this._pageContainer.getViewByTitle('StartPage');
+          if (startView) {
+            startView._clearStore();
+            startView._clearMapping();
+          }
+        }
       }
     });
   });

@@ -67,7 +67,9 @@ define({
       isDuplicateMakeChange: "is duplicate make changes",
       isNotDuplicate: "is not duplicate",
       item: "Item:",
-      locateFeature: "Locate Feature"
+      locateFeature: "Locate Feature",
+      removeFeature: "Remove Feature",
+      featureLocated: "Location Found"
     },
     warningsAndErrors: {
       loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",

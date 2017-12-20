@@ -354,6 +354,15 @@ define(['dojo/_base/declare',
         this.viewStack.removeView(view);
         this.views.splice(idx, 1);
         this._updateViews();
+        if (idx < this.views.length) {
+          this.selectView(idx);
+        } else if(typeof(this.altHomeIndex) !== 'undefined'){
+          this.selectView(this.altHomeIndex);
+        } else {
+          //TODO think through this more...
+          // if a view is removed and we don't have a next view where should it go?
+          this.selectView(this.homeIndex);
+        }
         this.emit('view-removed', view);
       },
 

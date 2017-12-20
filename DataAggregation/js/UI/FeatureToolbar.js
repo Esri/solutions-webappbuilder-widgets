@@ -70,6 +70,7 @@ define(['dojo/_base/declare',
       _editToolbar: null,
       csvStore: null,
       _isAddressFeature: true,
+      _stageLayer: null,
 
       //TODO add message on save when is duplicate...at this point ask them if they would like to keep both or overwrite
 
@@ -96,7 +97,12 @@ define(['dojo/_base/declare',
         this.own(on(this._editToolbar, 'graphic-move-stop', lang.hitch(this, this._graphicMoveStop)));
         this.own(on(this.featureView, 'address-located', lang.hitch(this, this._graphicMoveStop)));
 
+        //TODO this should be done once earlier in the process rather than on every single view
         this.locator = this._getLocator();
+
+        if (this._stageLayer === null) {
+          this._stageLayer = this.csvStore.matchedFeatureLayer;
+        }
       },
 
       postCreate: function () {
@@ -122,7 +128,7 @@ define(['dojo/_base/declare',
           }
         }
         if (locator) {
-          locator.outSpatialReference = this.spatialReference;
+          locator.outSpatialReference = this.map.spatialReference;
         }
         return locator;
       },
@@ -211,95 +217,186 @@ define(['dojo/_base/declare',
       },
 
       _save: function () {
-        var values = this.featureView._getEditValues();
-        if (this.featureView.isDuplicate) {
-          this._showDuplicateSavePopup().then(lang.hitch(this, function (results) {
-            if (results.save) {
-              switch (results.type) {
-                case 'overwrite':
-                  array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-                    if (k !== '_rows') {
-                      this.featureView._editFeature.attributes[k] = values[k];
+        if (!this._saveDisabled) {
+          var values = this.featureView._getEditValues();
+          if (this.featureView.isDuplicate) {
+            this._showDuplicateSavePopup().then(lang.hitch(this, function (results) {
+              if (results.save) {
+                switch (results.type) {
+                  case 'overwrite':
+                    array.forEach(Object.keys(values), lang.hitch(this, function (k) {
+                      if (k !== '_rows') {
+                        this.featureView._editFeature.attributes[k] = values[k];
+                      }
+                    }));
+                    if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
+                      this.featureView._editFeature.geometry = this.featureView._feature.geometry;
                     }
-                  }));
-                  if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
-                    this.featureView._editFeature.geometry = this.featureView._feature.geometry;
-                  }
-                  this.parent.editLayer.applyEdits(null, [this.featureView._editFeature], null)
-                    .then(lang.hitch(this, function (s) {
-                      console.log(s);
+                    this.parent.editLayer.applyEdits(null, [this.featureView._editFeature], null)
+                      .then(lang.hitch(this, function (s) {
+                        console.log(s);
+                        if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
+                          this._hasGeometryEdit = false;
+                        }
+
+                        array.forEach(values._rows, function (r) {
+                          //update the row instance with the new value
+                          var newValue = values[r.fieldName];
+                          r.layerValue = newValue;
+                          r.fileValue = r.useFile ? newValue : r.fileValue;
+                          r.layerValueTextBox.set('value', newValue);
+                        });
+                      }));
+                    break;
+                  case 'both':
+                    array.forEach(Object.keys(values), lang.hitch(this, function (k) {
+                      if (k !== '_rows') {
+                        this.featureView._feature.attributes[k] = values[k];
+                      }
+                    }));
+                    var updateFeature = this.featureView._feature;
+                    array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
+                      if (sf !== this.layer.objectIdField) {
+                        delete updateFeature.attributes[sf];
+                      }
+                    }));
+                    this.parent.editLayer.applyEdits([updateFeature], null, null).then(lang.hitch(this, function (r) {
+                      console.log(r);
                       if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
                         this._hasGeometryEdit = false;
                       }
-
-                      array.forEach(values._rows, function (r) {
-                        //update the row instance with the new value
-                        var newValue = values[r.fieldName];
-                        r.layerValue = newValue;
-                        r.fileValue = r.useFile ? newValue : r.fileValue;
-                        r.layerValueTextBox.set('value', newValue);
-                      });
                     }));
-                  break;
-                case 'both':
-                  array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-                    if (k !== '_rows') {
-                      this.featureView._feature.attributes[k] = values[k];
-                    }
-                  }));
-                  var updateFeature = this.featureView._feature;
-                  array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
-                    if (sf !== this.layer.objectIdField) {
-                      delete updateFeature.attributes[sf];
-                    }
-                  }));
-                  this.parent.editLayer.applyEdits([updateFeature], null, null).then(lang.hitch(this, function (r) {
-                    console.log(r);
-                    if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
-                      this._hasGeometryEdit = false;
-                    }
-                  }));
-                  break;
+                    break;
+                }
+
+                //disable save
+                this._updateSave(true);
+                //toggle edit
+                this._edit();
               }
-
-              //disable save
-              this._updateSave(true);
-              //toggle edit
-              this._edit();
-            }
-          }));
-        } else {
-          array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-            if (k !== '_rows') {
-              this.featureView._feature.attributes[k] = values[k];
-            }
-          }));
-
-          var updateFeature = this.featureView._feature;
-          if (this.featureView.label.indexOf('UnMatched') === -1) {
-            this.layer.applyEdits(null, [updateFeature], null).then(lang.hitch(this, function (r) {
-              console.log(r);
-              this._hasGeometryEdit = false;
-              this._hasAttributeEdit = false;
             }));
           } else {
+            array.forEach(Object.keys(values), lang.hitch(this, function (k) {
+              if (k !== '_rows') {
+                this.featureView._feature.attributes[k] = values[k];
+              }
+            }));
 
-            //TODO not complete...vew needs to be fully removed...list updated and the fetaureList re-generated or removed
-            array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
-              delete updateFeature.attributes[sf];
-            }));
-            this.parent.editLayer.applyEdits([updateFeature], null, null).then(lang.hitch(this, function (r) {
-              console.log(r);
-              this._hasGeometryEdit = false;
-              this._hasAttributeEdit = false;
-            }));
-            //this.parent._pageContainer.removeViewByTitle(this.featureView.label);
+            if (this._stageLayer === null) {
+              this._stageLayer = this.csvStore.matchedFeatureLayer;
+            }
+
+            var updateFeature = this.featureView._feature;
+            if (this.featureView.label.indexOf('UnMatched') === -1) {
+              //if currently unmatched save will go to matched layer and it will move to the matched list and be removed from the unmatched list
+              this._stageLayer.applyEdits(null, [updateFeature], null).then(lang.hitch(this, function (r) {
+                console.log(r);
+                this._hasGeometryEdit = false;
+                this._hasAttributeEdit = false;
+              }));
+            } else {
+              var oid = updateFeature.attributes[this.layer.objectIdField];
+
+              //TODO not complete...vew needs to be fully removed...list updated and the fetaureList re-generated or removed
+              array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
+                delete updateFeature.attributes[sf];
+              }));
+
+              //TODO add error handle
+              this._stageLayer.applyEdits(null, [updateFeature], null).then(lang.hitch(this, function (r) {
+                console.log(r);
+                this._hasGeometryEdit = false;
+                this._hasAttributeEdit = false;
+
+                //delete from un-matched layer
+                this.layer.applyEdits(null, null, [updateFeature]).then(lang.hitch(this, function (r) {
+                  console.log(r);
+                }));
+
+                this._updateList('was-unmatched', oid);
+              }));
+            }
+
+            //disable save
+            this._updateSave(true);
+            //toggle edit
+            this._edit();
           }
+        }
+      },
 
-          //disable save
-          this._updateSave(true);
-          //toggle edit
-          this._edit();
+      _updateList: function (type, oid) {
+        if (type === 'was-unmatched') {
+          //remove from unmatched list
+          this.featureView._parentFeatureList.removeFeature(this.featureView.feature, oid)
+            .then(lang.hitch(this, function (message) {
+              console.log(message);
+              this._updateFeature();
+              this.featureView._updateFeature(this.featureView.feature.geometry, this.featureView._address);
+
+              //remove current view from page container
+              this.parent._pageContainer.removeViewByTitle(this.featureView.label);
+
+              //update matched list
+              //need to get review and then _matchedListView from it
+              var reviewView = this.parent._pageContainer.getViewByTitle('Review');
+              reviewView.matchedFeatureList.addFeature(this.featureView.feature);
+              if (!reviewView._matchedListView) {
+                this.parent._pageContainer.addView(reviewView.matchedFeatureList);
+              }
+              reviewView._updateReviewRows('unmatched');
+
+              //TODO needs to set to an appropriate index
+
+              //TODO needs to remove UI bits from un-matched
+              //this should only occur when unmatched features goes to 0
+              //this.parent._pageContainer.removeViewByTitle(reviewView.label);
+
+              //May need to do this as a part of _updateReviewRow when that page has been visited first
+              //reviewView._initReviewRow([this.featureView._feature],
+              //  [reviewView.matchedHintRow, reviewView.matchedControlRow], reviewView.matchedCount);
+
+              //need to splice from unmatched list
+              //reviewView.unMatchedList.splice...
+            }));
+        }
+      },
+
+      _updateFeature: function () {
+        //take values from feature from _feature
+
+        //geom
+        //this.featureView.feature.geometry = this.featureView._feature.geometry;
+
+        //label
+
+        //address values if they have changed...
+        addr_fields_loop:
+        for (var ii = 0; ii < this.featureView.addressFields.length; ii++) {
+          var addrField = this.featureView.addressFields[ii];
+          var matchField = "MatchField_" + addrField.keyField;
+
+          var addr = this.featureView._getAddress();
+
+          var newValue = addr[addrField.keyField];
+
+          field_info_loop:
+          for (var j = 0; j < this.featureView.feature.fieldInfo.length; j++) {
+            var fi = this.featureView.feature.fieldInfo[j];
+            if (fi.name === matchField) {
+              //update with current value from control
+              fi.value = newValue;
+              break field_info_loop;
+            }
+          }
+        }
+
+        //fieldInfos
+        for (var i = 0; i < this.featureView.feature.fieldInfo.length; i++) {
+          var _fi = this.featureView.feature.fieldInfo[i];
+          if (this.featureView._feature.attributes.hasOwnProperty(_fi.name)) {
+            _fi.value = this.featureView._feature.attributes[_fi.name];
+          }
         }
       },
 

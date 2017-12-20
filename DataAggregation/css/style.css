@@ -395,7 +395,7 @@
 .jimu-widget-critical-facilities-ui .next-arrow {
   background-image: url('../images/nav_right_black.png');
   width: 15px;
-  height: 15px;
+  height: 16px;
   position: relative;
   background-size: contain;
   background-repeat: no-repeat;
@@ -611,7 +611,7 @@
 .jimu-widget-critical-facilities-ui .done-mark {
   background-image: url('../images/check.png');
   width: 15px;
-  height: 15px;
+  height: 16px;
   position: relative;
   background-size: contain;
   float: right;
@@ -622,7 +622,7 @@
 .jimu-rtl .jimu-widget-critical-facilities-ui .done-mark {
   background-image: url('../images/check.png');
   width: 15px;
-  height: 15px;
+  height: 16px;
   position: relative;
   background-size: contain;
   float: left;

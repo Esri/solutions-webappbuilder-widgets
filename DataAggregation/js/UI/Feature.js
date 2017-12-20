@@ -90,8 +90,6 @@ define(['dojo/_base/declare',
       theme: '',
       isDarkTheme: '',
       styleColor: 'black',
-      _fileFeature: null,
-      _layerFeature: null,
       layer: null,
       _changedAttributeRows: [],
       _changedAddressRows: [],
@@ -136,10 +134,12 @@ define(['dojo/_base/declare',
       startup: function () {
         this._started = true;
         this._updateAltIndexes();
+
         this._getFeature().then(lang.hitch(this, function (f) {
           this._feature = f;
           this._panToAndSelectFeature(f);
         }));
+
         this._getEditLayerFeature().then(lang.hitch(this, function (f) {
           this._editFeature = f;
         }));
@@ -147,20 +147,27 @@ define(['dojo/_base/declare',
         this._toggleEditControls(typeof (this._featureToolbar._editDisabled) === 'undefined' ?
           true : this._featureToolbar._editDisabled);
 
-        //TODO what did I start this for...
-        var score;
-        for (var i = 0; i < this.feature.fieldInfo.length; i++) {
-          var fi = this.feature.fieldInfo[i];
-          if (fi.name === 'matchScore') {
-            score = fi.value;
-          }
-        }
+        this._showDuplicateReview(this.isDuplicate);
       },
 
       onShown: function () {
         this._toggleEditControls(typeof (this._featureToolbar._editDisabled) === 'undefined' ?
           true : this._featureToolbar._editDisabled);
+        this._showDuplicateReview(this.isDuplicate);
+        if (domClass.contains(this.reviewTableG, 'display-none')) {
+          domClass.remove(this.reviewTableG, 'display-none');
+        }
         this._panToAndSelectFeature(this._feature);
+      },
+
+      _showDuplicateReview: function (v) {
+        if (v) {
+          if (domClass.contains(this.reviewTableG, 'display-none')) {
+            domClass.remove(this.reviewTableG, 'display-none');
+          }
+        } else {
+          domClass.add(this.reviewTableG, 'display-none');
+        }
       },
 
       _updateAltIndexes: function () {
@@ -203,22 +210,7 @@ define(['dojo/_base/declare',
       },
 
       _initDuplicateReview: function (fields) {
-        //workflows
-
-        //        Feature is a duplicate and the user wants use the existing feature without changes
-        //        Feature is a duplicate and the user wants to make changes to the existing feature (update existing feature's location or attribution)
-        //Feature is NOT a duplicate > moves into normal review but the feature needs to be geocoded first to ensure a valid location can be found.If valid location - treated as normal feature feature review.if no valid location - treated as location not found workflow
-        //UI Feedback
-        //Initially, a feature and supporting attribute information is presented to the user.The user is given an option to indicate if the feature is a duplicate using a flag .
-        //        Attribute information will be presented first, then followed by action based tools
-
-        ////////////////////////////////////////////////////
-        //Just in case we go back to checkbox for any reason
-        //this._initCheckBox();
-        ////////////////////////////////////////////////////
-
         this._initDuplicateSelect();
-
         this._initDuplicateReviewRows(fields);
       },
 
@@ -259,15 +251,57 @@ define(['dojo/_base/declare',
           this._showShouldLocateFeaturePopup().then(lang.hitch(this, function (shouldLocate) {
             if (shouldLocate) {
               this._featureToolbar._locateFeature().then(lang.hitch(this, function (feature) {
-                console.log(feature);
                 //move to the appropriate list and message the user about what happened
-                new Message({
-                  message: this.nls.warningsAndErrors.itemMoveMatch
+                var oidFieldName = this.layer.objectIdField;
+                var oid = feature.fieldInfo.filter(function (fi) {
+                  return fi.name === oidFieldName;
+                })[0];
+
+                var s = lang.clone(oid.value);
+                oid.value = this._feature.attributes[this.csvStore.matchedFeatureLayer.objectIdField];
+
+                var content = domConstruct.create('div');
+
+                domConstruct.create('div', {
+                  innerHTML: this.nls.warningsAndErrors.itemMoveMatch,
+                  style: "padding-bottom: 10px;"
+                }, content);
+
+                var movedPopup = new Popup({
+                  titleLabel: this.nls.review.featureLocated,
+                  width: 400,
+                  autoHeight: true,
+                  content: content,
+                  buttons: [{
+                    label: this.nls.ok,
+                    onClick: lang.hitch(this, lang.hitch(this, function () {
+                      movedPopup.close();
+                      movedPopup = null;
+                    }))
+                  }],
+                  onClose: lang.hitch(this, function () {
+                    movedPopup = null;
+                    this._removeView(feature, s);
+                    this._addView(feature);
+                  })
                 });
               }));
             }
           }));
         }
+      },
+
+      _removeView: function (feature, oid) {
+        //remove from duplicate feature list
+        this._parentFeatureList.removeFeature(feature, oid).then(lang.hitch(this, function (message) {
+          console.log(message);
+          this.parent._pageContainer.removeView(this);
+        }));
+      },
+
+      _addView: function (feature) {
+        var reviewView = this.parent._pageContainer.getViewByTitle('Review');
+        reviewView.matchedFeatureList.addFeature(feature);
       },
 
       _toggleDuplicateReview: function (v) {
@@ -276,10 +310,9 @@ define(['dojo/_base/declare',
           if (domClass.contains(this.featureTable, 'display-none')) {
             domClass.remove(this.featureTable, 'display-none');
           }
-
           //hide review Fields
           array.forEach(rows, lang.hitch(this, function (r) {
-            if (r.isLabelRow || r.isControlRow) {
+            if (r.isLabelRow || r.isControlRow || r.isHeaderRow) {
               domClass.add(r, 'display-none');
             }
           }));
@@ -289,7 +322,7 @@ define(['dojo/_base/declare',
 
           //show review Fields
           array.forEach(rows, lang.hitch(this, function (r) {
-            if (r.isLabelRow || r.isControlRow) {
+            if (r.isLabelRow || r.isControlRow || r.isHeaderRow) {
               if (domClass.contains(r, 'display-none')) {
                 domClass.remove(r, 'display-none');
               }
@@ -312,7 +345,7 @@ define(['dojo/_base/declare',
         }, content);
 
         var savePopup = new Popup({
-          titleLabel: this.nls.review.locateFeature,
+          titleLabel: this.nls.review.removeFeature,
           width: 400,
           autoHeight: true,
           content: content,
@@ -338,47 +371,6 @@ define(['dojo/_base/declare',
 
         return def;
       },
-
-      _initCheckBox: function () {
-        //Just in case we go back to checkbox for any reason
-        //var _isDuplicateFlag = new CheckBox({
-        //  checked: true,
-        //  label: this.nls.review.isDuplicate,
-        //  onChange: lang.hitch(this, this._isDuplicateFlagChange)
-        //});
-        //_isDuplicateFlag.placeAt(this._duplicateFlag);
-
-        //var tdLabel = domConstruct.create('td', {
-        //  className: "label-td",
-        //  title: this.nls.featureToolbar.save
-        //}, this.reviewRow);
-        //domConstruct.create('div', {
-        //  className: "float-right bg-ft-img bg-save feature-toolbar-btn",
-        //  'data-dojo-attach-event': lang.hitch(this, this._save)
-        //}, tdLabel);
-      },
-
-      //_isDuplicateFlagChange: function (v) {
-      //  if (this.isDuplicate) {
-      //    if (v) {
-      //      if(domClass.contains(this.featureTable, 'display-none')){
-      //        domClass.remove(this.featureTable, 'display-none');
-      //      }
-      //      var reviewRow = query('.field-label-row');
-      //      for (var i = 0; i < reviewRow.length; i++) {
-      //        var r = reviewRow[i];
-      //        domClass.add(r, 'display-none');
-      //      }
-      //    } else {
-      //      domClass.add(this.featureTable, 'display-none');
-      //      var reviewRow = query('.field-label-row');
-      //      for (var i = 0; i < reviewRow.length; i++) {
-      //        var r = reviewRow[i];
-      //        domClass.remove(r, 'display-none');
-      //      }
-      //    }
-      //  }
-      //},
 
       _initDuplicateReviewRows: function (fields) {
 
@@ -495,6 +487,7 @@ define(['dojo/_base/declare',
           domConstruct.create('div', {
             className: "main-text float-left",
             innerHTML: this.nls.review.fromLayer1
+
           }, tdLabel);
 
           var _tdLabel = domConstruct.create('td', {
@@ -595,6 +588,18 @@ define(['dojo/_base/declare',
         }));
       },
 
+      _getAddress: function () {
+        this._address = {};
+        //use the located address to update whatever fileds we have displayed
+        array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
+          //TODO understand if this can be different or some safe way to know what it is
+          var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : row.keyField;
+          this._address[keyField] = row.addressValueTextBox.value;
+        }));
+
+        return this._address;
+      },
+
       _updateFeature: function (location, address) {
         //TODO when a new feature is generated from locate we need to update the local instances
         //this will include the local feature instance that is disconnected from the layer and also the layer instance
@@ -608,8 +613,8 @@ define(['dojo/_base/declare',
         this.feature.geometry = location;
         this._feature.geometry = location;
 
-        //apply the edits
-        this.layer.applyEdits(null, [this._feature]).then(lang.hitch(this, function () {
+        //add the feature to the matched layer
+        this.csvStore.matchedFeatureLayer.applyEdits([this._feature]).then(lang.hitch(this, function () {
           // this._featureToolbar._hasAttributeEdit = false;
           this._panToAndSelectFeature(this._feature);
           this.emit('address-located');
@@ -828,8 +833,12 @@ define(['dojo/_base/declare',
       _toggleEnabled: function (isFile) {
         array.forEach(this.featureControlTable.rows, function (row) {
           if (!row.isRadioRow) {
-            row.fileValueTextBox.set('disabled', !isFile);
-            row.layerValueTextBox.set('disabled', isFile);
+            if (row.fileValueTextBox) {
+              row.fileValueTextBox.set('disabled', !isFile);
+            }
+            if (row.layerValueTextBox) {
+              row.layerValueTextBox.set('disabled', isFile);
+            }
           }
         });
       },
@@ -902,7 +911,7 @@ define(['dojo/_base/declare',
               end: 0
             }
           }).play();
-          setTimeout(this._clearFeature, 1075, g);
+          setTimeout(this._clearFeature, 1200, g);
         }
       },
 
@@ -913,40 +922,44 @@ define(['dojo/_base/declare',
       },
 
       _toggleEditControls: function (disabled) {
-        array.forEach(this.featureControlTable.rows, function (row) {
-          if (row.isRadioRow) {
-            row.fromSelect.set('disabled', disabled);
-          }
-          if (row.isEditRow) {
-            if (row.fileValueTextBox) {
-              if (disabled) {
-                row.fileValueTextBox.set('disabled', disabled);
-              } else if (row.parent.isDuplicate && row.parent._useValuesFromFile){
-                row.fileValueTextBox.set('disabled', disabled);
-              } else if (!row.parent.isDuplicate) {
-                row.fileValueTextBox.set('disabled', disabled);
+        if (this.featureControlTable) {
+          array.forEach(this.featureControlTable.rows, function (row) {
+            if (row.isRadioRow) {
+              row.fromSelect.set('disabled', disabled);
+            }
+            if (row.isEditRow) {
+              if (row.fileValueTextBox) {
+                if (disabled) {
+                  row.fileValueTextBox.set('disabled', disabled);
+                } else if (row.parent.isDuplicate && row.parent._useValuesFromFile) {
+                  row.fileValueTextBox.set('disabled', disabled);
+                } else if (!row.parent.isDuplicate) {
+                  row.fileValueTextBox.set('disabled', disabled);
+                }
+              }
+              if (row.layerValueTextBox) {
+                if (disabled) {
+                  row.layerValueTextBox.set('disabled', disabled);
+                } else if (row.parent.isDuplicate && row.parent._useValuesFromLayer) {
+                  row.layerValueTextBox.set('disabled', disabled);
+                } else if (!row.parent.isDuplicate) {
+                  row.layerValueTextBox.set('disabled', disabled);
+                }
               }
             }
-            if (row.layerValueTextBox) {
-              if (disabled) {
-                row.layerValueTextBox.set('disabled', disabled);
-              } else if (row.parent.isDuplicate && row.parent._useValuesFromLayer){
-                row.layerValueTextBox.set('disabled', disabled);
-              } else if (!row.parent.isDuplicate) {
-                row.layerValueTextBox.set('disabled', disabled);
-              }
-            }
-          }
-        });
+          });
+        }
 
         //address rows
-        array.forEach(this.locationControlTable.rows, function (row) {
-          if (row.isAddressRow) {
-            if (row.addressValueTextBox) {
-              row.addressValueTextBox.set('disabled', disabled);
+        if (this.locationControlTable) {
+          array.forEach(this.locationControlTable.rows, function (row) {
+            if (row.isAddressRow) {
+              if (row.addressValueTextBox) {
+                row.addressValueTextBox.set('disabled', disabled);
+              }
             }
-          }
-        });
+          });
+        }
       },
 
       _getEditValues: function () {
@@ -969,8 +982,11 @@ define(['dojo/_base/declare',
       },
 
       _clearFeature: function (f) {
-        var gl = f.getLayer();
-        gl.remove(f);
+        var gl = f.getLayer ? f.getLayer() : undefined;
+        if (gl) {
+          gl.remove(f);
+          gl.clear();
+        }
       },
 
       setStyleColor: function (styleColor) {

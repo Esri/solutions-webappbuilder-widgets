@@ -24,6 +24,7 @@ define(['dojo/_base/declare',
   "dojo/Evented",
   "dojo/text!./templates/Review.html",
   'dojo/query',
+  'dojo/on',
   './FeatureList',
   'jimu/dijit/Message',
   'jimu/CSVUtils',
@@ -39,6 +40,7 @@ define(['dojo/_base/declare',
     Evented,
     template,
     query,
+    on,
     FeatureList,
     Message,
     CSVUtils,
@@ -91,26 +93,45 @@ define(['dojo/_base/declare',
 
       _initNavPages: function () {
         if (this.pageContainer) {
-
+          //This will always be created but only shown when it has more than 0
+          this.matchedFeatureList = this._initFeatureList(this.matchedList, this.matchedLayer,
+            'MatchedFeatures', this.nls.review.reviewMatchedPageHint, false);
+          this.pageContainer.addView(this.matchedFeatureList);
           if (this.matchedList.length > 0) {
-            var matched = this._initFeatureList(this.matchedList, this.matchedLayer, 'MatchedFeatures',
-              this.nls.review.reviewMatchedPageHint, false);
-            this.pageContainer.addView(matched);
-            this._matchedListView = this.pageContainer.getViewByTitle(matched.label);
+            //Submit should enable here
           }
+          this._matchedListView = this.pageContainer.getViewByTitle(this.matchedFeatureList.label);
+          this.own(on(this.matchedFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
+            this.matchedCount.innerHTML = v;
+            this._initReviewRow(this.matchedList, [this.matchedHintRow, this.matchedControlRow], this.matchedCount);
+            //TODO Submit should also enable here if not already enabled
+          })));
 
           if (this.unMatchedList.length > 0) {
-            var unMatched = this._initFeatureList(this.unMatchedList, this.unMatchedLayer, 'UnMatchedFeatures',
-              this.nls.review.reviewUnMatchedPageHint, false);
-            this.pageContainer.addView(unMatched);
-            this._unMatchedListView = this.pageContainer.getViewByTitle(unMatched.label);
+            this.unMatchedFeatureList = this._initFeatureList(this.unMatchedList, this.unMatchedLayer,
+              'UnMatchedFeatures', this.nls.review.reviewUnMatchedPageHint, false);
+            this.pageContainer.addView(this.unMatchedFeatureList);
+            this._unMatchedListView = this.pageContainer.getViewByTitle(this.unMatchedFeatureList.label);
+            this.own(on(this.unMatchedFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
+              this.unMatchedCount.innerHTML = v;
+              if (v === 0) {
+                //If all rows have been removed it should no longer be shown
+                this.pageContainer.removeView(this._unMatchedListView);
+              }
+            })));
           }
 
           if (this.duplicateList.length > 0) {
-            var duplicateFeat = this._initFeatureList(this.duplicateList, this.duplicateLayer, 'DuplicateFeatures',
-              this.nls.review.reviewDuplicatePageHint, true);
-            this.pageContainer.addView(duplicateFeat);
-            this._duplicateListView = this.pageContainer.getViewByTitle(duplicateFeat.label);
+            this.duplicateFeatureList = this._initFeatureList(this.duplicateList, this.duplicateLayer,
+              'DuplicateFeatures', this.nls.review.reviewDuplicatePageHint, true);
+            this.pageContainer.addView(this.duplicateFeatureList);
+            this._duplicateListView = this.pageContainer.getViewByTitle(this.duplicateFeatureList.label);
+            this.own(on(this.duplicateFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
+              this.duplicateCount.innerHTML = v;
+              if (v === 0) {
+                this.pageContainer.removeView(this._duplicateListView);
+              }
+            })));
           }
 
           this.altNextIndex = this.matchedList.length > 0 ? this._matchedListView.index :
@@ -175,6 +196,21 @@ define(['dojo/_base/declare',
               domClass.add(r, 'display-none');
             }
           });
+        }
+      },
+
+      _updateReviewRows: function (type) {
+        this._initReviewRows();
+
+        if (type === 'unmatched') {
+          if (this.unMatchedFeatureList) {
+            //If page container is updated to support next nave to review when no more features in given list then this test could go away
+            if (this.unMatchedFeatureList.features && this.unMatchedFeatureList.features.length === 0) {
+              this.pageContainer._homeView();
+            } else {
+              this.pageContainer._nextView();
+            }
+          }
         }
       },
 
@@ -249,6 +285,7 @@ define(['dojo/_base/declare',
           console.log(e);
           this._updateNode(this.progressNode, false);
           this._navigateHome();
+          this.csvStore._zoomToData(this.editLayer);
         }), lang.hitch(this, function (err) {
           console.log(err);
           new Message({
