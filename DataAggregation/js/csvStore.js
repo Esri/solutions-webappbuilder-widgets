@@ -66,6 +66,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     xFieldName: "",
     yFieldName: "",
     symbol: null,
+    matchFieldPrefix: "MatchField_",
 
     constructor: function (options) {
       lang.mixin(this, options);
@@ -146,9 +147,9 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
           //These need to be persisted to support additional locate operations but need to be avoided when going into theactual layer
           array.forEach(this._currentAddressFields, lang.hitch(this, function (f) {
             if (typeof (f.value) !== 'undefined') {
-              attributes["MatchField_" + f.keyField] = this.csvStore.getValue(si, f.value);
+              attributes[this.matchFieldPrefix + f.keyField] = this.csvStore.getValue(si, f.value);
             } else {
-              attributes["MatchField_" + f.keyField] = undefined;
+              attributes[this.matchFieldPrefix + f.keyField] = undefined;
             }
           }));
 
@@ -163,6 +164,8 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             attributes.ObjectID = duplicateI;
             attributes.DestinationOID = di.featureAttributes[this.editLayer.objectIdField];
             attributes.matchScore = 100;
+            attributes.hasDuplicateUpdates = false;
+            attributes.duplicateState = 'no-change';
             duplicateFeatures.push({
               "geometry": di.location,
               "attributes": lang.clone(attributes)
@@ -186,7 +189,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         this.matchedFeatureLayer = this._initLayer(matchedFeatures, this.file.name);
         if (matchedFeatures.length > 0) {
           //feature list should support zoom to its children
-          this._zoomToData(this.matchedFeatureLayer);
+          this._zoomToData(this.matchedFeatureLayer.graphics);
         }
 
         if (duplicateFeatures.length > 0) {
@@ -232,7 +235,6 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
           if (this.keys && index < this.keys.length) {
             var layerFieldName = this.keys[index];
             if (layerFieldName === this.oidField || this.duplicateTestFields.indexOf(layerFieldName) === -1) {
-              //def.resolve(testFeatures);
               index += 1;
               _testFieldValues(testFeatures, index).then(lang.hitch(this, function (results) {
                 def.resolve(results);
@@ -474,7 +476,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
 
                           ////These need to be persisted to support additional locate operations but need to be avoided when going into theactual layer
                           //array.forEach(this._currentAddressFields, lang.hitch(this, function (f) {
-                          //  finalResults[_i]["MatchField_" + f.keyField] = _r.attributes[f.keyField];
+                          //  finalResults[_i][this.matchFieldPrefix + f.keyField] = _r.attributes[f.keyField];
                           //}));
 
                           //finalResults[_i].locatorAttributes = _r.attributes;
@@ -532,10 +534,9 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     _xyData: function (options) {
       //TODO eventually it would be good to use the defense solutions parsing logic...we could suppport many types of coordinates
       var def = new Deferred();
-      var isGeographic;
       var data = [];
       var csvStore = options.csvStore;
-      array.forEach(options.storeItems, function (i) {
+      array.forEach(options.storeItems, lang.hitch(this, function (i) {
         var attributes = {};
         var _attrs = csvStore.getAttributes(i);
         array.forEach(_attrs, function (a) {
@@ -543,19 +544,9 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         });
         var x = parseFloat(csvStore.getValue(i, options.xFieldName));
         var y = parseFloat(csvStore.getValue(i, options.yFieldName));
-        if (typeof (isGeographic) === 'undefined') {
-          isGeographic = /(?=^[-]?\d{1,3}\.)^[-]?\d{1,3}\.\d+|(?=^[-]?\d{4,})|^[-]?\d{1,3}/.exec(x) ? true : false;
-        }
 
-        //TODO may want to consider some other tests here to make sure we avoid
-        // potential funky/bad corrds from passing through
-        if (!isNaN(x) && !isNaN(y)) {
-          var geometry = new Point(x, y);
-          if (isGeographic) {
-            geometry = webMercatorUtils.geographicToWebMercator(geometry);
-          } else {
-            geometry.spatialReference = new SpatialReference({ wkid: options.wkid });
-          }
+        var geometry = this._getGeometry(x, y);
+        if (geometry) {
           data.push({
             attributes: attributes,
             location: geometry,
@@ -563,9 +554,29 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             score: 100
           });
         }
-      });
+      }));
       def.resolve(data);
       return def;
+    },
+
+    _getGeometry: function (x, y) {
+      var isGeographic;
+      if (typeof (isGeographic) === 'undefined') {
+        isGeographic = /(?=^[-]?\d{1,3}\.)^[-]?\d{1,3}\.\d+|(?=^[-]?\d{4,})|^[-]?\d{1,3}/.exec(x) ? true : false;
+      }
+
+      var geometry;
+      //TODO may want to consider some other tests here to make sure we avoid
+      // potential funky/bad corrds from passing through
+      if (!isNaN(x) && !isNaN(y)) {
+        geometry = new Point(x, y);
+        if (isGeographic) {
+          geometry = webMercatorUtils.geographicToWebMercator(geometry);
+        } else {
+          geometry.spatialReference = new SpatialReference({ wkid: this.map.spatialReference.wkid });
+        }
+        return geometry;
+      }
     },
 
     _generateFC: function (features) {
@@ -713,12 +724,13 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
       return def;
     },
 
-    _zoomToData: function (featureLayer) {
-      if (featureLayer.graphics && featureLayer.graphics.length > 0) {
+    //This should go into a util class
+    _zoomToData: function (graphics) {
+      if (graphics && graphics.length > 0) {
         try {
           //TODO this would not handle null features
-          var ext = graphicsUtils.graphicsExtent(featureLayer.graphics);
-          this.map.setExtent(ext.expand(1.5), true);
+          var ext = graphicsUtils.graphicsExtent(graphics);
+          this.map.setExtent(ext.expand(1.9), true);
         } catch (err) {
           console.log(err.message);
         }

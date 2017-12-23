@@ -87,10 +87,6 @@ define(['dojo/_base/declare',
         this._initNavPages();
       },
 
-      onShown: function () {
-
-      },
-
       _initNavPages: function () {
         if (this.pageContainer) {
           //This will always be created but only shown when it has more than 0
@@ -202,14 +198,14 @@ define(['dojo/_base/declare',
       _updateReviewRows: function (type) {
         this._initReviewRows();
 
-        if (type === 'unmatched') {
-          if (this.unMatchedFeatureList) {
-            //If page container is updated to support next nave to review when no more features in given list then this test could go away
-            if (this.unMatchedFeatureList.features && this.unMatchedFeatureList.features.length === 0) {
-              this.pageContainer._homeView();
-            } else {
-              this.pageContainer._nextView();
-            }
+        var list = (type === 'unmatched' && this.unMatchedFeatureList) ? this.unMatchedFeatureList :
+          (type === 'duplicate' && this.duplicateFeatureList) ? this.duplicateFeatureList : undefined;
+        if (list) {
+          //If page container is updated to support next nave to review when no more features in given list then this test could go away
+          if (list.features && list.features.length === 0) {
+            this.pageContainer._homeView();
+          } else {
+            this.pageContainer._nextView();
           }
         }
       },
@@ -262,36 +258,65 @@ define(['dojo/_base/declare',
       },
 
       _submit: function () {
+        //submit to feature service
+        //TODO understand if we are supposed to do anything to do this multi-part stayle for large number of features
+
         this._updateNode(this.submitButton, false);
         this._updateNode(this.progressNode, true);
-        //submit to feature service
-        var featureLayer = this.csvStore.matchedFeatureLayer;
-        var oidField = this.csvStore.objectIdField;
-        var flayer = this.editLayer;
-        var features = [];
-        array.forEach(featureLayer.graphics, function (feature) {
-          if (feature.attributes.hasOwnProperty(oidField)) {
-            delete feature.attributes[oidField];
-          }
-          if (feature.hasOwnProperty("_graphicsLayer")) {
-            delete feature._graphicsLayer;
-          }
-          if (feature.hasOwnProperty("_layer")) {
-            delete feature._layer;
-          }
-          features.push(feature);
-        });
-        flayer.applyEdits(features, null, null, lang.hitch(this, function (e) {
-          console.log(e);
+
+        var addFeatures = this._getFeatures(this.csvStore.matchedFeatureLayer);
+        var updateFeatures = this._getFeatures(this.csvStore.duplicateFeatureLayer);
+        this.editLayer.applyEdits(addFeatures, updateFeatures, null, lang.hitch(this, function () {
           this._updateNode(this.progressNode, false);
           this._navigateHome();
-          this.csvStore._zoomToData(this.editLayer);
+          this.csvStore._zoomToData(this.editLayer.graphics);
         }), lang.hitch(this, function (err) {
           console.log(err);
           new Message({
             message: this.nls.warningsAndErrors.saveError
           });
         }));
+      },
+
+      _getFeatures: function (featureLayer) {
+        var features = [];
+        var oidField = this.csvStore.objectIdField;
+        if (featureLayer && featureLayer.graphics) {
+          array.forEach(featureLayer.graphics, lang.hitch(this, function (feature) {
+            if (feature.hasOwnProperty("_graphicsLayer")) {
+              delete feature._graphicsLayer;
+            }
+            if (feature.hasOwnProperty("_layer")) {
+              delete feature._layer;
+            }
+
+            var attrs = feature.attributes;
+            //if feature is duplicate and has updates push it for update...if it's not duplicate push it for add
+            if (attrs.hasOwnProperty('hasDuplicateUpdates') && attrs.hasOwnProperty('duplicateState')) {
+              if (attrs.hasDuplicateUpdates && attrs.duplicateState === 'make-change') {
+                //update the OID...no updates will occur without this
+                if (attrs.hasOwnProperty('DestinationOID')) {
+                  attrs[this.editLayer.objectIdField] = attrs.DestinationOID;
+                }
+                this._deleteProp(attrs, 'hasDuplicateUpdates');
+                this._deleteProp(attrs, 'duplicateState');
+                features.push(feature);
+              }
+            } else {
+              features.push(feature);
+            }
+            this._deleteProp(attrs, 'matchScore');
+            this._deleteProp(attrs, oidField);
+            this._deleteProp(attrs, 'DestinationOID');
+          }));
+        }
+        return features.length > 0 ? features : null;
+      },
+
+      _deleteProp: function (attrs, fieldName) {
+        if (attrs.hasOwnProperty(fieldName)) {
+          delete attrs[fieldName];
+        }
       },
 
       _navigateHome: function () {

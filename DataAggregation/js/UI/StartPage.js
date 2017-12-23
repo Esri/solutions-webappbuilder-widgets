@@ -326,6 +326,8 @@ define(['dojo/_base/declare',
             duplicateLayer: results.duplicateLayer
           });
 
+
+
           //TODO still thinking through this but it will be necessary I believe
           this.state = 'review';
 
@@ -427,26 +429,40 @@ define(['dojo/_base/declare',
         return features;
       },
 
-      _addResultView: function (locateResults) {
+      _addResultView: function (results) {
         var r = new Review({
           nls: this.nls,
           map: this.map,
           parent: this.parent,
           config: this.config,
           appConfig: this.appConfig,
-          matchedList: locateResults.matchedFeatures,
-          unMatchedList: locateResults.unMatchedFeatures,
-          duplicateList: locateResults.duplicateFeatures,
+          matchedList: results.matchedFeatures,
+          unMatchedList: results.unMatchedFeatures,
+          duplicateList: results.duplicateFeatures,
           theme: this.theme,
           isDarkTheme: this.isDarkTheme,
           csvStore: this.csvStore,
           editLayer: this.parent.editLayer,
-          matchedLayer: locateResults.matchedLayer,
-          unMatchedLayer: locateResults.unMatchedLayer,
-          duplicateLayer: locateResults.duplicateLayer,
-          duplicateLookupList: locateResults.duplicateLookupList
+          matchedLayer: results.matchedLayer,
+          unMatchedLayer: results.unMatchedLayer,
+          duplicateLayer: results.duplicateLayer,
+          duplicateLookupList: results.duplicateLookupList
         });
         this.pageContainer.addView(r);
+
+        this._zoomToAllFeatures([results.matchedLayer, results.unMatchedLayer, results.duplicateLayer]);
+      },
+
+      _zoomToAllFeatures: function (resultsArray) {
+        var allFeatures = [];
+        array.forEach(resultsArray, function (results) {
+          if (results && results.graphics) {
+            for (var i = 0; i < results.graphics.length; i++) {
+              allFeatures.push(results.graphics[i]);
+            }
+          }
+        });
+        this.csvStore._zoomToData(allFeatures);
       }
     });
   });

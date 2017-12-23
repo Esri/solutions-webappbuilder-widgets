@@ -10,6 +10,7 @@
   height: 100%;
   color: #596679;
   font-size: 14px;
+  overflow-x: auto
 }
 
 .jimu-widget-setting-critical-facilities .instruction {

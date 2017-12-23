@@ -316,7 +316,7 @@ define(['dojo/_base/declare',
         this.viewCount = this.views.length;
         for (var i = 0; i < this.views.length; i++) {
           var view = this.views[i];
-          view.styleColor = this.styleColor;
+          view.setStyleColor(this.styleColor);
           view.index = i;
         }
       },

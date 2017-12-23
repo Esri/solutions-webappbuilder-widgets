@@ -20,17 +20,18 @@ define(['dojo/_base/declare',
   'dojo/Evented',
   'dojo/query',
   'dojo/dom-class',
-  'dojo/dom-construct',
   'dojo/Deferred',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
   'dojo/on',
+  'dojox/gfx/fx',
   'dojo/text!./templates/FeatureToolbar.html',
   'esri/toolbars/edit',
-  'jimu/dijit/Popup',
-  'esri/geometry/Point',
-  'esri/geometry/webMercatorUtils',
-  'esri/SpatialReference'
+  'jimu/dijit/Message',
+  'esri/symbols/SimpleMarkerSymbol',
+  'esri/symbols/SimpleLineSymbol',
+  'esri/Color',
+  'esri/graphic'
 ],
   function (declare,
     lang,
@@ -38,16 +39,18 @@ define(['dojo/_base/declare',
     Evented,
     query,
     domClass,
-    domConstruct,
     Deferred,
     _WidgetBase,
     _TemplatedMixin,
     on,
+    fx,
     template,
     Edit,
-    Popup,
-    Point,
-    webMercatorUtils, SpatialReference) {
+    Message,
+    SimpleMarkerSymbol,
+    SimpleLineSymbol,
+    Color,
+    Graphic) {
     return declare([_WidgetBase, _TemplatedMixin, Evented], {
       templateString: template,
 
@@ -72,7 +75,8 @@ define(['dojo/_base/declare',
       _isAddressFeature: true,
       _stageLayer: null,
 
-      //TODO add message on save when is duplicate...at this point ask them if they would like to keep both or overwrite
+      //TODO should this support the option to reset values to defaults if they have made temp changes?
+      //TODO need to test/handle situations where the address is not located sucessfully on locate calls
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -99,10 +103,6 @@ define(['dojo/_base/declare',
 
         //TODO this should be done once earlier in the process rather than on every single view
         this.locator = this._getLocator();
-
-        if (this._stageLayer === null) {
-          this._stageLayer = this.csvStore.matchedFeatureLayer;
-        }
       },
 
       postCreate: function () {
@@ -176,7 +176,12 @@ define(['dojo/_base/declare',
         }
       },
 
-      _edit: function () {
+      _disableEdit: function () {
+        this._editDisabled = false;
+        this._toggleEdit();
+      },
+
+      _toggleEdit: function () {
         this._editDisabled = !this._editDisabled;
         this._updateEdit(this._editDisabled);
 
@@ -189,7 +194,7 @@ define(['dojo/_base/declare',
         if (!this._editDisabled) {
           this._editToolbar.activate(Edit.MOVE, this.featureView._feature);
           if (this.featureView.isDuplicate) {
-            this.featureView._panToAndSelectFeature(this.featureView._useGeomFromFile ?
+            this._panToAndSelectFeature(this.featureView._useGeomFromFile ?
               this.featureView._feature : this.featureView._editFeature);
             if (this.featureView._useGeomFromFile) {
               this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
@@ -197,7 +202,7 @@ define(['dojo/_base/declare',
               this._updateSave(!(this._hasAttributeEdit));
             }
           } else {
-            this.featureView._panToAndSelectFeature(this.featureView._feature);
+            this._panToAndSelectFeature(this.featureView._feature);
             this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
           }
         } else {
@@ -216,234 +221,231 @@ define(['dojo/_base/declare',
         }));
       },
 
-      _save: function () {
-        if (!this._saveDisabled) {
-          var values = this.featureView._getEditValues();
-          if (this.featureView.isDuplicate) {
-            this._showDuplicateSavePopup().then(lang.hitch(this, function (results) {
-              if (results.save) {
-                switch (results.type) {
-                  case 'overwrite':
-                    array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-                      if (k !== '_rows') {
-                        this.featureView._editFeature.attributes[k] = values[k];
-                      }
-                    }));
-                    if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
-                      this.featureView._editFeature.geometry = this.featureView._feature.geometry;
-                    }
-                    this.parent.editLayer.applyEdits(null, [this.featureView._editFeature], null)
-                      .then(lang.hitch(this, function (s) {
-                        console.log(s);
-                        if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
-                          this._hasGeometryEdit = false;
-                        }
+      _save: function (forceSave) {
+        //forceSave === true bypasses _saveDisabled check
+        // allows a duplicate record to be saved in pretty much the same way as an unmatched record
 
-                        array.forEach(values._rows, function (r) {
-                          //update the row instance with the new value
-                          var newValue = values[r.fieldName];
-                          r.layerValue = newValue;
-                          r.fileValue = r.useFile ? newValue : r.fileValue;
-                          r.layerValueTextBox.set('value', newValue);
-                        });
-                      }));
-                    break;
-                  case 'both':
-                    array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-                      if (k !== '_rows') {
-                        this.featureView._feature.attributes[k] = values[k];
-                      }
-                    }));
-                    var updateFeature = this.featureView._feature;
-                    array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
-                      if (sf !== this.layer.objectIdField) {
-                        delete updateFeature.attributes[sf];
-                      }
-                    }));
-                    this.parent.editLayer.applyEdits([updateFeature], null, null).then(lang.hitch(this, function (r) {
-                      console.log(r);
-                      if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
-                        this._hasGeometryEdit = false;
-                      }
-                    }));
-                    break;
-                }
+        if (!this._saveDisabled || forceSave === true) {
+          if (forceSave !== true) {
+            //update the feature instances based on changes in user controls
+            this._setFieldValues(this.featureView);
+            this._setAddressValues(this.featureView);
+          }
 
-                //disable save
-                this._updateSave(true);
-                //toggle edit
-                this._edit();
-              }
-            }));
+          var updateFeature = this.featureView._feature;
+          if (this.featureView.label.indexOf('UnMatched') === -1 &&
+            this.featureView.label.indexOf('DuplicateFeatures') === -1) {
+            //matched features will remain in the matched layer on save
+            this._updateLayer(this._stageLayer, null, [updateFeature], null, true);
+          } else if (this.featureView.isDuplicate && forceSave !== true) {
+            //duplicate features will remain in the duplicate layer on save
+            //the hasUpdate attributes will be reviewed on submit to understand when update vs add should occur
+            this.featureView._updateDuplicateAttributes(null, true);
+            this._updateLayer(this.layer, null, [updateFeature], null, true);
           } else {
-            array.forEach(Object.keys(values), lang.hitch(this, function (k) {
-              if (k !== '_rows') {
-                this.featureView._feature.attributes[k] = values[k];
-              }
+            //unmatched features will be saved to the matched layer when they can be located or after the graphic is moved on save
+            // the feature and view should be removed from the unmatched layer and list
+            var oid = updateFeature.attributes[this.layer.objectIdField];
+            array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
+              delete updateFeature.attributes[sf];
             }));
 
-            if (this._stageLayer === null) {
-              this._stageLayer = this.csvStore.matchedFeatureLayer;
-            }
-
-            var updateFeature = this.featureView._feature;
-            if (this.featureView.label.indexOf('UnMatched') === -1) {
-              //if currently unmatched save will go to matched layer and it will move to the matched list and be removed from the unmatched list
-              this._stageLayer.applyEdits(null, [updateFeature], null).then(lang.hitch(this, function (r) {
-                console.log(r);
-                this._hasGeometryEdit = false;
-                this._hasAttributeEdit = false;
+            this._updateLayer(this._stageLayer, [updateFeature], null, null, true)
+              .then(lang.hitch(this, function (result) {
+                if (result && result.status === 'success') {
+                  if (forceSave === true) {
+                    updateFeature.attributes[this.layer.objectIdField] = oid;
+                  }
+                  //delete from un-matched layer
+                  this._updateLayer(this.layer, null, null, [updateFeature], true).then(lang.hitch(this, function (r) {
+                    if (r && r.status === 'success') {
+                      this._updateList(oid, (forceSave === true) ? 'duplicate' : 'unmatched');
+                    }
+                  }));
+                }
               }));
-            } else {
-              var oid = updateFeature.attributes[this.layer.objectIdField];
+          }
 
-              //TODO not complete...vew needs to be fully removed...list updated and the fetaureList re-generated or removed
-              array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
-                delete updateFeature.attributes[sf];
-              }));
-
-              //TODO add error handle
-              this._stageLayer.applyEdits(null, [updateFeature], null).then(lang.hitch(this, function (r) {
-                console.log(r);
-                this._hasGeometryEdit = false;
-                this._hasAttributeEdit = false;
-
-                //delete from un-matched layer
-                this.layer.applyEdits(null, null, [updateFeature]).then(lang.hitch(this, function (r) {
-                  console.log(r);
-                }));
-
-                this._updateList('was-unmatched', oid);
-              }));
-            }
-
+          if (forceSave !== true) {
             //disable save
             this._updateSave(true);
             //toggle edit
-            this._edit();
+            this._toggleEdit();
           }
         }
       },
 
-      _updateList: function (type, oid) {
-        if (type === 'was-unmatched') {
-          //remove from unmatched list
-          this.featureView._parentFeatureList.removeFeature(this.featureView.feature, oid)
-            .then(lang.hitch(this, function (message) {
-              console.log(message);
-              this._updateFeature();
-              this.featureView._updateFeature(this.featureView.feature.geometry, this.featureView._address);
-
-              //remove current view from page container
-              this.parent._pageContainer.removeViewByTitle(this.featureView.label);
-
-              //update matched list
-              //need to get review and then _matchedListView from it
-              var reviewView = this.parent._pageContainer.getViewByTitle('Review');
-              reviewView.matchedFeatureList.addFeature(this.featureView.feature);
-              if (!reviewView._matchedListView) {
-                this.parent._pageContainer.addView(reviewView.matchedFeatureList);
-              }
-              reviewView._updateReviewRows('unmatched');
-
-              //TODO needs to set to an appropriate index
-
-              //TODO needs to remove UI bits from un-matched
-              //this should only occur when unmatched features goes to 0
-              //this.parent._pageContainer.removeViewByTitle(reviewView.label);
-
-              //May need to do this as a part of _updateReviewRow when that page has been visited first
-              //reviewView._initReviewRow([this.featureView._feature],
-              //  [reviewView.matchedHintRow, reviewView.matchedControlRow], reviewView.matchedCount);
-
-              //need to splice from unmatched list
-              //reviewView.unMatchedList.splice...
-            }));
-        }
-      },
-
-      _updateFeature: function () {
-        //take values from feature from _feature
-
-        //geom
-        //this.featureView.feature.geometry = this.featureView._feature.geometry;
-
-        //label
-
-        //address values if they have changed...
-        addr_fields_loop:
-        for (var ii = 0; ii < this.featureView.addressFields.length; ii++) {
-          var addrField = this.featureView.addressFields[ii];
-          var matchField = "MatchField_" + addrField.keyField;
-
-          var addr = this.featureView._getAddress();
-
-          var newValue = addr[addrField.keyField];
-
-          field_info_loop:
-          for (var j = 0; j < this.featureView.feature.fieldInfo.length; j++) {
-            var fi = this.featureView.feature.fieldInfo[j];
-            if (fi.name === matchField) {
-              //update with current value from control
-              fi.value = newValue;
-              break field_info_loop;
-            }
-          }
-        }
-
-        //fieldInfos
-        for (var i = 0; i < this.featureView.feature.fieldInfo.length; i++) {
-          var _fi = this.featureView.feature.fieldInfo[i];
-          if (this.featureView._feature.attributes.hasOwnProperty(_fi.name)) {
-            _fi.value = this.featureView._feature.attributes[_fi.name];
-          }
-        }
-      },
-
-      _locateFeature: function () {
+      _updateLayer: function (layer, adds, updates, deletes, setFlags) {
         var def = new Deferred();
+        layer.applyEdits(adds, updates, deletes).then(lang.hitch(this, function () {
+          if (setFlags) {
+            this._hasGeometryEdit = false;
+            this._hasAttributeEdit = false;
+          }
+          def.resolve({ status: "success" });
+        }), lang.hitch(this, function (err) {
+          def.resolve({ status: "error", error: err });
+          new Message({
+            message: this.nls.warningsAndErrors.saveError
+          });
+        }));
+        return def;
+      },
 
-        //return feature from locationToAddress
-        var address = this.featureView._getAddressFieldsValues();
-        if (this._isAddressFeature) {
-          this.locator.addressToLocations(address).then(lang.hitch(this, function (result) {
-            var highestScoreItem;
-            if (result.length > 0) {
-              for (var i = 0; i < result.length; i++) {
-                var item = result[i];
-                if (typeof (highestScoreItem) === 'undefined') {
-                  highestScoreItem = item;
-                }
-                if (highestScoreItem && item.score > highestScoreItem.score) {
-                  highestScoreItem = item;
-                }
-              }
-              this.featureView._updateFeature(highestScoreItem.location, highestScoreItem.address);
-              def.resolve(this.featureView.feature);
+      _setFieldValues: function (featureView) {
+        var editIndexes = featureView._changedAttributeRows;
+        var useFile = featureView._useValuesFromFile;
+        var _feature = featureView._feature;
+        var feature = featureView.feature;
+        array.forEach(featureView.featureControlTable.rows, function (row) {
+          if (row.isEditRow && editIndexes.indexOf(row.rowIndex) > -1) {
+            var control = (row.parent.isDuplicate && !useFile) ? row.layerValueTextBox : row.fileValueTextBox;
+            _feature.attributes[row.fieldName] = control.value;
+            var fieldInfo = feature.fieldInfo.filter(function (f) {
+              return f.name === row.fieldName;
+            })[0];
+            fieldInfo.value = control.value;
+            control.title = control.value;
+          }
+        });
+      },
+
+      _setAddressValues: function (featureView) {
+        var addr = featureView._getAddress();
+        var matchFieldPrefix = this.csvStore.matchFieldPrefix;
+        array.forEach(featureView.addressFields, function (addrField) {
+          var matchField = matchFieldPrefix + addrField.keyField;
+          var field = featureView.feature.fieldInfo.filter(function (fi) {
+            return fi.name === matchField;
+          })[0];
+          field.value = addr[matchField];
+        });
+      },
+
+      _updateList: function (oid, type) {
+        //remove from list
+        var list = this.featureView._parentFeatureList;
+        list.removeFeature(this.featureView.feature, oid).then(lang.hitch(this, function () {
+          //remove current view from page container
+          this.parent._pageContainer.removeViewByTitle(this.featureView.label);
+
+          //update matched list
+          //need to get review and then _matchedListView from it
+          var reviewView = this.parent._pageContainer.getViewByTitle('Review');
+          reviewView.matchedFeatureList.addFeature(this.featureView.feature);
+          reviewView._updateReviewRows(type);
+        }));
+      },
+
+      _updateFeature: function (location, address, skipApplyEdits) {
+        console.log(address);
+        var fv = this.featureView;
+        fv.feature.geometry = location;
+        fv._feature.geometry = location;
+
+        var features = [fv._feature];
+
+        if (fv.isDuplicate) {
+          this._hasGeometryEdit = ((fv._editFeature.geometry.x !== fv._feature.geometry.x) ||
+            (fv._editFeature.geometry.y !== fv._feature.geometry.y));
+        }
+
+        if (!skipApplyEdits) {
+          this._updateLayer(fv.layer, null, features, null, false).then(lang.hitch(this, function (result) {
+            if (result && result.status === 'success' && !fv.isDuplicate) {
+              this._panToAndSelectFeature(fv._feature);
+              fv.emit('address-located');
             }
           }));
+        }
+      },
+
+      _locateFeature: function (skipApplyEdits) {
+        //skipApplyEdits is used to bypass applyEdits call to local layer when locating a
+        // feature that was identified as a potential duplicate and the user then said it was not
+        // a duplicate
+        var def = new Deferred();
+        var address = this.featureView._getAddressFieldsValues();
+        if (this._isAddressFeature) {
+          this._addressToLocation(address).then(lang.hitch(this, function (locationItem) {
+            this._updateFeature(locationItem.location, locationItem.address, skipApplyEdits);
+            def.resolve(this.featureView.feature);
+          }));
         } else {
-          var x = address[this.xField];
-          var y = address[this.yField];
-
-          var isGeographic;
-          if (typeof (isGeographic) === 'undefined') {
-            isGeographic = /(?=^[-]?\d{1,3}\.)^[-]?\d{1,3}\.\d+|(?=^[-]?\d{4,})|^[-]?\d{1,3}/.exec(x) ? true : false;
-          }
-
-          var geometry;
-          if (!isNaN(x) && !isNaN(y)) {
-            geometry = new Point(x, y);
-            if (isGeographic) {
-              geometry = webMercatorUtils.geographicToWebMercator(geometry);
-            } else {
-              geometry.spatialReference = new SpatialReference({ wkid: this.map.spatialReference.wkid });
-            }
-          }
-          this.featureView._updateFeature(geometry, address);
+          var geometry = this.csvStore._getGeometry(address[this.xField], address[this.yField]);
+          this._updateFeature(geometry, address, skipApplyEdits);
           def.resolve(this.featureView.feature);
         }
         return def;
+      },
+
+      _addressToLocation: function (address) {
+        var def = new Deferred();
+        this.locator.addressToLocations(address).then(lang.hitch(this, function (result) {
+          var highestScoreItem;
+          if (result && result.length > 0) {
+            array.forEach(result, function (item) {
+              if (typeof (highestScoreItem) === 'undefined') {
+                highestScoreItem = item;
+              }
+              if (highestScoreItem && item.score > highestScoreItem.score) {
+                highestScoreItem = item;
+              }
+            });
+            def.resolve(highestScoreItem);
+          }
+        }));
+        return def;
+      },
+
+      _flashFeatures: function (features) {
+        var layer;
+        array.forEach(features, lang.hitch(this, function (feature) {
+          if (feature.geometry) {
+            var color = Color.fromHex(this.styleColor);
+            var color2 = lang.clone(color);
+            color2.a = 0.4;
+            var symbol = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 15,
+              new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID, color, 1), color2);
+
+            var g = new Graphic(feature.geometry, symbol);
+            this.map.graphics.add(g);
+            layer = g.getLayer ? g.getLayer() : layer;
+            var dShape = g.getDojoShape();
+            if (dShape) {
+              fx.animateStroke({
+                shape: dShape,
+                duration: 900,
+                color: {
+                  start: dShape.strokeStyle.color,
+                  end: dShape.strokeStyle.color
+                },
+                width: {
+                  start: 25,
+                  end: 0
+                }
+              }).play();
+            }
+          }
+        }));
+        setTimeout(function (layer) {
+          if (layer && layer.clear) {
+            layer.clear();
+          }
+        }, 1200, layer);
+      },
+
+      _panToAndSelectFeature: function (feature) {
+        if (feature && feature.geometry) {
+          var maxZoom = this.map.getMaxZoom();
+          this.map.centerAndZoom(feature.geometry, Math.round(maxZoom / 2)).then(lang.hitch(this, function () {
+            this._flashFeatures([feature]);
+            if ((feature._layer && feature._layer.infoTemplate) || feature.infoTemplate) {
+              this.map.infoWindow.setFeatures([feature]);
+              this.map.infoWindow.select(0);
+            }
+          }));
+        }
       },
 
       setStyleColor: function (styleColor) {
@@ -503,54 +505,6 @@ define(['dojo/_base/declare',
 
       updateTheme: function (theme) {
         this.theme = theme;
-      },
-
-      _showDuplicateSavePopup: function () {
-        var def = new Deferred();
-        var content = domConstruct.create('div');
-
-        domConstruct.create('div', {
-          innerHTML: 'Would you like to overwrite the existing feature?'
-        }, content);
-
-        if (this.featureView._useGeomFromFile || this.featureView._useValuesFromFile) {
-          //if using values or geom from file see if they want to overwrite or store both
-          var savePopup = new Popup({
-            titleLabel: "Overwrite Feature",
-            width: 400,
-            autoHeight: true,
-            content: content,
-            buttons: [{
-              label: this.nls.yes,
-              onClick: lang.hitch(this, function () {
-                savePopup.close();
-                savePopup = null;
-                def.resolve({ save: true, type: 'overwrite' });
-              })
-            }, {
-              label: this.nls.no,
-              onClick: lang.hitch(this, function () {
-                savePopup.close();
-                savePopup = null;
-                def.resolve({ save: true, type: 'both' });
-              })
-            }, {
-              label: this.nls.cancel,
-              classNames: ['jimu-btn-vacation'],
-              onClick: lang.hitch(this, function () {
-                savePopup.close();
-                savePopup = null;
-                def.resolve({ save: false, type: undefined });
-              })
-            }],
-            onClose: function () {
-              savePopup = null;
-            }
-          });
-        } else {
-          def.resolve({ save: true, type: 'overwrite' });
-        }
-        return def;
       }
     });
   });
