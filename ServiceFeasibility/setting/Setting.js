@@ -20,6 +20,7 @@ define([
   "dijit/_WidgetBase",
   "dijit/_TemplatedMixin",
   "dijit/_WidgetsInTemplateMixin",
+  'dijit/registry',
   "dojo/_base/lang",
   "dojo/dom-construct",
   "dojo/dom-style",
@@ -51,6 +52,7 @@ define([
   _WidgetBase,
   _TemplatedMixin,
   _WidgetsInTemplateMixin,
+  registry,
   lang,
   domConstruct,
   domStyle,
@@ -198,8 +200,8 @@ define([
               .value,
             "nls": this.nls
           };
-          this._attributeParameterObj = new AttributeParameter(
-            parameters);
+          this._attributeParameterObj = new AttributeParameter(parameters);
+          console.log(this._attributeParameterObj);
           this._validateClosestFacilityServiceURL(false);
         })));
     },
@@ -278,7 +280,7 @@ define([
         this.travelModeRdb.set('checked', false);
         domClass.remove(this.attributeParameterValues,
           "esriCTHidden");
-        domClass.add(this.travelModesListParentContainer,
+        domClass.remove(this.travelModesListParentContainer,
           "esriCTHidden");
       }
     },
@@ -942,7 +944,7 @@ define([
     _addEventToCheckBox: function (checkBox) {
       var queryLayer;
       on(checkBox.domNode, "click", lang.hitch(this, function (event) {
-        if (domClass.contains(event.target, "checked")) {
+        if (checkBox.get('checked')) {
           this.checkedLayers.push(event.currentTarget);
           domClass.add(event.currentTarget,
             "esriCTcheckedPointLayer");
@@ -1018,7 +1020,7 @@ define([
         });
       }
       this.selectLengthUnits.set("value",-1);
-     
+
       on(this.selectLengthUnits, "change", lang.hitch(this, function (
         value) {
         this.selectedLengthUnits = value;
@@ -1253,7 +1255,7 @@ define([
       on(this.saveBusinessCheck.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (domClass.contains(event.target, "checked")) {
+          if (this.saveBusinessCheck.get('checked')) {
             domClass.remove(this.selectSaveBusinessLayerBlock,
               "esriCTHidden");
             domClass.remove(this.routeBussinessAttrTranferMainContainer,
@@ -1273,7 +1275,7 @@ define([
       on(this.saveRouteCheck.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (domClass.contains(event.target, "checked")) {
+          if (this.saveRouteCheck.get('checked')) {
             domClass.remove(this.routeLayerCheck, "esriCTHidden");
             domClass.remove(this.selectrouteLayerBlock,
               "esriCTHidden");
@@ -1295,7 +1297,7 @@ define([
       on(this.saveRouteLength.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (domClass.contains(event.target, "checked")) {
+          if (this.saveRouteLength.get('checked')) {
             domClass.remove(this.selectSaveRouteLength,
               "esriCTHidden");
             domClass.remove(this.selectRouteLengthBlock,
@@ -1311,7 +1313,7 @@ define([
       on(this.saveBusinessCount.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (domClass.contains(event.target, "checked")) {
+          if (this.saveBusinessCount.get('checked')) {
             domClass.remove(this.selectSaveBusinessCount,
               "esriCTHidden");
             domClass.remove(this.selectBusinessCountBlock,
@@ -1326,7 +1328,7 @@ define([
       on(this.saveRouteCost.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (domClass.contains(event.target, "checked")) {
+          if (this.saveRouteCost.get('checked')) {
             domClass.remove(this.selectSaveRouteCost,
               "esriCTHidden");
             domClass.remove(this.selectRouteCostBlock,
@@ -1341,7 +1343,7 @@ define([
       on(this.routeBussinessAttrTranferChkBox.domNode, "click", lang.hitch(
         this,
         function (event) {
-          if (domClass.contains(event.target, "checked")) {
+          if (this.routeBussinessAttrTranferChkBox.get('checked')) {
             domClass.remove(this.layerFieldMapping,
               "esriCTHidden");
           } else {
@@ -1736,6 +1738,7 @@ define([
       validateOperationLayer = this._validateOperationLayer();
       // Validation of Check point Layer
       validateCheckPoint = this._validateAccesspointCheck();
+      console.log(validateCheckPoint);
       // Validate label text box
       validateLabelForBox = this._validateLabelForBox();
       // Validate expression
@@ -1890,8 +1893,8 @@ define([
           if (this.divAccessPointLayer.childNodes[i] && this.divAccessPointLayer
             .childNodes[i].childNodes && this.divAccessPointLayer.childNodes[
               i].childNodes[0]) {
-            if (domClass.contains(this.divAccessPointLayer.childNodes[
-                i].childNodes[0], "checked")) {
+            var widget = registry.byId(this.divAccessPointLayer.childNodes[i].id);
+            if (widget.get('checked')) {
               returnObj = {
                 returnErr: "",
                 hasError: false

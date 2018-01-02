@@ -308,8 +308,7 @@ define([
         "name": attrParameter.attributeName,
         "title": toolTip,
         onChange: function () {
-          self._showHideInputControls(this.domNode, domClass.contains(
-            this.domNode.childNodes[0], "checked"));
+          self._showHideInputControls(this.domNode, this.get('checked'));
         }
       }, parentDiv);
       return checkBox;

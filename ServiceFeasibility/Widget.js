@@ -1902,7 +1902,7 @@ define([
         }
         this._routeCost = routeUnitVal;
       }
-      
+
       if (this.config && this.config.symbol && this.config.symbol.length &&
         this.config.symbol.length > 0) {
         routeSymbolData = this._getSymbolJson("routeSymbol");
@@ -2141,7 +2141,7 @@ define([
     **/
     _showBusinessDataOnMap: function (queryResult) {
       // when features length inside buffer is grater than 0 show the features on map else show the empty grid with no features on map
-      
+
       if (queryResult && queryResult.length > 0) {
         this.businessPassedCountValue.innerHTML = queryResult.length;
         this._businessPassed = queryResult.length;
@@ -3044,7 +3044,7 @@ define([
     _onRouteLayerCheck: function (checkbox) {
       on(checkbox, "click", lang.hitch(this, function (event) {
         if (domClass.contains(event.target, "checkbox")) {
-          if (domClass.contains(event.target, "checked")) {
+          if (checkbox.get('checked')) {
             domClass.remove(this.esriCTSaveBusinessRouteLength,
               "esriCTHidePanel");
             domClass.add(event.currentTarget,
@@ -3198,7 +3198,7 @@ define([
     **/
     _onBusinessLayerCheck: function (checkBox) {
       on(checkBox, "click", lang.hitch(this, function (event) {
-        if (domClass.contains(event.target, "checked")) {
+        if (checkBox.get('checked')) {
           domClass.add(event.currentTarget,
             "esriCTSaveCheckbox");
           if (array.indexOf(this.checkedLayers, event.currentTarget) ===
