@@ -93,14 +93,12 @@ define(['dojo/_base/declare',
           this.matchedFeatureList = this._initFeatureList(this.matchedList, this.matchedLayer,
             'MatchedFeatures', this.nls.review.reviewMatchedPageHint, false);
           this.pageContainer.addView(this.matchedFeatureList);
-          if (this.matchedList.length > 0) {
-            //Submit should enable here
-          }
+          this._updateNode(this.submitButton, this.matchedList.length > 0);
           this._matchedListView = this.pageContainer.getViewByTitle(this.matchedFeatureList.label);
           this.own(on(this.matchedFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
             this.matchedCount.innerHTML = v;
             this._initReviewRow(this.matchedList, [this.matchedHintRow, this.matchedControlRow], this.matchedCount);
-            //TODO Submit should also enable here if not already enabled
+            this._updateNode(this.submitButton, this.matchedList.length > 0);
           })));
 
           if (this.unMatchedList.length > 0) {
