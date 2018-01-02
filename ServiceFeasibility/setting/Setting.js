@@ -201,7 +201,6 @@ define([
             "nls": this.nls
           };
           this._attributeParameterObj = new AttributeParameter(parameters);
-          console.log(this._attributeParameterObj);
           this._validateClosestFacilityServiceURL(false);
         })));
     },
