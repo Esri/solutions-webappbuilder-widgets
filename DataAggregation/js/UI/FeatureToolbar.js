@@ -308,6 +308,11 @@ define(['dojo/_base/declare',
             this._hasGeometryEdit = false;
             this._hasAttributeEdit = false;
           }
+          if (updates && updates.hasOwnProperty('length') && updates.length > 0) {
+            //enable submit
+            var reviewView = this.featureView.parent._pageContainer.getViewByTitle('Review');
+            reviewView._updateNode(reviewView.submitButton, true);
+          }
           def.resolve({ status: "success" });
         }), lang.hitch(this, function (err) {
           def.resolve({ status: "error", error: err });
@@ -384,7 +389,7 @@ define(['dojo/_base/declare',
 
         if (!skipApplyEdits) {
           this._updateLayer(fv.layer, null, features, null, false).then(lang.hitch(this, function (result) {
-            if (result && result.status === 'success' && !fv.isDuplicate) {
+            if (result && result.status === 'success') {
               this._panToAndSelectFeature(fv._feature);
               fv.emit('address-located');
             }
