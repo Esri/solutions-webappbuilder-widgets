@@ -68,6 +68,7 @@ define(['dojo/_base/declare',
       unMatchedLayer: null,
       duplicateLayer: null,
       _editToolbar: null,
+      _syncFields: {},
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -151,7 +152,8 @@ define(['dojo/_base/declare',
           isDarkTheme: this.isDarkTheme,
           layer: layer,
           _editToolbar: this._editToolbar,
-          csvStore: this.csvStore
+          csvStore: this.csvStore,
+          _syncFields: this._syncFields
         });
       },
 

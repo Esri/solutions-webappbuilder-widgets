@@ -70,7 +70,8 @@ define({
       locateFeature: "Locate Feature",
       removeFeature: "Remove Feature",
       featureLocated: "Location Found",
-      valuesDoNotMatch: "Does not match existing value"
+      valuesDoNotMatch: "Does not match existing value",
+      sync: "Sync address information with field information"
     },
     warningsAndErrors: {
       loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",

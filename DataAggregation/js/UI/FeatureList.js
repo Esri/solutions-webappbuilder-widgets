@@ -62,6 +62,7 @@ define(['dojo/_base/declare',
       isDuplicate: false,
       layer: null,
       _editToolbar: null,
+      _syncFields: {},
 
       //TODO may need a loading shelter here to avoid see feature views while adding
 

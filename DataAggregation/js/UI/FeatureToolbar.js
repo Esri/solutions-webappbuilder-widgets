@@ -90,6 +90,9 @@ define(['dojo/_base/declare',
         //enable locate when change to address
         this._locateDisabled = true;
 
+        //enable when address is re-located
+        this._syncDisabled = true;
+
         //Used to store and listen when a change occurs
         this._hasAttributeEdit = false;
         this.own(on(this.featureView, 'attribute-change', lang.hitch(this, this._attributeChange)));
@@ -103,6 +106,9 @@ define(['dojo/_base/declare',
 
         //TODO this should be done once earlier in the process rather than on every single view
         this.locator = this._getLocator();
+
+        //get the original field and location values for comparison and possibly to support a reset
+        this._initOriginalValues();
       },
 
       postCreate: function () {
@@ -133,6 +139,10 @@ define(['dojo/_base/declare',
         return locator;
       },
 
+      _initOriginalValues: function () {
+        this._originalValues = lang.clone(this.featureView.feature);
+      },
+
       _attributeChange: function (v) {
         this._hasAttributeEdit = v;
         if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
@@ -148,19 +158,24 @@ define(['dojo/_base/declare',
       },
 
       _graphicMoveStop: function (result) {
-        this._hasGeometryEdit = true;
-        if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
-          this._updateSave(!(this._hasAttributeEdit));
-        } else {
-          this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
-        }
-        this.map.infoWindow.setFeatures(this.featureView._feature);
-        this.map.infoWindow.select(0);
+        if (this.featureView.isShowing) {
+          this._hasGeometryEdit = true;
+          if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
+            this._updateSave(!(this._hasAttributeEdit));
+          } else {
+            this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+          }
+          this.map.infoWindow.setFeatures(this.featureView._feature);
+          this.map.infoWindow.select(0);
 
-        //I fire graphicMoveStop when locating...in that case it's based off of the address the user entered
-        //no need to reverse geocode again
-        if (result) {
-          this._reverseLocate(result.graphic.geometry);
+          //I fire graphicMoveStop when locating...in that case it's based off of the address the user entered
+          //no need to reverse geocode again
+          if (result) {
+            this._reverseLocate(result.graphic.geometry);
+          }
+          if (this.featureView._validateAddressDifference()) {
+            this._updateSync(false);
+          }
         }
       },
 
@@ -168,11 +183,11 @@ define(['dojo/_base/declare',
         if (this._isAddressFeature) {
           this.locator.locationToAddress(geometry, 100).then(lang.hitch(this, function (result) {
             //TODO should this honor the configured match score limit...if
-            this.featureView._updateAddressFields(result.address);
+            this.featureView._updateAddressFields(result.address, false);
           }));
         } else {
           //TODO support the same for coiordinate feature...should return xy
-          this.featureView._updateAddressFields(geometry);
+          this.featureView._updateAddressFields(geometry, false);
         }
       },
 
@@ -205,20 +220,31 @@ define(['dojo/_base/declare',
             this._panToAndSelectFeature(this.featureView._feature);
             this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
           }
+          this._updateLocate(!this._hasAddressEdit);
+          if (this._hasGeometryEdit && this._locateDisabled) {
+            this._updateSync(!this.featureView._validateAddressDifference());
+          } else {
+            this._updateSync(true);
+          }
         } else {
           this._editToolbar.refresh();
           this._editToolbar.deactivate();
           this._updateSave(true);
+          this._updateLocate(true);
+          this._updateSync(true);
           this.map.infoWindow.clearFeatures();
         }
       },
 
       _locate: function () {
-        //locate feature
-        this._locateFeature().then(lang.hitch(this, function () {
-          //disable locate
-          this._updateLocate(true);
-        }));
+        if (!this._locateDisabled) {
+          //locate feature
+          this._locateFeature().then(lang.hitch(this, function () {
+            //disable locate
+            this._hasAddressEdit = false;
+            this._updateLocate(true);
+          }));
+        }
       },
 
       _save: function (forceSave) {
@@ -305,7 +331,7 @@ define(['dojo/_base/declare',
               return f.name === row.fieldName;
             })[0];
             fieldInfo.value = control.value;
-            control.title = control.value;
+            control.textbox.title = control.value;
           }
         });
       },
@@ -319,6 +345,12 @@ define(['dojo/_base/declare',
             return fi.name === matchField;
           })[0];
           field.value = addr[matchField];
+
+          var row = Array.from(featureView.locationControlTable.rows).filter(function (r) {
+            return r.isAddressRow ? r.keyField === addrField.keyField : false;
+          })[0];
+          row.addressValueTextBox.textbox.title = addr[matchField];
+          row.addressValue = addr[matchField];
         });
       },
 
@@ -454,43 +486,57 @@ define(['dojo/_base/declare',
 
       _updateEdit: function (disabled) {
         this._editDisabled = disabled;
-        this._updateImageNode('bg-edit', 'bg-edit-white', 'bg-edit-disabled', this._editDisabled);
+        this._updateImageNode('bg-edit', 'bg-edit-white', 'bg-edit-disabled',
+          this._editDisabled, this.domNode);
       },
 
       _updateSave: function (disabled) {
         this._saveDisabled = disabled;
-        this._updateImageNode('bg-save', 'bg-save-white', 'bg-save-disabled', this._saveDisabled);
+        this._updateImageNode('bg-save', 'bg-save-white', 'bg-save-disabled',
+          this._saveDisabled, this.domNode);
       },
 
       _updateLocate: function (disabled) {
         this._locateDisabled = disabled;
-        this._updateImageNode('bg-locate', 'bg-locate-white', 'bg-locate-disabled', this._locateDisabled);
+        this._updateImageNode('bg-locate', 'bg-locate-white', 'bg-locate-disabled',
+          this._locateDisabled, this.domNode);
+      },
+
+      _updateSync: function (disabled) {
+        this._syncDisabled = disabled;
+        this._updateImageNode('bg-sync', 'bg-sync-white', 'bg-sync-disabled',
+          this._syncDisabled, this.featureView.syncFields.domNode);
       },
 
       updateImageNodes: function () {
         //toggle all images
-        this._updateImageNode('bg-edit', 'bg-edit-white', 'bg-edit-disabled', this._editDisabled);
-        this._updateImageNode('bg-save', 'bg-save-white', 'bg-save-disabled', this._saveDisabled);
-        this._updateImageNode('bg-locate', 'bg-locate-white', 'bg-locate-disabled', this._locateDisabled);
+        this._updateImageNode('bg-edit', 'bg-edit-white', 'bg-edit-disabled',
+          this._editDisabled, this.domNode);
+        this._updateImageNode('bg-save', 'bg-save-white', 'bg-save-disabled',
+          this._saveDisabled, this.domNode);
+        this._updateImageNode('bg-locate', 'bg-locate-white', 'bg-locate-disabled',
+          this._locateDisabled, this.domNode);
+        this._updateImageNode('bg-sync', 'bg-sync-white', 'bg-sync-disabled',
+          this._syncDisabled, this.featureView.syncFields.domNode);
       },
 
-      _updateImageNode: function (img, imgWhite, imgDisabled, isDisabled) {
+      _updateImageNode: function (img, imgWhite, imgDisabled, isDisabled, node) {
         var isDark = this._darkThemes.indexOf(this.theme) > -1;
         var addClass = isDisabled ? imgDisabled : isDark ? imgWhite : img;
 
         //var removeClass = isDark ? img : imgWhite;
         var removeClass = imgWhite;
         var nodesFound = false;
-        var imageNodes = query('.' + img, this.domNode);
+        var imageNodes = query('.' + img, node);
         if (imageNodes.hasOwnProperty('length') && imageNodes.length === 0) {
-          imageNodes = query('.' + imgDisabled, this.domNode);
+          imageNodes = query('.' + imgDisabled, node);
         } else {
           nodesFound = true;
           removeClass = img;
         }
 
         if (!nodesFound && imageNodes.hasOwnProperty('length') && imageNodes.length === 0) {
-          imageNodes = query('.' + imgWhite, this.domNode);
+          imageNodes = query('.' + imgWhite, node);
         } else {
           if (!nodesFound) {
             nodesFound = true;
@@ -501,6 +547,12 @@ define(['dojo/_base/declare',
           domClass.remove(node, removeClass);
           domClass.add(node, addClass);
         });
+      },
+
+      _validateAddressDifference: function () {
+        //TODO test if a difference exists between address fields and related layer fields
+
+        return false;
       },
 
       updateTheme: function (theme) {

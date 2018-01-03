@@ -101,6 +101,7 @@ define(['dojo/_base/declare',
         } else {
           domClass.remove(this.featureTable, 'display-none');
         }
+        this.isShowing = false;
       },
 
       _initSkipFields: function () {
@@ -131,6 +132,7 @@ define(['dojo/_base/declare',
         this._featureToolbar._disableEdit();
 
         this._showDuplicateReview(this.isDuplicate);
+        this.isShowing = true;
       },
 
       onShown: function () {
@@ -144,6 +146,11 @@ define(['dojo/_base/declare',
         }
         this._featureToolbar._panToAndSelectFeature((this.isDuplicate && this._useGeomFromLayer) ?
           this._editFeature : this._feature);
+        this.isShowing = true;
+      },
+
+      onHidden: function () {
+        this.isShowing = false;
       },
 
       _showDuplicateReview: function (v) {
@@ -431,6 +438,11 @@ define(['dojo/_base/declare',
       },
 
       _initToolbar: function (domNode) {
+        //this._featureToolbar = new FeatureToolbar(lang.mixin({
+        //  featureView: this,
+        //  _stageLayer: this.csvStore.matchedFeatureLayer
+        //}, this));
+
         this._featureToolbar = new FeatureToolbar({
           nls: this.nls,
           map: this.map,
@@ -474,7 +486,6 @@ define(['dojo/_base/declare',
           domConstruct.create('div', {
             className: "main-text float-left",
             innerHTML: this.nls.review.fromLayer1
-
           }, tdLabel);
 
           var _tdLabel = domConstruct.create('td', {
@@ -484,6 +495,13 @@ define(['dojo/_base/declare',
             className: "main-text float-left",
             innerHTML: this.nls.review.fromFile1
           }, _tdLabel);
+        }
+
+        this._syncEnabled = Object.keys(this._parentFeatureList._syncFields).length > 0;
+        if (!this._syncEnabled) {
+          domClass.add(this.syncFields, 'display-none');
+        } else {
+          this._syncFields = this._parentFeatureList._syncFields;
         }
 
         var rowIndex = 0;
@@ -547,6 +565,16 @@ define(['dojo/_base/declare',
         }));
       },
 
+      _syncAddressInfo: function () {
+        //sync location information with destination layer fields
+        if (!this._featureToolbar._syncDisabled) {
+          var addr = this._getAddress();
+          this._updateAddressFields(addr, true);
+          this._featureToolbar._hasAddressEdit = false;
+          this._featureToolbar._updateSync(true);
+        }
+      },
+
       getXYFields: function () {
         this._featureToolbar._isAddressFeature = false;
         var coordinatesView = this.parent._pageContainer.getViewByTitle('Coordinates');
@@ -566,14 +594,59 @@ define(['dojo/_base/declare',
         }];
       },
 
-      _updateAddressFields: function (address) {
+      _updateAddressFields: function (address, sync) {
         this._address = address;
-        //use the located address to update whatever fileds we have displayed
+
+        if (!sync) {
+          //use the located address to update whatever fileds we have displayed
+          array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
+            //TODO understand if this can be different or some safe way to know what it is
+            //TODO make sure this doesn't need the prefix...seems off
+            var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : row.keyField;
+            row.addressValueTextBox.set('value', this._address[keyField]);
+          }));
+        } else {
+          //use the address to update destination layer fields
+          array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
+            if (this._syncFields.hasOwnProperty(row.keyField)) {
+              var addrField = this._syncFields[row.keyField];
+              for (var i = 0; i < this.featureControlTable.rows.length; i++) {
+                var featureRow = this.featureControlTable.rows[i];
+                if (featureRow.isEditRow && featureRow.fieldName === addrField.layerFieldName) {
+                  //TODO think through what should happen with duplicate workflow....does this update existing or file or both??
+                  featureRow.fileValueTextBox.set('value',
+                    this._address[this.csvStore.matchFieldPrefix + row.keyField]);
+                  featureRow.fileValueTextBox.emit('keyUp');
+                  break;
+                }
+              }
+            }
+          }));
+
+        }
+      },
+
+      _validateAddressDifference: function () {
+        //TODO test if a difference exists between address fields and related layer fields
+        var hasDifferences = false;
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
-          //TODO understand if this can be different or some safe way to know what it is
-          var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : row.keyField;
-          row.addressValueTextBox.set('value', this._address[keyField]);
+          if (!hasDifferences) {
+            if (this._syncFields.hasOwnProperty(row.keyField)) {
+              var value = row.addressValueTextBox.value;
+              var addrField = this._syncFields[row.keyField];
+              for (var i = 0; i < this.featureControlTable.rows.length; i++) {
+                var featureRow = this.featureControlTable.rows[i];
+                if (featureRow.isEditRow && featureRow.fieldName === addrField.layerFieldName) {
+                  //TODO think through what should happen with duplicate workflow....does this update existing or file or both??
+                  hasDifferences = featureRow.fileValueTextBox.value !== value;
+                  //featureRow.fileValueTextBox.set('value', this._address[this.csvStore.matchFieldPrefix + row.keyField]);
+                  break;
+                }
+              }
+            }
+          }
         }));
+        return hasDifferences;
       },
 
       _getAddress: function () {
@@ -700,7 +773,6 @@ define(['dojo/_base/declare',
 
       _validateValues: function () {
         //this function is used to test when duplicate and you switch the state of the rdo for use values
-        this._changedAttributeRows = [];
         array.forEach(this.featureControlTable.rows, lang.hitch(this, function (row) {
           if (row.isEditRow) {
             var nullValues = [null, undefined, ""];

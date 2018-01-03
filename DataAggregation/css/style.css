@@ -81,9 +81,17 @@
   background-image: url('../images/nav_left_black.png');
 }
 
+/*.jimu-widget-critical-facilities-ui .bg-back-img:hover {
+  background-image: url('../images/nav_left_hover.png');
+}*/
+
 .jimu-widget-critical-facilities-ui .bg-back-img-white {
   background-image: url('../images/nav_left.png');
 }
+
+/*.jimu-widget-critical-facilities-ui .bg-back-img-white:hover {
+  background-image: url('../images/nav_left_hover.png');
+}*/
 
 .jimu-widget-critical-facilities-ui .bg-home-img {
   background-image: url('../images/home_black.png');
@@ -107,9 +115,17 @@
   background-image: url('../images/nav_right_black.png');
 }
 
+/*.jimu-widget-critical-facilities-ui .bg-next-img:hover {
+  background-image: url('../images/nav_right_hover.png');
+}*/
+
 .jimu-widget-critical-facilities-ui .bg-next-img-white {
   background-image: url('../images/nav_right.png');
 }
+
+/*.jimu-widget-critical-facilities-ui .bg-next-img-white:hover {
+  background-image: url('../images/nav_right_hover.png');
+}*/
 
 .jimu-widget-critical-facilities-ui .bg-img {
   width: 12px;
@@ -194,6 +210,29 @@
 
 .jimu-widget-critical-facilities-ui .bg-save-disabled {
   background-image: url('../images/save_disabled.png');
+  cursor: default;
+}
+
+/*sync*/
+
+.jimu-widget-critical-facilities-ui .bg-sync {
+  background-image: url('../images/sync_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-sync:hover {
+  background-image: url('../images/sync_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-sync-white {
+  background-image: url('../images/sync_white.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-sync-white:hover {
+  background-image: url('../images/sync_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-sync-disabled {
+  background-image: url('../images/sync_disabled.png');
   cursor: default;
 }
 /*-----------------------------------------------------------------------------s*/
@@ -402,13 +441,31 @@
   cursor: pointer;
 }
 
+/*.jimu-widget-critical-facilities-ui .next-arrow:hover {
+  background-image: url('../images/nav_right_hover.png');
+  width: 15px;
+  height: 16px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}*/
+
 .jimu-widget-critical-facilities-ui .next-arrow-img {
   background-image: url('../images/nav_right_black.png');
 }
 
+/*.jimu-widget-critical-facilities-ui .next-arrow-img:hover {
+  background-image: url('../images/nav_right_hover.png');
+}*/
+
 .jimu-widget-critical-facilities-ui .next-arrow-img-white {
   background-image: url('../images/nav_right.png');
 }
+
+/*.jimu-widget-critical-facilities-ui .next-arrow-img-white:hover {
+  background-image: url('../images/nav_right_hover.png');
+}*/
 
 .jimu-widget-critical-facilities-ui .width-15 {
   width: 15px;

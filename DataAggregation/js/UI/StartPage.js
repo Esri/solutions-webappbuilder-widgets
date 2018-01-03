@@ -61,6 +61,7 @@ define(['dojo/_base/declare',
       styleColor: '',
       state: 'mapping', //mapping or review...helps control what happens for various apsects of view navigation
       csvStore: null,
+      _syncFields: {},
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -291,7 +292,31 @@ define(['dojo/_base/declare',
 
         var fieldMappingResults = this._fieldMappingView._getResults();
         var locationResults = this._locationTypeView._getResults();
+        this._syncFields = this._checkFields(fieldMappingResults, locationResults);
         this._locateFeatures(fieldMappingResults, locationResults);
+      },
+
+      _checkFields: function (fieldMappingResults, locationResults) {
+        //test if same field is chosen for location and fieldmapping
+        var matchingFields = {};
+        if (locationResults && locationResults.fields) {
+          array.forEach(locationResults.fields, function (field) {
+            if (!matchingFields.hasOwnProperty(field.value)) {
+              if (fieldMappingResults) {
+                var fieldMappingKeys = Object.keys(fieldMappingResults);
+                for (var i = 0; i < fieldMappingKeys.length; i++) {
+                  if (fieldMappingResults[fieldMappingKeys[i]] === field.value) {
+                    matchingFields[field.keyField] = {
+                      layerFieldName: fieldMappingKeys[i]
+                    };
+                    break;
+                  }
+                }
+              }
+            }
+          });
+        }
+        return matchingFields;
       },
 
       _locateFeatures: function (fieldMappingResults, locationResults) {
@@ -325,8 +350,6 @@ define(['dojo/_base/declare',
               results.duplicateLookupList),
             duplicateLayer: results.duplicateLayer
           });
-
-
 
           //TODO still thinking through this but it will be necessary I believe
           this.state = 'review';
@@ -446,7 +469,8 @@ define(['dojo/_base/declare',
           matchedLayer: results.matchedLayer,
           unMatchedLayer: results.unMatchedLayer,
           duplicateLayer: results.duplicateLayer,
-          duplicateLookupList: results.duplicateLookupList
+          duplicateLookupList: results.duplicateLookupList,
+          _syncFields: this._syncFields
         });
         this.pageContainer.addView(r);
 
