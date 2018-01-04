@@ -66,12 +66,6 @@ define(['dojo/_base/declare',
 
       //TODO may need a loading shelter here to avoid see feature views while adding
 
-      //TODO add support for add/remove from the list
-      //TODO this has to respond to changes to feature state
-      // for example if they locate it needs to be able to transition from the un-matched to matched list for example
-      //In that case this list would need to remove the feature
-      //may be wiser to use the store apporach...
-
       constructor: function (options) {
         lang.mixin(this, options);
       },
@@ -219,7 +213,9 @@ define(['dojo/_base/declare',
         this.features.push(feature);
         //if the table has already been init then add new row
         if (this.featureListTable.rows.length !== this.features.length) {
-          this._initRow(feature, this.features.length);
+          if (this._started) {
+            this._initRow(feature, this.features.length);
+          }
         }
         this.emit('feature-list-updated', this.features.length);
       }

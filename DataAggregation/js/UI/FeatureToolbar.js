@@ -140,6 +140,7 @@ define(['dojo/_base/declare',
       },
 
       _initOriginalValues: function () {
+        //These could be used for comparison or to support reset
         this._originalValues = lang.clone(this.featureView.feature);
       },
 
@@ -271,6 +272,7 @@ define(['dojo/_base/declare',
           } else {
             //unmatched features will be saved to the matched layer when they can be located or after the graphic is moved on save
             // the feature and view should be removed from the unmatched layer and list
+            //TODO look closer at result objects to see if this OID business could be simplified
             var oid = updateFeature.attributes[this.layer.objectIdField];
             array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
               delete updateFeature.attributes[sf];
@@ -281,6 +283,12 @@ define(['dojo/_base/declare',
                 if (result && result.status === 'success') {
                   if (forceSave === true) {
                     updateFeature.attributes[this.layer.objectIdField] = oid;
+                  }
+                  if (result.hasOwnProperty('objectId')) {
+                    var oidField = this.featureView.feature.fieldInfo.filter(lang.hitch(this, function (field) {
+                      return field.name === this._stageLayer.objectIdField;
+                    }))[0];
+                    oidField.value = result.objectId;
                   }
                   //delete from un-matched layer
                   this._updateLayer(this.layer, null, null, [updateFeature], true).then(lang.hitch(this, function (r) {
@@ -303,17 +311,24 @@ define(['dojo/_base/declare',
 
       _updateLayer: function (layer, adds, updates, deletes, setFlags) {
         var def = new Deferred();
-        layer.applyEdits(adds, updates, deletes).then(lang.hitch(this, function () {
+        layer.applyEdits(adds, updates, deletes).then(lang.hitch(this, function (addRes, updateRes, deleteRes) {
+          console.log(updateRes);
+          console.log(deleteRes);
+          var result = { status: "success" };
           if (setFlags) {
             this._hasGeometryEdit = false;
             this._hasAttributeEdit = false;
           }
+          if (addRes && addRes.hasOwnProperty('length') && addRes.length > 0 && addRes[0].hasOwnProperty('objectId')) {
+            result.objectId = addRes[0].objectId;
+          }
+
           if (updates && updates.hasOwnProperty('length') && updates.length > 0) {
             //enable submit
             var reviewView = this.featureView.parent._pageContainer.getViewByTitle('Review');
             reviewView._updateNode(reviewView.submitButton, true);
           }
-          def.resolve({ status: "success" });
+          def.resolve(result);
         }), lang.hitch(this, function (err) {
           def.resolve({ status: "error", error: err });
           new Message({
@@ -552,12 +567,6 @@ define(['dojo/_base/declare',
           domClass.remove(node, removeClass);
           domClass.add(node, addClass);
         });
-      },
-
-      _validateAddressDifference: function () {
-        //TODO test if a difference exists between address fields and related layer fields
-
-        return false;
       },
 
       updateTheme: function (theme) {

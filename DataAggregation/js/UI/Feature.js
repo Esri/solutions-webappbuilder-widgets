@@ -283,18 +283,18 @@ define(['dojo/_base/declare',
           this._feature.attributes.hasDuplicateUpdates;
       },
 
-      _removeView: function (feature, oid) {
-        //remove from duplicate feature list
-        this._parentFeatureList.removeFeature(feature, oid).then(lang.hitch(this, function (message) {
-          console.log(message);
-          this.parent._pageContainer.removeView(this);
-        }));
-      },
+      //_removeView: function (feature, oid) {
+      //  //remove from duplicate feature list
+      //  this._parentFeatureList.removeFeature(feature, oid).then(lang.hitch(this, function (message) {
+      //    console.log(message);
+      //    this.parent._pageContainer.removeView(this);
+      //  }));
+      //},
 
-      _addView: function (feature) {
-        var reviewView = this.parent._pageContainer.getViewByTitle('Review');
-        reviewView.matchedFeatureList.addFeature(feature);
-      },
+      //_addView: function (feature) {
+      //  var reviewView = this.parent._pageContainer.getViewByTitle('Review');
+      //  reviewView.matchedFeatureList.addFeature(feature);
+      //},
 
       _toggleDuplicateReview: function (v) {
         var rows = this.reviewTableG.rows;
@@ -600,8 +600,6 @@ define(['dojo/_base/declare',
         if (!sync) {
           //use the located address to update whatever fileds we have displayed
           array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
-            //TODO understand if this can be different or some safe way to know what it is
-            //TODO make sure this doesn't need the prefix...seems off
             var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : row.keyField;
             row.addressValueTextBox.set('value', this._address[keyField]);
           }));
@@ -613,7 +611,6 @@ define(['dojo/_base/declare',
               for (var i = 0; i < this.featureControlTable.rows.length; i++) {
                 var featureRow = this.featureControlTable.rows[i];
                 if (featureRow.isEditRow && featureRow.fieldName === addrField.layerFieldName) {
-                  //TODO think through what should happen with duplicate workflow....does this update existing or file or both??
                   featureRow.fileValueTextBox.set('value',
                     this._address[this.csvStore.matchFieldPrefix + row.keyField]);
                   featureRow.fileValueTextBox.emit('keyUp');
@@ -627,17 +624,16 @@ define(['dojo/_base/declare',
       },
 
       _validateAddressDifference: function () {
-        //TODO test if a difference exists between address fields and related layer fields
+        //test if a difference exists between address fields and related layer fields
         var hasDifferences = false;
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
           if (!hasDifferences) {
-            if (this._syncFields.hasOwnProperty(row.keyField)) {
+            if (this._syncFields && this._syncFields.hasOwnProperty(row.keyField)) {
               var value = row.addressValueTextBox.value;
               var addrField = this._syncFields[row.keyField];
               for (var i = 0; i < this.featureControlTable.rows.length; i++) {
                 var featureRow = this.featureControlTable.rows[i];
                 if (featureRow.isEditRow && featureRow.fieldName === addrField.layerFieldName) {
-                  //TODO think through what should happen with duplicate workflow....does this update existing or file or both??
                   hasDifferences = featureRow.fileValueTextBox.value !== value;
                   //featureRow.fileValueTextBox.set('value', this._address[this.csvStore.matchFieldPrefix + row.keyField]);
                   break;
@@ -653,7 +649,6 @@ define(['dojo/_base/declare',
         this._address = {};
         //use the located address to update whatever fileds we have displayed
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
-          //TODO understand if this can be different or some safe way to know what it is
           //var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? this.csvStore.matchFieldPrefix + row.keyField : row.keyField;
           this._address[this.csvStore.matchFieldPrefix + row.keyField] = row.addressValueTextBox.value;
         }));
@@ -662,7 +657,7 @@ define(['dojo/_base/declare',
       },
 
       _getAddressFieldsValues: function () {
-        //get the address or coordinates from the
+        //get the address or coordinates from the textbox controls
         var address = {};
         array.forEach(this.locationControlTable.rows, function (row) {
           address[row.keyField] = row.addressValueTextBox.value;
@@ -772,7 +767,7 @@ define(['dojo/_base/declare',
       },
 
       _validateValues: function () {
-        //this function is used to test when duplicate and you switch the state of the rdo for use values
+        //this function is used to test when duplicate and you switch between file and layer
         array.forEach(this.featureControlTable.rows, lang.hitch(this, function (row) {
           if (row.isEditRow) {
             var nullValues = [null, undefined, ""];

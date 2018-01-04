@@ -67,6 +67,19 @@ define(['dojo/_base/declare',
 
       constructor: function (options) {
         lang.mixin(this, options);
+        this._initBaseArgs();
+      },
+
+      _initBaseArgs: function () {
+        this._baseArgs = {
+          nls: this.nls,
+          map: this.map,
+          parent: this.parent,
+          config: this.config,
+          appConfig: this.appConfig,
+          theme: this.theme,
+          isDarkTheme: this.isDarkTheme
+        };
       },
 
       postCreate: function () {
@@ -193,85 +206,44 @@ define(['dojo/_base/declare',
       },
 
       _initCoordinatesView: function (obj) {
-        var xField = this.config.xyFields[0];
-        var yField = this.config.xyFields[1];
-
-        var fields = [];
-        array.forEach(obj.fields, function (field) {
-          var fieldType = obj.fieldTypes[field];
-          if (fieldType) {
-            if (fieldType.supportsInt || fieldType.supportsFloat) {
-              fields.push({
-                label: field,
-                value: field
-              });
-            }
-          }
-        });
-
-        return new Coordinates({
-          nls: this.nls,
-          map: this.map,
-          parent: this.parent,
-          config: this.config,
-          appConfig: this.appConfig,
-          fields: fields,
-          xField: xField,
-          yField: yField,
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme
-        });
+        return new Coordinates(lang.mixin({
+          fields: this._getFields(obj, true),
+          xField: this.config.xyFields[0],
+          yField: this.config.xyFields[1]
+        }, this._baseArgs));
       },
 
       _initAddressView: function (obj) {
-        var fields = [];
-        array.forEach(obj.fields, function (field) {
-          var fieldType = obj.fieldTypes[field];
-          fields.push({
-            label: field,
-            value: field,
-            type: fieldType
-          });
-        });
-
-        return new Addresses({
-          nls: this.nls,
-          map: this.map,
-          parent: this.parent,
-          config: this.config,
-          appConfig: this.appConfig,
+        return new Addresses(lang.mixin({
           singleFields: this._singleFields,
           multiFields: this._multiFields,
-          fields: fields,
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme
-        });
+          fields: this._getFields(obj, false)
+        }, this._baseArgs));
       },
 
       _initFieldMappingView: function (obj) {
-        var targetFields = obj.fsFields;
+        return new FieldMapping(lang.mixin({
+          targetFields: obj.fsFields,
+          sourceFields: this._getFields(obj, false)
+        }, this._baseArgs));
+      },
 
-        var sourceFields = [];
+      _getFields: function (obj, coordFields) {
+        //coord fields
+        var fields = [];
         array.forEach(obj.fields, function (field) {
           var fieldType = obj.fieldTypes[field];
-          sourceFields.push({
-            label: field,
-            value: field,
-            type: fieldType
-          });
+          var pushField = (coordFields && fieldType && (fieldType.supportsInt || fieldType.supportsFloat)) ?
+            true : !coordFields ? true : false;
+          if (pushField) {
+            fields.push({
+              label: field,
+              value: field,
+              type: fieldType
+            });
+          }
         });
-
-        return new FieldMapping({
-          nls: this.nls,
-          map: this.map,
-          parent: this.parent,
-          config: this.config,
-          appConfig: this.appConfig,
-          targetFields: targetFields,
-          sourceFields: sourceFields,
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme
-        });
+        return fields;
       },
 
       _updatePageContainer: function (obj) {

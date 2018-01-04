@@ -359,7 +359,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             var def = new Deferred();
             var locatorSource = this._geocodeSources[_idx];
             var locator = locatorSource.locator;
-            locator.outSpatialReference = this.spatialReference;
+            locator.outSpatialReference = this.map.spatialReference;
             var unMatchedStoreItems = [];
             var geocodeOps = [];
             var oid = "OBJECTID";
