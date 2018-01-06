@@ -252,7 +252,7 @@ define([
     _maintainTravelModeRdbState: function () {
       if (this.config.travelModeSelection) {
         this.travelModeRdb.set('checked', true);
-        this.customAttributeParameterRdb.set('checked', false);
+        this.customAttributeParameterRdb.setValue(false);
         domClass.remove(this.travelModesListParentContainer,
           "esriCTHidden");
         domClass.add(this.attributeParameterValues,
@@ -275,8 +275,8 @@ define([
     **/
     _maintainCustomAttributeRdbState: function () {
       if (this.config.customAttributeSelection) {
-        this.customAttributeParameterRdb.set('checked', true);
-        this.travelModeRdb.set('checked', false);
+        this.customAttributeParameterRdb.setValue(true);
+        this.travelModeRdb.setValue(false);
         domClass.remove(this.attributeParameterValues,
           "esriCTHidden");
         domClass.remove(this.travelModesListParentContainer,
@@ -553,9 +553,9 @@ define([
     * @memberOf widgets/ServiceFeasibility/setting/Setting.
     **/
     _resetAttributeParameterRdb: function () {
-      this.travelModeRdb.set('checked', false);
+      this.travelModeRdb.setValue(false);
       this.travelModeRdb.set('disabled', false);
-      this.customAttributeParameterRdb.set('checked', false);
+      this.customAttributeParameterRdb.setValue(false);
       this.customAttributeParameterRdb.set('disabled', false);
       domClass.add(this.travelModesListParentContainer,
         "esriCTHidden");
@@ -568,7 +568,7 @@ define([
     * @memberOf widgets/ServiceFeasibility/setting/Setting.
     **/
     _selectTravelModeRdb: function () {
-      this.travelModeRdb.set('checked', true);
+      this.travelModeRdb.setValue(true);
       domClass.remove(this.travelModesListParentContainer,
         "esriCTHidden");
     },
@@ -715,7 +715,7 @@ define([
     * @memberOf widgets/ServiceFeasibility/setting/Setting.
     **/
     _disableTravelModeRdb: function () {
-      this.travelModeRdb.set('checked', false);
+      this.travelModeRdb.setValue(false);
       this.travelModeRdb.set('disabled', true);
       domClass.add(this.travelModesListParentContainer,
         "esriCTHidden");
@@ -785,8 +785,7 @@ define([
         }
         // check whether data for business layer in config exists
         if (this.config && this.config.businessesLayerName && this.selectBusinessLayer &&
-          this.selectBusinessLayer.options && this.selectBusinessLayer
-          .options.length > 0) {
+          this.selectBusinessLayer.options && this.selectBusinessLayer.options.length > 0) {
           // loop to set the selected option for business layer dropdown
           for (i = 0; i < this.selectBusinessLayer.options.length; i++) {
             if (this.selectBusinessLayer.options[i].label === this.config
@@ -885,43 +884,36 @@ define([
               "class": "esriCTCheckboxLabel"
             }, divAccessPointLayerContainer);
             domConstruct.place(divAccessPointLayerContainer, this.divAccessPointLayer);
-            domClass.remove(accessPointChecks,
-              "esriCTcheckedPointLayer");
+            domClass.remove(accessPointChecks, "esriCTcheckedPointLayer");
             domClass.remove(accessPointChecks.checkNode, "checked");
             this._addEventToCheckBox(accessPointChecks);
             // if config object not null and accessPointsLayersName available
             if (this.config && this.config.accessPointsLayersName) {
-              chkBoxTitle = domAttr.get(accessPointChecks.domNode,
-                "title");
+              chkBoxTitle = domAttr.get(accessPointChecks.domNode,"title");
               // if config object not null and accessPointsLayersName length is greater than 1
-              if (this.config.accessPointsLayersName.split(",").length >
-                1) {
-                for (j = 0; j < this.config.accessPointsLayersName.split(
-                    ",").length; j++) {
+              if (this.config.accessPointsLayersName.split(",").length > 1) {
+                for (j = 0; j < this.config.accessPointsLayersName.split(",").length; j++) {
                   // if checkbox title and  accessPointsLayersName of this index are same
-                  if (chkBoxTitle === this.config.accessPointsLayersName
-                    .split(",")[j]) {
-                    accessPointChecks.checked = true;
-                    domClass.add(accessPointChecks.checkNode,
-                      "checked");
-                    domClass.add(accessPointChecks.domNode,
-                      "esriCTcheckedPointLayer");
+                  if (chkBoxTitle === this.config.accessPointsLayersName.split(",")[j]) {
+                    accessPointChecks.setValue(true);
+                    //accessPointChecks.checked = true;
+                    //domClass.add(accessPointChecks.checkNode,"checked");
+                    domClass.add(accessPointChecks.domNode,"esriCTcheckedPointLayer");
                   }
                 }
               } else {
                 // if checkbox title and accessPointsLayersName in config is same
                 if (chkBoxTitle === this.config.accessPointsLayersName) {
-                  accessPointChecks.checked = true;
-                  domClass.add(accessPointChecks.checkNode, "checked");
-                  domClass.add(accessPointChecks.domNode,
-                    "esriCTcheckedPointLayer");
+                  //accessPointChecks.checked = true;
+                  //domClass.add(accessPointChecks.checkNode, "checked");
+                  accessPointChecks.setValue(true);
+                  domClass.add(accessPointChecks.domNode, "esriCTcheckedPointLayer");
                   this.checkedLayers.push(accessPointChecks.domNode);
                   this.checkedAccessPointLayers = this.checkedLayers;
                 }
               }
               // if value doesn't exist in array
-              if (array.indexOf(this.checkedLayers, accessPointChecks
-                  .domNode) === -1) {
+              if (array.indexOf(this.checkedLayers, accessPointChecks.domNode) === -1) {
                 this.checkedLayers.push(accessPointChecks.domNode);
                 this.checkedAccessPointLayers = this.checkedLayers;
               }
@@ -943,7 +935,7 @@ define([
     _addEventToCheckBox: function (checkBox) {
       var queryLayer;
       on(checkBox.domNode, "click", lang.hitch(this, function (event) {
-        if (checkBox.get('checked')) {
+        if (checkBox.getValue()) {
           this.checkedLayers.push(event.currentTarget);
           domClass.add(event.currentTarget,
             "esriCTcheckedPointLayer");
@@ -1104,10 +1096,10 @@ define([
         "class": "esriCTTargetLayerLabel"
       }, this.saveBusinessLayerLabel);
       if (this.config && this.config.targetBusinessLayer) {
-        this.saveBusinessCheck.checked = true;
-        domClass.add(this.saveBusinessCheck.checkNode, "checked");
-        domClass.remove(this.selectSaveBusinessLayerBlock,
-          "esriCTHidden");
+        this.saveBusinessCheck.setValue(true);
+        //this.saveBusinessCheck.checked = true;
+        //domClass.add(this.saveBusinessCheck.checkNode, "checked");
+        domClass.remove(this.selectSaveBusinessLayerBlock,"esriCTHidden");
       }
     },
 
@@ -1125,8 +1117,9 @@ define([
         "class": "esriCTTargetLayerLabel"
       }, this.saveRouteLayerLabel);
       if (this.config && this.config.targetRouteLayer) {
-        this.saveRouteCheck.checked = true;
-        domClass.add(this.saveRouteCheck.checkNode, "checked");
+        this.saveRouteCheck.setValue(true);
+        //this.saveRouteCheck.checked = true;
+        //domClass.add(this.saveRouteCheck.checkNode, "checked");
         domClass.remove(this.routeLayerCheck, "esriCTHidden");
         domClass.remove(this.selectrouteLayerBlock, "esriCTHidden");
       }
@@ -1164,20 +1157,23 @@ define([
         "class": "esriCTTargetLayerLabel esriCTEllipsis"
       }, this.saveRouteCostLabel);
       if (this.config && this.config.saveRoutelengthField) {
-        this.saveRouteLength.checked = true;
-        domClass.add(this.saveRouteLength.checkNode, "checked");
+        this.saveRouteLength.setValue(true);
+        //this.saveRouteLength.checked = true;
+        //domClass.add(this.saveRouteLength.checkNode, "checked");
         domClass.remove(this.selectSaveRouteLength, "esriCTHidden");
         domClass.remove(this.selectRouteLengthBlock, "esriCTHidden");
       }
       if (this.config && this.config.saveBusinessCountField) {
-        this.saveBusinessCount.checked = true;
-        domClass.add(this.saveBusinessCount.checkNode, "checked");
+        this.saveBusinessCount.setValue(true);
+        //this.saveBusinessCount.checked = true;
+        //domClass.add(this.saveBusinessCount.checkNode, "checked");
         domClass.remove(this.selectSaveBusinessCount, "esriCTHidden");
         domClass.remove(this.selectBusinessCountBlock, "esriCTHidden");
       }
       if (this.config && this.config.saveRouteCostField) {
-        this.saveRouteCost.checked = true;
-        domClass.add(this.saveRouteCost.checkNode, "checked");
+        this.saveRouteCost.setValue(true);
+        //this.saveRouteCost.checked = true;
+        //domClass.add(this.saveRouteCost.checkNode, "checked");
         domClass.remove(this.selectSaveRouteCost, "esriCTHidden");
         domClass.remove(this.selectRouteCostBlock, "esriCTHidden");
       }
@@ -1198,10 +1194,11 @@ define([
         "class": "esriCTTargetLayerLabel esriCTEllipsis"
       }, this.fieldMappingLabel);
       if (this.config && this.config.RouteBussinessAttribute) {
-        this.routeBussinessAttrTranferChkBox.checked = true;
-        domClass.add(this.routeBussinessAttrTranferChkBox.checkNode,
-          "checked");
-        this.routeBussinessAttrTranferChkBox.checked = this.config.RouteBussinessAttribute;
+        this.routeBussinessAttrTranferChkBox.setValue(true);
+        //this.routeBussinessAttrTranferChkBox.checked = true;
+        //domClass.add(this.routeBussinessAttrTranferChkBox.checkNode,"checked");
+        //this.routeBussinessAttrTranferChkBox.checked = this.config.RouteBussinessAttribute;
+        this.routeBussinessAttrTranferChkBox.setValue(this.config.RouteBussinessAttribute);
       }
     },
 
@@ -1210,19 +1207,16 @@ define([
     * @memberOf widgets/serviceFeasibility/setting/settings
     **/
     _ToggleFieldMapping: function () {
-      if (this.saveBusinessCheck.checked && !this.saveRouteCheck.checked) {
+      if (this.saveBusinessCheck.getValue() && !this.saveRouteCheck.getValue()) {
         domClass.add(this.routeBussinessAttrTranfer, "esriCTHidden");
         domClass.add(this.layerFieldMapping, "esriCTHidden");
       }
-      if (!this.saveBusinessCheck.checked && this.saveRouteCheck.checked) {
+      if (!this.saveBusinessCheck.getValue() && this.saveRouteCheck.getValue()) {
         domClass.add(this.routeBussinessAttrTranfer, "esriCTHidden");
         domClass.add(this.layerFieldMapping, "esriCTHidden");
-      } else if (this.saveBusinessCheck.checked && this.saveRouteCheck
-        .checked) {
-        domClass.remove(this.routeBussinessAttrTranfer,
-          "esriCTHidden");
-        if (this.routeBussinessAttrTranferChkBox && this.routeBussinessAttrTranferChkBox
-          .checked) {
+      } else if (this.saveBusinessCheck.getValue() && this.saveRouteCheck.getValue()) {
+        domClass.remove(this.routeBussinessAttrTranfer,"esriCTHidden");
+        if (this.routeBussinessAttrTranferChkBox && this.routeBussinessAttrTranferChkBox.getValue()) {
           domClass.remove(this.layerFieldMapping, "esriCTHidden");
         } else {
           domClass.add(this.layerFieldMapping, "esriCTHidden");
@@ -1254,7 +1248,7 @@ define([
       on(this.saveBusinessCheck.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (this.saveBusinessCheck.get('checked')) {
+          if (this.saveBusinessCheck.getValue()) {
             domClass.remove(this.selectSaveBusinessLayerBlock,
               "esriCTHidden");
             domClass.remove(this.routeBussinessAttrTranferMainContainer,
@@ -1274,7 +1268,7 @@ define([
       on(this.saveRouteCheck.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (this.saveRouteCheck.get('checked')) {
+          if (this.saveRouteCheck.getValue()) {
             domClass.remove(this.routeLayerCheck, "esriCTHidden");
             domClass.remove(this.selectrouteLayerBlock,
               "esriCTHidden");
@@ -1296,7 +1290,7 @@ define([
       on(this.saveRouteLength.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (this.saveRouteLength.get('checked')) {
+          if (this.saveRouteLength.getValue()) {
             domClass.remove(this.selectSaveRouteLength,
               "esriCTHidden");
             domClass.remove(this.selectRouteLengthBlock,
@@ -1312,7 +1306,7 @@ define([
       on(this.saveBusinessCount.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (this.saveBusinessCount.get('checked')) {
+          if (this.saveBusinessCount.getValue()) {
             domClass.remove(this.selectSaveBusinessCount,
               "esriCTHidden");
             domClass.remove(this.selectBusinessCountBlock,
@@ -1327,7 +1321,7 @@ define([
       on(this.saveRouteCost.domNode, "click", lang.hitch(this,
         function (
           event) {
-          if (this.saveRouteCost.get('checked')) {
+          if (this.saveRouteCost.getValue()) {
             domClass.remove(this.selectSaveRouteCost,
               "esriCTHidden");
             domClass.remove(this.selectRouteCostBlock,
@@ -1342,7 +1336,7 @@ define([
       on(this.routeBussinessAttrTranferChkBox.domNode, "click", lang.hitch(
         this,
         function (event) {
-          if (this.routeBussinessAttrTranferChkBox.get('checked')) {
+          if (this.routeBussinessAttrTranferChkBox.getValue()) {
             domClass.remove(this.layerFieldMapping,
               "esriCTHidden");
           } else {
@@ -1356,11 +1350,10 @@ define([
     * @memberOf widgets/ServiceFeasibility/setting/Settings
     **/
     _toggleFieldMappingCheck: function () {
-      if (this.routeBussinessAttrTranferChkBox && this.routeBussinessAttrTranferChkBox
-        .checked) {
-        this.routeBussinessAttrTranferChkBox.checked = false;
-        domClass.remove(this.routeBussinessAttrTranferChkBox.checkNode,
-          "checked");
+      if (this.routeBussinessAttrTranferChkBox && this.routeBussinessAttrTranferChkBox.getValue()) {
+        this.routeBussinessAttrTranferChkBox.setValue(false);
+        //this.routeBussinessAttrTranferChkBox.checked = false;
+        //domClass.remove(this.routeBussinessAttrTranferChkBox.checkNode,"checked");
       }
 
     },
@@ -1558,8 +1551,9 @@ define([
         "class": "esriCTTargetLayerLabel"
       }, this.exportCsvLabel);
       if (this.config && this.config.exportToCSV) {
-        domClass.add(this.exportCheck.checkNode, "checked");
-        this.exportCheck.checked = this.config.exportToCSV;
+        this.exportCheck.setValue(true);
+        //domClass.add(this.exportCheck.checkNode, "checked");
+        //this.exportCheck.checked = this.config.exportToCSV;
       }
     },
 
@@ -1611,8 +1605,7 @@ define([
         }
         getSymbolvalues = this._getSymbols();
         highlighterDetails = this._getHighlighterForm();
-        businessLayerCheck = this.saveBusinessCheck && this.saveBusinessCheck
-          .checked ? this.saveBusinessCheck.checked : false;
+        businessLayerCheck = this.saveBusinessCheck && this.saveBusinessCheck.getValue() ? this.saveBusinessCheck.setValue(true) : false;
         // check whether business layer check box is checked
         if (businessLayerCheck) {
           businessLayer = (this.selectSaveBusinessLayer && this.selectSaveBusinessLayer
@@ -1620,32 +1613,28 @@ define([
             .value].title : "";
         }
         // if Route Layer Checkbox is checked
-        if (this.saveRouteCheck && this.saveRouteCheck.checked) {
-          routeLayerCheck = this.saveRouteCheck && this.saveRouteCheck
-            .checked ? this.saveRouteCheck.checked : false;
+        if (this.saveRouteCheck && this.saveRouteCheck.getValue()) {
+          routeLayerCheck = this.saveRouteCheck && this.saveRouteCheck.getValue() ? this.saveRouteCheck.getValue() : false;
           // if Route Layer Checkbox is checked then set route layer value from dropdown
           if (routeLayerCheck) {
             routeLayerValue = (this.selectSaveRouteLayer && this.selectSaveRouteLayer
               .value !== "") ? this.operationalLayers[this.selectSaveRouteLayer
               .value].title : "";
           }
-          routelengthCheck = this.saveRouteLength && this.saveRouteLength
-            .checked ? this.saveRouteLength.checked : false;
+          routelengthCheck = this.saveRouteLength && this.saveRouteLength.getValue() ? this.saveRouteLength.getValue() : false;
           // if Route Layer Checkbox is checked  and Route Length checkbox is checked then set Route Length value from dropdown
           if (routeLayerCheck && routelengthCheck) {
             routelengthLayer = this.selectSaveRouteLength && this.selectSaveRouteLength
               .value ? this.selectSaveRouteLength.value : "";
           }
-          businessCountCheck = this.saveBusinessCount && this.saveBusinessCount
-            .checked ? this.saveBusinessCount.checked : false;
+          businessCountCheck = this.saveBusinessCount && this.saveBusinessCount.getValue() ? this.saveBusinessCount.getValue() : false;
           // if Route Layer Checkbox is checked  and Business Count checkbox is checked then set Business Count value from dropdown
           if (routeLayerCheck && businessCountCheck) {
             businessCountLayer = this.selectSaveBusinessCount && this
               .selectSaveBusinessCount.value ? this.selectSaveBusinessCount
               .value : "";
           }
-          routeCostCheck = this.saveRouteCost && this.saveRouteCost
-            .checked ? this.saveRouteCost.checked : false;
+          routeCostCheck = this.saveRouteCost && this.saveRouteCost.getValue() ? this.saveRouteCost.getValue() : false;
           if (routeLayerCheck && routeCostCheck) {
             routeCostLayer = this.selectSaveRouteCost && this.selectSaveRouteCost
               .value ? this.selectSaveRouteCost.value : "";
@@ -1669,7 +1658,7 @@ define([
           businessListFieldName = "";
           businessLayer = "";
           businessCountLayer = "";
-          this.routeBussinessAttrTranferChkBox.checked = false;
+          this.routeBussinessAttrTranferChkBox.setValue(false);
         }
         businessLayerName = bussinessLayerIndex !== "" ? this.operationalLayers[
           bussinessLayerIndex].title : "";
@@ -1692,26 +1681,24 @@ define([
           "targetBusinessLayer": businessLayer,
           "targetRouteLayer": routeLayerValue,
           "saveRoutelengthField": routelengthLayer,
-          "exportToCSV": this.exportCheck.checked,
+          "exportToCSV": this.exportCheck.getValue(),
           "saveBusinessCountField": businessCountLayer,
           "symbol": getSymbolvalues,
           "highlighterDetails": highlighterDetails,
           "FieldMappingData": this.targetLayerFields,
-          "RouteBussinessAttribute": this.routeBussinessAttrTranferChkBox
-            .checked,
+          "RouteBussinessAttribute": this.routeBussinessAttrTranferChkBox.getValue(),
           "AllowedBarriersCheckBoxChecked": this.isAllowBarriersCheckBoxChecked,
           "BusinessLayerValue": this.selectBusinessLayer.value,
           "AllowedAccessPointCheckBoxChecked": this.isAllowAccessPointCheckBox,
           "selectedTravelMode": this._selectedTravelMode,
-          "travelModeSelection": this.travelModeRdb.checked,
-          "customAttributeSelection": this.customAttributeParameterRdb
-            .checked,
+          "travelModeSelection": this.travelModeRdb.getValue(),
+          "customAttributeSelection": this.customAttributeParameterRdb.getValue(),
           "ExpressionValue": this.txtCostExpression.value,
           "LabelForBox": this.labelForBox,
           "AllowBusinessOptional": this.isAllowBusinessOptional,
           "saveRouteCostField": routeCostLayer,
-          "Before": this.inputRadioBefore.checked,
-          "After": this.inputRadioAfter.checked,
+          "Before": this.inputRadioBefore.getValue(),
+          "After": this.inputRadioAfter.getValue(),
           "settingNLS": this.nls.routeLengthroundingOption
         };
       } else {
@@ -1842,7 +1829,7 @@ define([
     * @memberOf widgets/ServiceFeasibility/setting/Settings
     **/
     _getGeometryFromBussinessLayer: function () {
-      if (this.saveBusinessCheck.checked) {
+      if (this.saveBusinessCheck.getValue()) {
         var i, saveBussinessLayerGeometeyType,
           bussinessLayerGeometryType, returnObj = {
             returnErr: "",
@@ -1915,8 +1902,8 @@ define([
         returnErr: "",
         hasError: false
       };
-      if (this.saveRouteCheck.checked && this.saveRouteLength.checked &&
-        this.saveBusinessCount.checked) {
+      if (this.saveRouteCheck.getValue() && this.saveRouteLength.getValue() &&
+        this.saveBusinessCount.getValue()) {
         if (this.selectSaveRouteLength.value === this.selectSaveBusinessCount
           .value) {
           returnObj.returnErr = "'" + this.nls.lblRouteLength + "'" +
@@ -1925,8 +1912,8 @@ define([
           returnObj.hasError = true;
         }
       }
-      if (this.saveRouteCheck.checked && this.saveRouteCost.checked &&
-        this.saveRouteLength.checked) {
+      if (this.saveRouteCheck.getValue() && this.saveRouteCost.getValue() &&
+        this.saveRouteLength.getValue()) {
         if (this.selectSaveRouteLength.value === this.selectSaveRouteCost
           .value) {
           returnObj.returnErr = "'" + this.nls.lblRouteLength + "'" +
@@ -1935,8 +1922,8 @@ define([
           returnObj.hasError = true;
         }
       }
-      if (this.saveRouteCheck.checked && this.saveRouteCost.checked &&
-        this.saveBusinessCount.checked) {
+      if (this.saveRouteCheck.getValue() && this.saveRouteCost.getValue() &&
+        this.saveBusinessCount.getValue()) {
         if (this.selectSaveRouteCost.value === this.selectSaveBusinessCount
           .value) {
           returnObj.returnErr = "'" + this.nls.lblRouteLength + "'" +
@@ -1980,14 +1967,14 @@ define([
         returnErr: "",
         hasError: false
       };
-      if (this.saveBusinessCheck && this.saveBusinessCheck.checked &&
+      if (this.saveBusinessCheck && this.saveBusinessCheck.getValue() &&
         this.selectSaveBusinessLayer && this.selectSaveBusinessLayer.options
         .length === 0) {
         returnObj.returnErr = this.nls.validationErrorMessage.specifyText +
           "'" + this.saveBusinessLayerLabel.innerHTML + "'.";
         returnObj.hasError = true;
 
-      } else if (this.saveRouteCheck && this.saveRouteCheck.checked &&
+      } else if (this.saveRouteCheck && this.saveRouteCheck.getValue() &&
         this.selectSaveRouteLayer && this.selectSaveRouteLayer.options
         .length === 0) {
         returnObj.returnErr = this.nls.validationErrorMessage.specifyText +
@@ -2317,22 +2304,25 @@ define([
       }, this.allowBarriersLabel);
       switch (this.config.AllowedBarriersCheckBoxChecked) {
         case true:
-          domClass.add(allowBarrierCheckBox.checkNode, "checked");
+          allowBarrierCheckBox.setValue(true);
+          //domClass.add(allowBarrierCheckBox.checkNode, "checked");
           domStyle.set(this.barriersDiv, "display", "block");
-          allowBarrierCheckBox.checked = true;
-          this.isAllowBarriersCheckBoxChecked = allowBarrierCheckBox.checked;
+          //allowBarrierCheckBox.checked = true;
+          this.isAllowBarriersCheckBoxChecked = allowBarrierCheckBox.getValue();
           break;
         case false:
-          domClass.remove(allowBarrierCheckBox.checkNode, "checked");
+          allowBarrierCheckBox.setValue(false);
+          //domClass.remove(allowBarrierCheckBox.checkNode, "checked");
           domStyle.set(this.barriersDiv, "display", "none");
-          allowBarrierCheckBox.checked = false;
-          this.isAllowBarriersCheckBoxChecked = allowBarrierCheckBox.checked;
+          //allowBarrierCheckBox.checked = false;
+          this.isAllowBarriersCheckBoxChecked = allowBarrierCheckBox.getValue();
           break;
         default:
-          domClass.add(allowBarrierCheckBox.checkNode, "checked");
+          allowBarrierCheckBox.setValue(true);
+          //domClass.add(allowBarrierCheckBox.checkNode, "checked");
           domStyle.set(this.barriersDiv, "display", "block");
-          allowBarrierCheckBox.checked = true;
-          this.isAllowBarriersCheckBoxChecked = allowBarrierCheckBox.checked;
+          //allowBarrierCheckBox.checked = true;
+          this.isAllowBarriersCheckBoxChecked = allowBarrierCheckBox.getValue();
       }
       this._onClickAllowBarriersCheckBox(allowBarrierCheckBox);
     },
@@ -2347,8 +2337,8 @@ define([
         this,
         function () {
           this.isAllowBarriersCheckBoxChecked =
-            allowBarrierCheckBox.checked;
-          switch (allowBarrierCheckBox.checked) {
+            allowBarrierCheckBox.getValue();
+          switch (allowBarrierCheckBox.getValue()) {
             case true:
               domStyle.set(this.barriersDiv, "display", "block");
               break;
@@ -2389,8 +2379,7 @@ define([
       this.own(on(allowAccessPointCheckBox.domNode, "click", lang.hitch(
         this,
         function () {
-          this.isAllowAccessPointCheckBox =
-            allowAccessPointCheckBox.checked;
+          this.isAllowAccessPointCheckBox = allowAccessPointCheckBox.getValue();
         })));
     },
 
@@ -2553,9 +2542,8 @@ define([
     _onClickMakeBusinessOptionalChkBx: function (checkbox) {
       this.own(on(checkbox.domNode, "click", lang.hitch(this,
         function () {
-          this.isAllowBusinessOptional =
-            checkbox.checked;
-          switch (checkbox.checked) {
+          this.isAllowBusinessOptional = checkbox.getValue();
+          switch (checkbox.getValue()) {
             case true:
               this._displayOnCheckBoxChecked();
               break;
@@ -2597,20 +2585,21 @@ define([
     _checkUncheckCheckBox: function (checkbox, isChecked) {
       switch (isChecked) {
         case true:
-          domClass.add(checkbox.checkNode, "checked");
-          checkbox.checked = true;
+          checkbox.setValue(true);
+          //domClass.add(checkbox.checkNode, "checked");
+          //checkbox.checked = true;
           break;
         case false:
-          domClass.remove(checkbox.checkNode,
-            "checked");
-          checkbox.checked = false;
+          //domClass.remove(checkbox.checkNode,"checked");
+          //checkbox.checked = false;
+          checkbox.setValue(false);
           break;
         default:
-          domClass.remove(checkbox.checkNode,
-            "checked");
-          checkbox.checked = false;
+          //domClass.remove(checkbox.checkNode,"checked");
+          //checkbox.checked = false;
+          checkbox.setValue(false);
       }
-      return checkbox.checked;
+      return checkbox.getValue();
     },
 
     /**

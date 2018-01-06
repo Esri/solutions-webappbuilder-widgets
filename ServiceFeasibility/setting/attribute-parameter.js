@@ -278,7 +278,7 @@ define([
 
       //Select if attribute is already configured
       if (configParameterObj) {
-        checkBox.check();
+        checkBox.setValue(true);
 
         if (defaultToValueDropdown) {
           this._setDropDownValue(defaultToValueDropdown,
@@ -308,7 +308,7 @@ define([
         "name": attrParameter.attributeName,
         "title": toolTip,
         onChange: function () {
-          self._showHideInputControls(this.domNode, this.get('checked'));
+          self._showHideInputControls(this.domNode, this.getValue());
         }
       }, parentDiv);
       return checkBox;
@@ -406,7 +406,7 @@ define([
       }
       //Select if attribute is already configured
       if (configParameterObj) {
-        checkBox.check();
+        checkBox.setValue(true);
         if (defaultToValueDropdown) {
           this._setDropDownValue(defaultToValueDropdown,
             configParameterObj);
