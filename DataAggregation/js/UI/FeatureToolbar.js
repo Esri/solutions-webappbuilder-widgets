@@ -134,7 +134,7 @@ define(['dojo/_base/declare',
           }
         }
         if (locator) {
-          locator.outSpatialReference = this.map.spatialReference;
+          locator.outSpatialReference = this.featureView.parent.editLayer.spatialReference;
         }
         return locator;
       },
@@ -181,15 +181,19 @@ define(['dojo/_base/declare',
       },
 
       _reverseLocate: function (geometry) {
+        var def = new Deferred();
         if (this._isAddressFeature) {
-          this.locator.locationToAddress(geometry, 100).then(lang.hitch(this, function (result) {
+          this.locator.locationToAddress(geometry).then(lang.hitch(this, function (result) {
             //TODO should this honor the configured match score limit...if
             this.featureView._updateAddressFields(result.address, false);
+            def.resolve({ address: result.address });
           }));
         } else {
           //TODO support the same for coiordinate feature...should return xy
           this.featureView._updateAddressFields(geometry, false);
+          def.resolve({ geometry: geometry });
         }
+        return def;
       },
 
       _disableEdit: function () {
@@ -210,8 +214,8 @@ define(['dojo/_base/declare',
         if (!this._editDisabled) {
           this._editToolbar.activate(Edit.MOVE, this.featureView._feature);
           if (this.featureView.isDuplicate) {
-            this._panToAndSelectFeature(this.featureView._useGeomFromFile ?
-              this.featureView._feature : this.featureView._editFeature);
+            this._flashFeatures([this.featureView._useGeomFromFile ?
+              this.featureView._feature : this.featureView._editFeature]);
             if (this.featureView._useGeomFromFile) {
               this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
             } else {
@@ -222,7 +226,8 @@ define(['dojo/_base/declare',
             this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
           }
           this._updateLocate(!this._hasAddressEdit);
-          if (this._hasGeometryEdit && this._locateDisabled) {
+          if ((this._hasGeometryEdit && this._locateDisabled) ||
+            (this.featureView.isDuplicate && this.featureView._useValuesFromLayer)) {
             this._updateSync(!this.featureView._validateAddressDifference());
           } else {
             this._updateSync(true);
@@ -233,7 +238,25 @@ define(['dojo/_base/declare',
           this._updateSave(true);
           this._updateLocate(true);
           this._updateSync(true);
+          this._undoEdits();
           this.map.infoWindow.clearFeatures();
+        }
+      },
+
+      _undoEdits: function () {
+        //reset all controls with the original values
+        if (this._hasAttributeEdit) {
+          this.featureView.resetAttributeValues(this._originalValues);
+          this._hasAttributeEdit = false;
+        }
+        if (this._hasAddressEdit || this._hasGeometryEdit) {
+          this.featureView.resetAddressValues(this._originalValues);
+          this._hasAddressEdit = false;
+        }
+
+        if (this._hasGeometryEdit){
+          this.featureView.resetGeometry(this._originalValues.geometry, this._originalValues.duplicateGeometry);
+          this._hasGeometryEdit = false;
         }
       },
 
@@ -257,47 +280,63 @@ define(['dojo/_base/declare',
             //update the feature instances based on changes in user controls
             this._setFieldValues(this.featureView);
             this._setAddressValues(this.featureView);
+            this.featureView.feature.geometry = this.featureView._feature.geometry;
+            this._originalValues.geometry = this.featureView._feature.geometry;
+            if (this.featureView.isDuplicate) {
+              this._originalValues.duplicateGeometry = this.featureView._feature.geometry;
+            }
           }
 
           var updateFeature = this.featureView._feature;
           if (this.featureView.label.indexOf('UnMatched') === -1 &&
             this.featureView.label.indexOf('DuplicateFeatures') === -1) {
             //matched features will remain in the matched layer on save
-            this._updateLayer(this._stageLayer, null, [updateFeature], null, true);
+            this._updateLayer(this._stageLayer, null, [updateFeature], null, true, false);
           } else if (this.featureView.isDuplicate && forceSave !== true) {
             //duplicate features will remain in the duplicate layer on save
             //the hasUpdate attributes will be reviewed on submit to understand when update vs add should occur
             this.featureView._updateDuplicateAttributes(null, true);
-            this._updateLayer(this.layer, null, [updateFeature], null, true);
+            this._updateLayer(this.layer, null, [updateFeature], null, true, false);
           } else {
             //unmatched features will be saved to the matched layer when they can be located or after the graphic is moved on save
             // the feature and view should be removed from the unmatched layer and list
-            //TODO look closer at result objects to see if this OID business could be simplified
             var oid = updateFeature.attributes[this.layer.objectIdField];
-            array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
-              delete updateFeature.attributes[sf];
-            }));
 
-            this._updateLayer(this._stageLayer, [updateFeature], null, null, true)
-              .then(lang.hitch(this, function (result) {
-                if (result && result.status === 'success') {
-                  if (forceSave === true) {
-                    updateFeature.attributes[this.layer.objectIdField] = oid;
-                  }
-                  if (result.hasOwnProperty('objectId')) {
-                    var oidField = this.featureView.feature.fieldInfo.filter(lang.hitch(this, function (field) {
-                      return field.name === this._stageLayer.objectIdField;
-                    }))[0];
-                    oidField.value = result.objectId;
-                  }
-                  //delete from un-matched layer
-                  this._updateLayer(this.layer, null, null, [updateFeature], true).then(lang.hitch(this, function (r) {
-                    if (r && r.status === 'success') {
-                      this._updateList(oid, (forceSave === true) ? 'duplicate' : 'unmatched');
-                    }
+            //delete from un-matched layer
+            this._updateLayer(this.layer, null, null, [updateFeature], true, false).then(lang.hitch(this, function (r) {
+              if (r && r.status === 'success') {
+                var list = this.featureView._parentFeatureList;
+                list.removeFeature(this.featureView.feature, oid).then(lang.hitch(this, function () {
+                  //remove current view from page container
+                  this.parent._pageContainer.removeViewByTitle(this.featureView.label);
+
+                  array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
+                    delete updateFeature.attributes[sf];
                   }));
-                }
-              }));
+
+                  //Add the new
+                  this._updateLayer(this._stageLayer, [updateFeature], null, null, true, false)
+                    .then(lang.hitch(this, function (result) {
+                      if (result && result.status === 'success') {
+                        console.log(updateFeature.geometry);
+                        if (result.hasOwnProperty('objectId')) {
+                          //update the feature view feature OID with the new OID prior to adding the feature to the list
+                          var oidField = this.featureView.feature.fieldInfo.filter(lang.hitch(this, function (field) {
+                            return field.name === this._stageLayer.objectIdField;
+                          }))[0];
+                          oidField.value = result.objectId;
+                        }
+                        //update matched list
+                        //need to get review and then _matchedListView from it
+                        var reviewView = this.parent._pageContainer.getViewByTitle('Review');
+                        reviewView.matchedFeatureList.addFeature(this.featureView.feature);
+                        reviewView._updateReviewRows((forceSave === true) ? 'duplicate' : 'unmatched');
+                      }
+                    }));
+
+                }));
+              }
+            }));
           }
 
           if (forceSave !== true) {
@@ -309,7 +348,8 @@ define(['dojo/_base/declare',
         }
       },
 
-      _updateLayer: function (layer, adds, updates, deletes, setFlags) {
+      _updateLayer: function (layer, adds, updates, deletes, setFlags, bypassSubmitCheck) {
+        //bypassSubmitCheck allows update to occur without changing the submit button state when edits are cancelled
         var def = new Deferred();
         layer.applyEdits(adds, updates, deletes).then(lang.hitch(this, function (addRes, updateRes, deleteRes) {
           console.log(updateRes);
@@ -323,7 +363,7 @@ define(['dojo/_base/declare',
             result.objectId = addRes[0].objectId;
           }
 
-          if (updates && updates.hasOwnProperty('length') && updates.length > 0) {
+          if (!bypassSubmitCheck && updates && updates.hasOwnProperty('length') && updates.length > 0) {
             //enable submit
             var reviewView = this.featureView.parent._pageContainer.getViewByTitle('Review');
             reviewView._updateNode(reviewView.submitButton, true);
@@ -351,6 +391,12 @@ define(['dojo/_base/declare',
               return f.name === row.fieldName;
             })[0];
             fieldInfo.value = control.value;
+
+            if (row.parent.isDuplicate && !useFile) {
+              row.layerValue = control.value;
+            } else {
+              row.fileValue = control.value;
+            }
             control.textbox.title = control.value;
           }
         });
@@ -374,22 +420,7 @@ define(['dojo/_base/declare',
         });
       },
 
-      _updateList: function (oid, type) {
-        //remove from list
-        var list = this.featureView._parentFeatureList;
-        list.removeFeature(this.featureView.feature, oid).then(lang.hitch(this, function () {
-          //remove current view from page container
-          this.parent._pageContainer.removeViewByTitle(this.featureView.label);
-
-          //update matched list
-          //need to get review and then _matchedListView from it
-          var reviewView = this.parent._pageContainer.getViewByTitle('Review');
-          reviewView.matchedFeatureList.addFeature(this.featureView.feature);
-          reviewView._updateReviewRows(type);
-        }));
-      },
-
-      _updateFeature: function (location, address, skipApplyEdits) {
+      _updateFeature: function (location, address, skipApplyEdits, bypassSubmitCheck) {
         console.log(address);
         var fv = this.featureView;
         fv.feature.geometry = location;
@@ -403,12 +434,13 @@ define(['dojo/_base/declare',
         }
 
         if (!skipApplyEdits) {
-          this._updateLayer(fv.layer, null, features, null, false).then(lang.hitch(this, function (result) {
-            if (result && result.status === 'success') {
-              this._panToAndSelectFeature(fv._feature);
-              fv.emit('address-located');
-            }
-          }));
+          this._updateLayer(fv.layer, null, features, null, false, bypassSubmitCheck)
+            .then(lang.hitch(this, function (result) {
+              if (result && result.status === 'success') {
+                this._panToAndSelectFeature(fv._feature);
+                fv.emit('address-located');
+              }
+            }));
         }
       },
 
@@ -420,19 +452,26 @@ define(['dojo/_base/declare',
         var address = this.featureView._getAddressFieldsValues();
         if (this._isAddressFeature) {
           this._addressToLocation(address).then(lang.hitch(this, function (locationItem) {
-            this._updateFeature(locationItem.location, locationItem.address, skipApplyEdits);
-            def.resolve(this.featureView.feature);
+            this._updateFeature(locationItem.location, locationItem.address, skipApplyEdits, true);
+            def.resolve({
+              feature: this.featureView.feature,
+              address: locationItem.address
+            });
           }));
         } else {
           var geometry = this.csvStore._getGeometry(address[this.xField], address[this.yField]);
-          this._updateFeature(geometry, address, skipApplyEdits);
-          def.resolve(this.featureView.feature);
+          this._updateFeature(geometry, address, skipApplyEdits, true);
+          def.resolve({
+            feature: this.featureView.feature,
+            geometry: geometry
+          });
         }
         return def;
       },
 
       _addressToLocation: function (address) {
         var def = new Deferred();
+        address.maxLocations = 1;
         this.locator.addressToLocations(address).then(lang.hitch(this, function (result) {
           var highestScoreItem;
           if (result && result.length > 0) {
@@ -440,6 +479,7 @@ define(['dojo/_base/declare',
               if (typeof (highestScoreItem) === 'undefined') {
                 highestScoreItem = item;
               }
+              console.log(item.location);
               if (highestScoreItem && item.score > highestScoreItem.score) {
                 highestScoreItem = item;
               }

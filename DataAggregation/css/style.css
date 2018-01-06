@@ -42,6 +42,14 @@
   line-height: 25px;
 }
 
+.jimu-widget-critical-facilities-ui .duplicate-col-headers {
+  overflow: hidden;
+  width: 100%;
+  white-space: normal !important;
+  line-height: 1.5;
+  text-align: center;
+}
+
 /*new container*/
 .jimu-widget-critical-facilities-ui .page-item-td {
   cursor: pointer;

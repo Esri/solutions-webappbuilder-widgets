@@ -81,6 +81,8 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
 
       //TODO this is now configurable...need to pull from there
       this.minScore = 90;
+
+      this.spatialReference = this.editLayer.spatialReference;
     },
 
     _getDuplicateFields: function (fields) {
@@ -178,7 +180,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             //need to handle the null location by doing something
             // not actually sure if this is the best way...may not store the geom...
             unmatchedFeatures.push({
-              "geometry": di.location && di.location.type ? di.location : new Point(0, 0, this.map.spatialReference),
+              "geometry": di.location && di.location.type ? di.location : new Point(0, 0, this.spatialReference),
               "attributes": lang.clone(attributes)
             });
             unmatchedI++;
@@ -359,7 +361,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             var def = new Deferred();
             var locatorSource = this._geocodeSources[_idx];
             var locator = locatorSource.locator;
-            locator.outSpatialReference = this.map.spatialReference;
+            locator.outSpatialReference = this.spatialReference;
             var unMatchedStoreItems = [];
             var geocodeOps = [];
             var oid = "OBJECTID";
@@ -523,7 +525,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
           csvStore: this.csvStore,
           xFieldName: this.xFieldName,
           yFieldName: this.yFieldName,
-          wkid: this.map.spatialReference.wkid
+          wkid: this.spatialReference.wkid
         }).then(function (data) {
           def.resolve(data);
         });
@@ -573,7 +575,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         if (isGeographic) {
           geometry = webMercatorUtils.geographicToWebMercator(geometry);
         } else {
-          geometry.spatialReference = new SpatialReference({ wkid: this.map.spatialReference.wkid });
+          geometry.spatialReference = new SpatialReference({ wkid: this.spatialReference.wkid });
         }
         return geometry;
       }
@@ -584,6 +586,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
       var lyr = {
         "layerDefinition": {
           "geometryType": "esriGeometryPoint",
+          "spatialReference": this.editLayer.spatialReference,
           "objectIdField": this.objectIdField,
           "type": "Feature Layer",
           "drawingInfo": {
