@@ -16,6 +16,7 @@
 ///////////////////////////////////////////////////////////////////////////
 define([
   "dojo/_base/declare",
+  'dijit/registry',
   "dojo/on",
   "dojo/_base/lang",
   "dojo/dom-construct",
@@ -28,6 +29,7 @@ define([
   "dojo/string"
 ], function (
   declare,
+  registry,
   on,
   lang,
   domConstruct,
@@ -186,11 +188,8 @@ define([
       checkBox = this._createAttributeCheckBox(attrParameter,
         attributeParameterCheckBoxDiv, attrParameter.parameters[0].name
       );
-
-      domAttr.set(checkBox.domNode, "restrictionParameterName",
-        attrParameter.parameters[0].name);
-      domAttr.set(checkBox.domNode, "restrictionAttributeName",
-        attrParameter.attributeName);
+      domAttr.set(checkBox.domNode, "restrictionParameterName", attrParameter.parameters[0].name);
+      domAttr.set(checkBox.domNode, "restrictionAttributeName", attrParameter.attributeName);
 
       attributenameLabelDiv = domConstruct.create("div", {
         "class": "esriCTAttrLabelWidth esriCTParameterValueMargin"
@@ -763,8 +762,9 @@ define([
           "parameters": []
         };
         attributeNameRows = attrParamParent.childNodes[i].childNodes;
-        if (domClass.contains(attributeNameRows[0].childNodes[0].childNodes[
-            0], "checked")) {
+        var widget = registry.byId(attributeNameRows[0].childNodes[0].id);
+        if (widget.getValue()) {
+        //if (domClass.contains(attributeNameRows[0].childNodes[0].childNodes[0], "checked")) {
           for (j = 0; j < attributeNameRows.length; j++) {
             //if 0 row then - it means not indented
             parameter = {
