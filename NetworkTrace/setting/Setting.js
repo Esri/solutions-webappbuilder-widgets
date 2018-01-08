@@ -314,7 +314,7 @@ define([
       if (gpTaskParameters) {
         this.inputParametersArray = [];
         this.outputParametersArray = [];
-        this.outputStrings = [];  
+        this.outputStrings = [];
         // loop for creating input and output parameters array
         for (i = 0; i < gpTaskParameters.length; i++) {
           if (gpTaskParameters[i].direction ===
@@ -636,10 +636,8 @@ define([
                   domClass.remove(this.outputSettingArray[key].skippableCheckboxBlock,
                     "esriCTHidden");
                 } else {
-                  domClass.remove(this.outputSettingArray[key].skippable
-                    .checkNode, "checked");
-                  this.outputSettingArray[key].skippable.checked =
-                    false;
+                  //domClass.remove(this.outputSettingArray[key].skippable.checkNode, "checked");
+                  this.outputSettingArray[key].skippable.setValue(false);
                   this.outputSettingArray[key].inputTypeData.set(
                     "value", this.outputSettingArray[key].inputTypeData
                     .options[0].value);
@@ -1192,7 +1190,7 @@ define([
           if (this.outputSettingArray.hasOwnProperty(key)) {
             // Checking if output setting array is checked
             if (this.outputSettingArray[key].outputLayer && this.outputSettingArray[
-                key].outputLayer.checked) {
+                key].outputLayer.getValue()) {
               // Pushing the save to layer value in an array
               saveToLayerCount.push(this.outputSettingArray[key].outputLayerType
                 .value);
@@ -1206,7 +1204,7 @@ define([
         for (l = 0; l < this.outageSettingObj.length; l++) {
           // Checking for the save to layer checkbox is checked
           if (this.outageSettingObj[l].outputLayer && this.outageSettingObj[
-              l].outputLayer.checked) {
+              l].outputLayer.getValue()) {
             saveToLayerCount.push(this.outageSettingObj[l].outputLayerType
               .value);
           }

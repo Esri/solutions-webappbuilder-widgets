@@ -646,7 +646,7 @@ define([
     **/
     _onBackButtonClick: function () {
       if (this.CheckBoxOutageArea) {
-        this.CheckBoxOutageArea.checked = false;
+        this.CheckBoxOutageArea.setValue(false);
       }
       domClass.add(this.outageAreaVisibiltyDiv, "esriCTHidden");
       this._showLoadingIcon(true);
@@ -731,7 +731,8 @@ define([
       this._showLoadingIcon(true);
       checkBox = query(".saveToLayerData", this.bottomDiv);
       for (i = 0; i < checkBox.length; i++) {
-        if (domClass.contains(checkBox[i].firstChild, "checked")) {
+        var widget = registry.byId(checkBox[i].id);
+        if (widget.getValue()) {
           displayName = domAttr.get(checkBox[i], "OBJID");
           if (displayName !== null) {
             selectedLayersArray.push(displayName);
@@ -908,8 +909,8 @@ define([
         checkBox = query(".esriCTChkExportToLayer", this.exportToCSVBottomDiv);
         arrayValues = [];
         for (i = 0; i < checkBox.length; i++) {
-          if (domClass.contains(checkBox[i].firstChild,
-              "checked")) {
+          var widget = registry.byId(checkBox[i].id);
+          if (widget.getValue()) {
             displayName = domAttr.get(checkBox[i], "ObJID");
             if (displayName !== null) {
               arrayValues.push(displayName);
@@ -1265,7 +1266,7 @@ define([
     *This function is used to display (Outage Date,time,Type) panel.
     **/
     _displayOutageAreaDetail: function () {
-      if (this.CheckBoxOutageArea && this.CheckBoxOutageArea.checked) {
+      if (this.CheckBoxOutageArea && this.CheckBoxOutageArea.getValue()) {
         domClass.remove(this.outageAreaVisibiltyDiv, "esriCTHidden");
         this._enhanceLaunchpadThemeStyle();
       } else {
