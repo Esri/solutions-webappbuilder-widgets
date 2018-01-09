@@ -73,7 +73,8 @@ define(['dojo/_base/declare',
       isDarkTheme: '',
       styleColor: 'black',
       layer: null,
-      _changedAttributeRows: [],
+      _changedFileAttributeRows: [],
+      _changedLayerAttributeRows: [],
       _changedAddressRows: [],
       _editToolbar: null,
       _featureQuery: null,
@@ -100,6 +101,8 @@ define(['dojo/_base/declare',
         if (this.isDuplicate) {
           this._initDuplicateReview(fields);
         } else {
+          this._useValuesFromFile = true;
+          this._useValuesFromLayer = false;
           domClass.remove(this.featureTable, 'display-none');
         }
         this.isShowing = false;
@@ -716,9 +719,9 @@ define(['dojo/_base/declare',
         valueTextBox.on("keyUp", function (v) {
           var valueChanged;
           var changeIndex;
-          var newValue = v.srcElement.value;
+          var newValue = this.parent._getValue(v.srcElement.value);
           if (this.isAddress) {
-            valueChanged = newValue !== this.row.addressValue;
+            valueChanged = newValue !== this.parent._getValue(this.row.addressValue);
             changeIndex = this.parent._changedAddressRows.indexOf(this.row.rowIndex);
             if (changeIndex === -1 && valueChanged) {
               this.parent._changedAddressRows.push(this.row.rowIndex);
@@ -727,14 +730,17 @@ define(['dojo/_base/declare',
             }
             this.parent.emit('address-change', this.parent._changedAddressRows.length > 0);
           } else {
-            valueChanged = this.isFile ? newValue !== this.row.fileValue : newValue !== this.row.layerValue;
-            changeIndex = this.parent._changedAttributeRows.indexOf(this.row.rowIndex);
+            var rfv = this.parent._getValue(this.row.fileValue);
+            var rlv = this.parent._getValue(this.row.layerValue);
+            valueChanged = this.isFile ? newValue !== rfv : newValue !== rlv;
+            var rows = this.isFile ? this.parent._changedFileAttributeRows : this.parent._changedLayerAttributeRows;
+            changeIndex = rows.indexOf(this.row.rowIndex);
             if (changeIndex === -1 && valueChanged) {
-              this.parent._changedAttributeRows.push(this.row.rowIndex);
+              rows.push(this.row.rowIndex);
             } else if (changeIndex > -1 && !valueChanged) {
-              this.parent._changedAttributeRows.splice(changeIndex, 1);
+              rows.splice(changeIndex, 1);
             }
-            this.parent.emit('attribute-change', this.parent._changedAttributeRows.length > 0);
+            this.parent.emit('attribute-change', rows.length > 0);
           }
         });
       },
@@ -751,17 +757,19 @@ define(['dojo/_base/declare',
         //this function is used to test when duplicate and you switch between file and layer
         array.forEach(this.featureControlTable.rows, lang.hitch(this, function (row) {
           if (row.isEditRow) {
-            var nullValues = [null, undefined, ""];
+            var fvtb = this._getValue(row.fileValueTextBox.value);
+            var fv = this._getValue(row.fileValue);
+            var lvtb = this._getValue(row.layerValueTextBox.value);
+            var lv = this._getValue(row.layerValue);
+
             if (row.parent._useValuesFromFile) {
-              if ((row.fileValueTextBox.value !== row.fileValue || row.fileValueTextBox.value !== row.layerValue) &&
-                (nullValues.indexOf(row.fileValueTextBox.value) === -1 && nullValues.indexOf(row.fileValue) === -1)) {
-                this._changedAttributeRows.push(row.rowIndex);
+              if ((fvtb !== fv || fvtb !== lv)) {
+                this._changedFileAttributeRows.push(row.rowIndex);
               }
             }
             if (row.parent._useValuesFromLayer) {
-              if (row.layerValueTextBox.value !== row.layerValue &&
-                (nullValues.indexOf(row.layerValueTextBox.value) === -1 && nullValues.indexOf(row.layerValue) === -1)) {
-                this._changedAttributeRows.push(row.rowIndex);
+              if (lvtb !== lv) {
+                this._changedLayerAttributeRows.push(row.rowIndex);
               }
             }
           }
@@ -771,13 +779,18 @@ define(['dojo/_base/declare',
         this._changedAddressRows = [];
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
           if (row.isAddressRow) {
-            if (row.addressValueTextBox.value !== row.addressValue) {
+            if (row.addressValueTextBox.value !== row.addressValue && (this.isDuplicate &&
+              this._featureToolbar._originalValues.editAddress.Match_addr !== row.addressValueTextBox.value)) {
               this._changedAddressRows.push(row.rowIndex);
             }
           }
         }));
-        this.emit('attribute-change',
-          this._changedAttributeRows.length > 0 || this._changedAddressRows.length > 0);
+        var rows = this._useValuesFromFile ? this._changedFileAttributeRows : this._changedLayerAttributeRows;
+        this.emit('attribute-change', rows.length > 0 || this._changedAddressRows.length > 0);
+      },
+
+      _getValue: function (v) {
+        return [null, undefined, ""].indexOf(v) === -1 ? v : '';
       },
 
       _validateGeoms: function () {
@@ -786,13 +799,13 @@ define(['dojo/_base/declare',
         if (!this._useGeomFromLayer) {
           //when using geom from file only attributes matter unless we have a geom edit
           if (gEdit) {
-            this._featureToolbar._updateSave(!aEdit && !gEdit);
+            this._featureToolbar._updateSaveAndCancel(!aEdit && !gEdit);
           } else {
-            this._featureToolbar._updateSave(!aEdit);
+            this._featureToolbar._updateSaveAndCancel(!aEdit);
           }
         } else {
           //when useing geom from layer only attribute edits matter
-          this._featureToolbar._updateSave(!aEdit);
+          this._featureToolbar._updateSaveAndCancel(!aEdit);
         }
       },
 
@@ -862,8 +875,9 @@ define(['dojo/_base/declare',
             }));
           }
         } else {
-          this._featureToolbar._updateFeature(this._featureToolbar._originalValues.duplicateGeometry,
-            null, false, true);
+          var geom = this._useGeomFromFile ? this._featureToolbar._originalValues.duplicateGeometry :
+            this._editFeature.geometry;
+          this._featureToolbar._updateFeature(geom, null, false, true);
           this._featureToolbar._flashFeatures([v ? this._feature : this._editFeature]);
           this._validateGeoms();
         }

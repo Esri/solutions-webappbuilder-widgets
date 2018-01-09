@@ -1,15 +1,18 @@
 <div class="float-right">
-  <table data-dojo-attach-point="controlTable" class="control-table" cellpading="0">
+  <table class="control-table" cellpading="0">
     <tbody>
-      <tr data-dojo-attach-point="controlTr" class="feature-toolbar-row">
-        <td nowrap data-dojo-attach-point="backTd" class="pad-right-15" title="${nls.featureToolbar.edit}">
-          <div class="float-left bg-ft-img bg-edit feature-toolbar-btn" data-dojo-attach-event="onclick:_toggleEdit"></div>
+      <tr class="feature-toolbar-row">
+        <td nowrap class="pad-right-15" title="${nls.featureToolbar.edit}">
+          <div style="display:flex;" data-dojo-attach-point="toggleEditButton"></div>
         </td>
-        <td data-dojo-attach-point="homeTd" class="pad-right-15" title="${nls.featureToolbar.locate}">
+        <td class="pad-right-15" title="${nls.featureToolbar.locate}">
           <div class="bg-ft-img bg-locate feature-toolbar-btn" data-dojo-attach-event="onclick:_locate">
           </div>
         </td>
-        <td data-dojo-attach-point="nextTd" title="${nls.featureToolbar.save}">
+        <td class="pad-right-15" title="${nls.featureToolbar.cancel}">
+          <div class="bg-ft-img bg-cancel feature-toolbar-btn" data-dojo-attach-event="onclick:_cancel"></div>
+        </td>
+        <td title="${nls.featureToolbar.save}">
           <div class="float-right bg-ft-img bg-save feature-toolbar-btn" data-dojo-attach-event="onclick:_save"></div>
         </td>
       </tr>

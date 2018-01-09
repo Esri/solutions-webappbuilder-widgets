@@ -144,7 +144,7 @@
   cursor: pointer;
 }
 
-/*----------------------------------------------------------------------------s*/
+/*------------------------------Feature Toolbar Buttons----------------------------------------------*/
 .jimu-widget-critical-facilities-ui .bg-ft-img {
   width: 15px;
   height: 15px;
@@ -155,29 +155,7 @@
   margin: auto;
 }
 
-.jimu-widget-critical-facilities-ui .bg-edit {
-  background-image: url('../images/edit_black.png');
-}
-
-.jimu-widget-critical-facilities-ui .bg-edit:hover {
-  background-image: url('../images/edit_hover.png');
-}
-
-.jimu-widget-critical-facilities-ui .bg-edit-white {
-  background-image: url('../images/edit.png');
-}
-
-.jimu-widget-critical-facilities-ui .bg-edit-white:hover {
-  background-image: url('../images/edit_hover.png');
-}
-
-.jimu-widget-critical-facilities-ui .bg-edit-disabled {
-  background-image: url('../images/edit_default.png');
-}
-
-.jimu-widget-critical-facilities-ui .bg-edit-disabled:hover {
-  background-image: url('../images/edit_hover.png');
-}
+/*locate*/
 
 .jimu-widget-critical-facilities-ui .bg-locate {
   background-image: url('../images/locate_black.png');
@@ -199,6 +177,8 @@
   background-image: url('../images/locate_disabled.png');
   cursor: default;
 }
+
+/*save*/
 
 .jimu-widget-critical-facilities-ui .bg-save {
   background-image: url('../images/save_black.png');
@@ -241,6 +221,29 @@
 
 .jimu-widget-critical-facilities-ui .bg-sync-disabled {
   background-image: url('../images/sync_disabled.png');
+  cursor: default;
+}
+
+/*cancel*/
+
+.jimu-widget-critical-facilities-ui .bg-cancel {
+  background-image: url('../images/cancel_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-cancel:hover {
+  background-image: url('../images/cancel_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-cancel-white {
+  background-image: url('../images/cancel_white.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-cancel-white:hover {
+  background-image: url('../images/cancel_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-cancel-disabled {
+  background-image: url('../images/cancel_disabled.png');
   cursor: default;
 }
 /*-----------------------------------------------------------------------------s*/
@@ -303,7 +306,6 @@
   display: inline-block;
   white-space: nowrap;
 }
-
 
 .jimu-widget-critical-facilities-ui .instruction {
   color: #898989;

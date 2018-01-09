@@ -20,6 +20,7 @@ define(['dojo/_base/declare',
   'dojo/Evented',
   'dojo/query',
   'dojo/dom-class',
+  'dojo/dom-construct',
   'dojo/Deferred',
   'dijit/_WidgetBase',
   'dijit/_TemplatedMixin',
@@ -28,10 +29,12 @@ define(['dojo/_base/declare',
   'dojo/text!./templates/FeatureToolbar.html',
   'esri/toolbars/edit',
   'jimu/dijit/Message',
+  'jimu/dijit/Popup',
   'esri/symbols/SimpleMarkerSymbol',
   'esri/symbols/SimpleLineSymbol',
   'esri/Color',
-  'esri/graphic'
+  'esri/graphic',
+  'jimu/dijit/ToggleButton'
 ],
   function (declare,
     lang,
@@ -39,6 +42,7 @@ define(['dojo/_base/declare',
     Evented,
     query,
     domClass,
+    domConstruct,
     Deferred,
     _WidgetBase,
     _TemplatedMixin,
@@ -47,10 +51,12 @@ define(['dojo/_base/declare',
     template,
     Edit,
     Message,
+    Popup,
     SimpleMarkerSymbol,
     SimpleLineSymbol,
     Color,
-    Graphic) {
+    Graphic,
+    ToggleButton) {
     return declare([_WidgetBase, _TemplatedMixin, Evented], {
       templateString: template,
 
@@ -87,6 +93,9 @@ define(['dojo/_base/declare',
         //enable save when change to geometry or attributes
         this._saveDisabled = true;
 
+        //enable cancel when change to geometry or attributes
+        this._cancelDisabled = true;
+
         //enable locate when change to address
         this._locateDisabled = true;
 
@@ -121,6 +130,7 @@ define(['dojo/_base/declare',
         this.inherited(arguments);
         this._started = true;
         this.featureView._toggleEditControls(this._editDisabled);
+        this._initToggleEdit();
       },
 
       _getLocator: function () {
@@ -139,6 +149,13 @@ define(['dojo/_base/declare',
         return locator;
       },
 
+      _initToggleEdit: function () {
+        this._toggleEditButton = new ToggleButton({});
+        this._toggleEditButton.placeAt(this.toggleEditButton);
+        this._toggleEditButton.startup();
+        this.own(on(this._toggleEditButton, 'change', lang.hitch(this, this._toggleEdit)));
+      },
+
       _initOriginalValues: function () {
         //These could be used for comparison or to support reset
         this._originalValues = lang.clone(this.featureView.feature);
@@ -147,9 +164,9 @@ define(['dojo/_base/declare',
       _attributeChange: function (v) {
         this._hasAttributeEdit = v;
         if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
-          this._updateSave(!(this._hasAttributeEdit));
+          this._updateSaveAndCancel(!(this._hasAttributeEdit));
         } else {
-          this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+          this._updateSaveAndCancel(!(this._hasAttributeEdit || this._hasGeometryEdit));
         }
       },
 
@@ -162,9 +179,9 @@ define(['dojo/_base/declare',
         if (this.featureView.isShowing) {
           this._hasGeometryEdit = true;
           if (this.featureView.isDuplicate && this.featureView._useGeomFromLayer) {
-            this._updateSave(!(this._hasAttributeEdit));
+            this._updateSaveAndCancel(!(this._hasAttributeEdit));
           } else {
-            this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+            this._updateSaveAndCancel(!(this._hasAttributeEdit || this._hasGeometryEdit));
           }
           this.map.infoWindow.setFeatures(this.featureView._feature);
           this.map.infoWindow.select(0);
@@ -202,7 +219,7 @@ define(['dojo/_base/declare',
       },
 
       _toggleEdit: function () {
-        this._editDisabled = !this._editDisabled;
+        this._editDisabled = !this._toggleEditButton.checked;
         this._updateEdit(this._editDisabled);
 
         this.featureView._toggleEditControls(this._editDisabled);
@@ -217,13 +234,13 @@ define(['dojo/_base/declare',
             this._flashFeatures([this.featureView._useGeomFromFile ?
               this.featureView._feature : this.featureView._editFeature]);
             if (this.featureView._useGeomFromFile) {
-              this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+              this._updateSaveAndCancel(!(this._hasAttributeEdit || this._hasGeometryEdit));
             } else {
-              this._updateSave(!(this._hasAttributeEdit));
+              this._updateSaveAndCancel(!(this._hasAttributeEdit));
             }
           } else {
             this._panToAndSelectFeature(this.featureView._feature);
-            this._updateSave(!(this._hasAttributeEdit || this._hasGeometryEdit));
+            this._updateSaveAndCancel(!(this._hasAttributeEdit || this._hasGeometryEdit));
           }
           this._updateLocate(!this._hasAddressEdit);
           if ((this._hasGeometryEdit && this._locateDisabled) ||
@@ -235,10 +252,10 @@ define(['dojo/_base/declare',
         } else {
           this._editToolbar.refresh();
           this._editToolbar.deactivate();
-          this._updateSave(true);
+          this._updateSaveAndCancel(true);
           this._updateLocate(true);
           this._updateSync(true);
-          this._undoEdits();
+          //this._undoEdits();
           this.map.infoWindow.clearFeatures();
         }
       },
@@ -269,6 +286,38 @@ define(['dojo/_base/declare',
             this._updateLocate(true);
           }));
         }
+      },
+
+      _cancel: function () {
+        //confirm cancel
+        var cancelPopup = new Popup({
+          titleLabel: this.nls.featureToolbar.cancelTitle,
+          width: 400,
+          autoHeight: true,
+          content: domConstruct.create('div', {
+            innerHTML: this.nls.featureToolbar.cancelMessage,
+            style: "padding-bottom: 10px;"
+          }),
+          buttons: [{
+            label: this.nls.yes,
+            onClick: lang.hitch(this, function () {
+              cancelPopup.close();
+              cancelPopup = null;
+              this._undoEdits();
+              this._updateSaveAndCancel(true);
+              this._panToAndSelectFeature((this.featureView.isDuplicate && this.featureView._useGeomFromLayer) ?
+                this.featureView._editFeature : this.featureView._feature);
+            })
+          }, {
+            label: this.nls.no,
+            onClick: lang.hitch(this, function () {
+              cancelPopup.close();
+            })
+          }],
+          onClose: lang.hitch(this, function () {
+            cancelPopup = null;
+          })
+        });
       },
 
       _save: function (forceSave) {
@@ -341,7 +390,7 @@ define(['dojo/_base/declare',
 
           if (forceSave !== true) {
             //disable save
-            this._updateSave(true);
+            this._updateSaveAndCancel(true);
             //toggle edit
             this._toggleEdit();
           }
@@ -379,8 +428,8 @@ define(['dojo/_base/declare',
       },
 
       _setFieldValues: function (featureView) {
-        var editIndexes = featureView._changedAttributeRows;
         var useFile = featureView._useValuesFromFile;
+        var editIndexes = useFile ? featureView._changedFileAttributeRows : featureView._changedLayerAttributeRows;
         var _feature = featureView._feature;
         var feature = featureView.feature;
         array.forEach(featureView.featureControlTable.rows, function (row) {
@@ -546,14 +595,22 @@ define(['dojo/_base/declare',
 
       _updateEdit: function (disabled) {
         this._editDisabled = disabled;
-        this._updateImageNode('bg-edit', 'bg-edit-white', 'bg-edit-disabled',
-          this._editDisabled, this.domNode);
       },
 
-      _updateSave: function (disabled) {
+      _updateCancel: function (disabled) {
+        this._cancelDisabled = disabled;
+        this._updateImageNode('bg-cancel', 'bg-cancel-white', 'bg-cancel-disabled',
+          this._cancelDisabled, this.domNode);
+      },
+
+      _updateSaveAndCancel: function (disabled) {
+        //update save
         this._saveDisabled = disabled;
         this._updateImageNode('bg-save', 'bg-save-white', 'bg-save-disabled',
           this._saveDisabled, this.domNode);
+
+        //update cancel
+        this._updateCancel(disabled);
       },
 
       _updateLocate: function (disabled) {
@@ -570,8 +627,8 @@ define(['dojo/_base/declare',
 
       updateImageNodes: function () {
         //toggle all images
-        this._updateImageNode('bg-edit', 'bg-edit-white', 'bg-edit-disabled',
-          this._editDisabled, this.domNode);
+        this._updateImageNode('bg-cancel', 'bg-cancel-white', 'bg-cancel-disabled',
+          this._cancelDisabled, this.domNode);
         this._updateImageNode('bg-save', 'bg-save-white', 'bg-save-disabled',
           this._saveDisabled, this.domNode);
         this._updateImageNode('bg-locate', 'bg-locate-white', 'bg-locate-disabled',

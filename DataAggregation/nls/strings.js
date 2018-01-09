@@ -90,7 +90,10 @@ define({
     featureToolbar: {
       edit: "Edit location information",
       locate: "Locate",
-      save: "Save location"
+      save: "Save location",
+      cancel: "Cancel location edits",
+      cancelTitle: "Cancel Edits",
+      cancelMessage: "Cancel edits to location information?"
     }
   }),
   "ar": 0,

@@ -383,7 +383,9 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                     var duplicateDataItem = this.duplicateData[duplicateKey];
                     if (duplicateDataItem.fileId === csvID) {
                       //look and see if I cab actually just pass the geom here or if I need to muck with it
-                      duplicateItem = Object.assign({}, duplicateDataItem);
+                      //Object.assign fails in IE
+                      //duplicateItem = Object.assign({}, duplicateDataItem);
+                      duplicateItem = lang.mixin({}, duplicateDataItem);
                       delete this.duplicateData[duplicateKey];
                       break duplicate_data_loop;
                     }
@@ -413,8 +415,9 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                       addr[locatorSource.singleLineFieldName] = s_val;
                     }
                   }
-
-                  var clone = Object.assign({}, addr);
+                  //Object.assign fails in IE
+                  //var clone = Object.assign({}, addr);
+                  var clone = lang.mixin({}, addr);
                   delete clone[oid];
                   var cacheKey = JSON.stringify(clone);
                   if (duplicateItem === null) {
@@ -431,7 +434,8 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
                         index: -1,
                         csvIndex: csvID,
                         isDuplicate: true,
-                        location: Object.assign({}, duplicateItem.feature.geometry),
+                        //location: Object.assign({}, duplicateItem.feature.geometry), //Object.assign fails in IE
+                        location: lang.mixin({}, duplicateItem.feature.geometry),
                         featureAttributes: duplicateItem.feature.attributes
                       };
                     }
@@ -728,12 +732,16 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     },
 
     //This should go into a util class
-    _zoomToData: function (graphics) {
+    _zoomToData: function (graphics, expand) {
       if (graphics && graphics.length > 0) {
         try {
           //TODO this would not handle null features
           var ext = graphicsUtils.graphicsExtent(graphics);
-          this.map.setExtent(ext.expand(1.9), true);
+          if (expand) {
+            this.map.setExtent(ext.expand(1.9), true);
+          } else {
+            this.map.setExtent(ext, true);
+          }
         } catch (err) {
           console.log(err.message);
         }
