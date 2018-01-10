@@ -29,10 +29,6 @@
   width: 100%;
 }
 
-.jimu-widget-critical-facilities-ui .label-td {
-  white-space: nowrap;
-}
-
 .jimu-widget-critical-facilities-ui .feature-toolbar-btn {
   padding: 10px;
   display: block;
@@ -73,40 +69,37 @@
   float: left;
 }
 
-.jimu-widget-critical-facilities-ui .control-row {
-  line-height: 48px;
+.jimu-widget-critical-facilities-ui .text-left {
+  text-align: left;
 }
 
-.jimu-widget-critical-facilities-ui .field-label-row {
-  line-height: 30px;
+.jimu-rtl .jimu-widget-critical-facilities-ui .text-left {
+  text-align: right;
 }
 
-.jimu-widget-critical-facilities-ui .field-label-value-row {
-  line-height: 30px;
+.jimu-widget-critical-facilities-ui .field-row-width {
+  word-break: break-word;
 }
 
-.jimu-widget-critical-facilities-ui .bg-back-img {
-  background-image: url('../images/nav_left_black.png');
+.jimu-widget-critical-facilities-ui .field-row-width2 {
+  word-break: break-word;
 }
 
-/*.jimu-widget-critical-facilities-ui .bg-back-img:hover {
-  background-image: url('../images/nav_left_hover.png');
-}*/
-
-.jimu-widget-critical-facilities-ui .bg-back-img-white {
-  background-image: url('../images/nav_left.png');
-}
-
-/*.jimu-widget-critical-facilities-ui .bg-back-img-white:hover {
-  background-image: url('../images/nav_left_hover.png');
-}*/
-
+/*home*/
 .jimu-widget-critical-facilities-ui .bg-home-img {
   background-image: url('../images/home_black.png');
 }
 
+.jimu-widget-critical-facilities-ui .page-item-td-center:hover .bg-home-img {
+  background-image: url('../images/home_hover.png');
+}
+
 .jimu-widget-critical-facilities-ui .bg-home-img-white {
   background-image: url('../images/home.png');
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-center:hover .bg-home-img-white {
+  background-image: url('../images/home_hover.png');
 }
 
 .jimu-widget-critical-facilities-ui .bg-home {
@@ -119,22 +112,6 @@
   margin: auto;
 }
 
-.jimu-widget-critical-facilities-ui .bg-next-img {
-  background-image: url('../images/nav_right_black.png');
-}
-
-/*.jimu-widget-critical-facilities-ui .bg-next-img:hover {
-  background-image: url('../images/nav_right_hover.png');
-}*/
-
-.jimu-widget-critical-facilities-ui .bg-next-img-white {
-  background-image: url('../images/nav_right.png');
-}
-
-/*.jimu-widget-critical-facilities-ui .bg-next-img-white:hover {
-  background-image: url('../images/nav_right_hover.png');
-}*/
-
 .jimu-widget-critical-facilities-ui .bg-img {
   width: 12px;
   height: 20px;
@@ -143,6 +120,7 @@
   background-repeat: no-repeat;
   cursor: pointer;
 }
+/*end home*/
 
 /*------------------------------Feature Toolbar Buttons----------------------------------------------*/
 .jimu-widget-critical-facilities-ui .bg-ft-img {
@@ -156,7 +134,6 @@
 }
 
 /*locate*/
-
 .jimu-widget-critical-facilities-ui .bg-locate {
   background-image: url('../images/locate_black.png');
 }
@@ -177,9 +154,9 @@
   background-image: url('../images/locate_disabled.png');
   cursor: default;
 }
+/*end locate*/
 
 /*save*/
-
 .jimu-widget-critical-facilities-ui .bg-save {
   background-image: url('../images/save_black.png');
 }
@@ -200,9 +177,9 @@
   background-image: url('../images/save_disabled.png');
   cursor: default;
 }
+/*end save*/
 
 /*sync*/
-
 .jimu-widget-critical-facilities-ui .bg-sync {
   background-image: url('../images/sync_black.png');
 }
@@ -223,9 +200,9 @@
   background-image: url('../images/sync_disabled.png');
   cursor: default;
 }
+/*end sync*/
 
 /*cancel*/
-
 .jimu-widget-critical-facilities-ui .bg-cancel {
   background-image: url('../images/cancel_black.png');
 }
@@ -246,10 +223,26 @@
   background-image: url('../images/cancel_disabled.png');
   cursor: default;
 }
-/*-----------------------------------------------------------------------------s*/
+/*end cancel*/
 
+/*-----------------------------------------------------------------------------*/
 
+/*--------------------------------------Start Feature List Page---------------------------------------*/
+.jimu-widget-critical-facilities-ui .feature-list-row {
 
+}
+
+.jimu-widget-critical-facilities-ui .feature-list-row:hover {
+  cursor:pointer;
+}
+
+.jimu-widget-critical-facilities-ui .feature-list-row:hover .next-arrow-img {
+  background-image: url('../images/nav_right_hover.png');
+  cursor: pointer;
+}
+/*--------------------------------------End Feature List Page---------------------------------------*/
+
+/*back*/
 .jimu-widget-critical-facilities-ui .page-item-td-left {
   cursor: pointer;
   min-width: 0;
@@ -264,6 +257,40 @@
   text-align: right;
 }
 
+.jimu-widget-critical-facilities-ui .bg-back-img {
+  background-image: url('../images/nav_left_black.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .bg-back-img {
+  background-image: url('../images/nav_right_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-back-img-white {
+  background-image: url('../images/nav_left.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .bg-back-img-white {
+  background-image: url('../images/nav_right.png');
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-left:hover .bg-back-img {
+  background-image: url('../images/nav_left_hover.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .page-item-td-left:hover .bg-back-img {
+  background-image: url('../images/nav_right_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-left:hover .bg-back-img-white {
+  background-image: url('../images/nav_left_hover.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .page-item-td-left:hover .bg-back-img-white {
+  background-image: url('../images/nav_right_hover.png');
+}
+/*end back*/
+
+/*next*/
 .jimu-widget-critical-facilities-ui .page-item-td-right {
   cursor: pointer;
   min-width: 0;
@@ -277,6 +304,39 @@
   white-space: nowrap;
   text-align: left;
 }
+
+.jimu-widget-critical-facilities-ui .bg-next-img {
+  background-image: url('../images/nav_right_black.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .bg-next-img {
+  background-image: url('../images/nav_left_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-next-img-white {
+  background-image: url('../images/nav_right.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .bg-next-img-white {
+  background-image: url('../images/nav_left.png');
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-right:hover .bg-next-img {
+  background-image: url('../images/nav_right_hover.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .page-item-td-right:hover .bg-next-img {
+  background-image: url('../images/nav_left_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-right:hover .bg-next-img-white {
+  background-image: url('../images/nav_right_hover.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .page-item-td-right:hover .bg-next-img-white {
+  background-image: url('../images/nav_left_hover.png');
+}
+/*end next*/
 
 .jimu-widget-critical-facilities-ui .jimu-tab3 .page-item-td.jimu-state-active {
   color: #48494B;
@@ -304,12 +364,16 @@
 .jimu-widget-critical-facilities-ui .main-text {
   font-weight: bold;
   display: inline-block;
-  white-space: nowrap;
+  /*white-space: nowrap;*/ /*removed for #971*/
 }
 
 .jimu-widget-critical-facilities-ui .instruction {
   color: #898989;
   font-size: 11px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-10 {
+  padding: 10px;
 }
 
 .jimu-widget-critical-facilities-ui .pad-top-10 {
@@ -353,11 +417,11 @@
 }
 
 .jimu-widget-critical-facilities-ui .pad-right-15 {
-  padding-right: 15px;
+  padding-right: 15px !important;
 }
 
 .jimu-rtl .jimu-widget-critical-facilities-ui .pad-right-15 {
-  padding-left: 15px;
+  padding-left: 15px !important;
 }
 
 .jimu-widget-critical-facilities-ui .margin-right-5 {
@@ -396,6 +460,30 @@
   float: left;
 }
 
+.jimu-widget-critical-facilities-ui .field-control-td {
+  padding: 10px 0px 10px 10px;
+  /*word-break: break-word;*/
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .field-control-td {
+  padding: 10px 10px 10px 0px;
+  /*word-break: break-word;*/
+}
+
+.jimu-widget-critical-facilities-ui .sub-field-control-td {
+  padding: 0px 0px 10px 10px;
+  /*word-break: break-word;*/
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .sub-field-control-td {
+  padding: 0px 10px 10px 0px;
+  /*word-break: break-word;*/
+}
+
+.jimu-widget-critical-facilities-ui .min-width-80 {
+  min-width: 80px;
+}
+
 .jimu-widget-critical-facilities-ui .task-text {
   float: left;
   padding-left: 5px;
@@ -409,12 +497,59 @@
 }
 
 .jimu-widget-critical-facilities-ui .task-row {
-  line-height: 33px;
+  /*line-height: 33px;*/
+  cursor: pointer;
 }
 
-.jimu-widget-critical-facilities-ui .radio-row {
-  line-height: 43px;
+.jimu-widget-critical-facilities-ui .dijitSelectLabel {
+  text-align: left;
+  text-overflow: ellipsis;
+  overflow: hidden;
 }
+
+/*next arrow*/
+.jimu-widget-critical-facilities-ui .next-arrow {
+  /*background-image: url('../images/nav_right_black.png');*/
+  width: 15px;
+  height: 16px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-widget-critical-facilities-ui .next-arrow-img {
+  background-image: url('../images/nav_right_black.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .next-arrow-img {
+  background-image: url('../images/nav_left_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .next-arrow-img-white {
+  background-image: url('../images/nav_right.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .next-arrow-img-white {
+  background-image: url('../images/nav_left.png');
+}
+
+.jimu-widget-critical-facilities-ui .task-row:hover .next-arrow-img {
+  background-image: url('../images/nav_right_hover.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .task-row:hover .next-arrow-img {
+  background-image: url('../images/nav_left_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .task-row:hover .next-arrow-img-white {
+  background-image: url('../images/nav_right_hover.png');
+}
+
+.jimu-rtl .jimu-widget-critical-facilities-ui .task-row:hover .next-arrow-img-white {
+  background-image: url('../images/nav_left_hover.png');
+}
+/*end next arrow*/
 
 .jimu-widget-critical-facilities-ui .sub-task-hint {
   text-align: left;
@@ -438,44 +573,9 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
-  text-align: center;
+  /*text-align: center;*/
+  /*margin-top: 1px;*/
 }
-
-.jimu-widget-critical-facilities-ui .next-arrow {
-  background-image: url('../images/nav_right_black.png');
-  width: 15px;
-  height: 16px;
-  position: relative;
-  background-size: contain;
-  background-repeat: no-repeat;
-  cursor: pointer;
-}
-
-/*.jimu-widget-critical-facilities-ui .next-arrow:hover {
-  background-image: url('../images/nav_right_hover.png');
-  width: 15px;
-  height: 16px;
-  position: relative;
-  background-size: contain;
-  background-repeat: no-repeat;
-  cursor: pointer;
-}*/
-
-.jimu-widget-critical-facilities-ui .next-arrow-img {
-  background-image: url('../images/nav_right_black.png');
-}
-
-/*.jimu-widget-critical-facilities-ui .next-arrow-img:hover {
-  background-image: url('../images/nav_right_hover.png');
-}*/
-
-.jimu-widget-critical-facilities-ui .next-arrow-img-white {
-  background-image: url('../images/nav_right.png');
-}
-
-/*.jimu-widget-critical-facilities-ui .next-arrow-img-white:hover {
-  background-image: url('../images/nav_right_hover.png');
-}*/
 
 .jimu-widget-critical-facilities-ui .width-15 {
   width: 15px;

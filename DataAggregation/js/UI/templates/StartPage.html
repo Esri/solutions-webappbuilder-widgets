@@ -6,8 +6,8 @@
           <div class="instruction">${nls.mapping.locationMappingHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row">
-        <td>
+      <tr class="bottom-border task-row" data-dojo-attach-event="onClick:_locationMappingClick">
+        <td class="field-control-td">
           <div class="task-text">${nls.mapping.locationMapping}</div>
         </td>
         <td class="width-15">
@@ -15,7 +15,7 @@
           </div>
         </td>
         <td class="width-15">
-          <div class="next-arrow float-right next-arrow-img" data-dojo-attach-event="onClick:_locationMappingClick">
+          <div class="next-arrow float-right next-arrow-img">
           </div>
         </td>
       </tr>
@@ -25,8 +25,8 @@
           <div class="instruction pad-top-10">${nls.mapping.schemaMappingHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row">
-        <td>
+      <tr class="bottom-border task-row" data-dojo-attach-event="onClick:_schemaMappingClick">
+        <td class="field-control-td">
           <div class="task-text">${nls.mapping.schemaMapping}</div>
         </td>
         <td class="width-15">
@@ -34,7 +34,7 @@
           </div>
         </td>
         <td class="width-15">
-          <div class="next-arrow float-right next-arrow-img" data-dojo-attach-event="onClick:_schemaMappingClick"></div>
+          <div class="next-arrow float-right next-arrow-img"></div>
         </td>
       </tr>
     </tbody>

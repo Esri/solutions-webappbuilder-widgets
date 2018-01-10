@@ -101,9 +101,7 @@ define(['dojo/_base/declare',
         if (this.isDuplicate) {
           this._initDuplicateReview(fields);
         } else {
-          this._useValuesFromFile = true;
-          this._useValuesFromLayer = false;
-          domClass.remove(this.featureTable, 'display-none');
+          this._initStandardReview();
         }
         this.isShowing = false;
       },
@@ -212,6 +210,14 @@ define(['dojo/_base/declare',
         return def;
       },
 
+      _initStandardReview: function () {
+        this._useValuesFromFile = true;
+        this._useValuesFromLayer = false;
+        domClass.remove(this.featureTable, 'display-none');
+        domClass.remove(this.locationSyncTable, 'display-none');
+        domClass.remove(this.locationControlTable, 'display-none');
+      },
+
       _initDuplicateReview: function (fields) {
         this._initDuplicateSelect();
         this._initDuplicateReviewRows(fields);
@@ -301,6 +307,12 @@ define(['dojo/_base/declare',
           if (domClass.contains(this.featureTable, 'display-none')) {
             domClass.remove(this.featureTable, 'display-none');
           }
+          if (domClass.contains(this.locationSyncTable, 'display-none')) {
+            domClass.remove(this.locationSyncTable, 'display-none');
+          }
+          if (domClass.contains(this.locationControlTable, 'display-none')) {
+            domClass.remove(this.locationControlTable, 'display-none');
+          }
           //hide review Fields
           array.forEach(rows, lang.hitch(this, function (r) {
             if (r.isLabelRow || r.isControlRow || r.isHeaderRow) {
@@ -310,6 +322,8 @@ define(['dojo/_base/declare',
 
         } else {
           domClass.add(this.featureTable, 'display-none');
+          domClass.add(this.locationSyncTable, 'display-none');
+          domClass.add(this.locationControlTable, 'display-none');
 
           //show review Fields
           array.forEach(rows, lang.hitch(this, function (r) {
@@ -365,14 +379,14 @@ define(['dojo/_base/declare',
 
       _initDuplicateReviewRows: function (fields) {
         var tr = domConstruct.create('tr', {
-          className: "field-label-row",
+          className: "bottom-border",
           isHeaderRow: true
         }, this.reviewTable);
         domConstruct.create('td', {
-          className: "label-td"
+          className: "text-left"
         }, tr);
         var tdLabel = domConstruct.create('td', {
-          className: "label-td"
+          className: "text-left"
         }, tr);
         domConstruct.create('div', {
           className: "duplicate-col-headers main-text float-left",
@@ -380,7 +394,7 @@ define(['dojo/_base/declare',
         }, tdLabel);
 
         var _tdLabel = domConstruct.create('td', {
-          className: "label-td"
+          className: "text-left"
         }, tr);
         domConstruct.create('div', {
           className: "duplicate-col-headers main-text float-left",
@@ -390,14 +404,14 @@ define(['dojo/_base/declare',
         array.forEach(fields, lang.hitch(this, function (f) {
           if (this._skipFields.indexOf(f.name) === -1) {
             var tr = domConstruct.create('tr', {
-              className: "field-label-row",
+              className: "bottom-border",
               isLabelRow: true,
               isControlRow: true
             }, this.reviewTable);
             tr.fieldName = f.name;
             tr.parent = this;
             var tdLabel = domConstruct.create('td', {
-              className: "label-td"
+              className: "field-control-td text-left"
             }, tr);
             domConstruct.create('div', {
               className: "main-text float-left",
@@ -454,14 +468,14 @@ define(['dojo/_base/declare',
           this._initSelectRow(this.nls.review.useValues, table, this._useValuesChanged);
 
           var tr = domConstruct.create('tr', {
-            className: "field-label-row bottom-border",
+            className: "bottom-border",
             isHeaderRow: true
           }, table);
           domConstruct.create('td', {
-            className: "label-td"
+            className: "text-left"
           }, tr);
           var tdLabel = domConstruct.create('td', {
-            className: "label-td"
+            className: "text-left"
           }, tr);
           domConstruct.create('div', {
             className: "duplicate-col-headers main-text float-left",
@@ -469,7 +483,7 @@ define(['dojo/_base/declare',
           }, tdLabel);
 
           var _tdLabel = domConstruct.create('td', {
-            className: "label-td"
+            className: "text-left"
           }, tr);
           domConstruct.create('div', {
             className: "duplicate-col-headers main-text float-left",
@@ -489,7 +503,7 @@ define(['dojo/_base/declare',
         array.forEach(fields, lang.hitch(this, function (f) {
           if (this._skipFields.indexOf(f.name) === -1) {
             var tr = domConstruct.create('tr', {
-              className: "control-row bottom-border",
+              className: "bottom-border",
               isRadioRow: false,
               isEditRow: true,
               rowIndex: rowIndex
@@ -497,7 +511,7 @@ define(['dojo/_base/declare',
             tr.fieldName = f.name;
             tr.parent = this;
             var tdLabel = domConstruct.create('td', {
-              className: "pad-right-10 pad-left-10 label-td"
+              className: "field-control-td text-left field-row-width"
             }, tr);
             domConstruct.create('div', {
               className: "main-text float-left",
@@ -520,7 +534,7 @@ define(['dojo/_base/declare',
 
         array.forEach(this.addressFields, lang.hitch(this, function (f) {
           var tr = domConstruct.create('tr', {
-            className: "control-row bottom-border",
+            className: "bottom-border",
             isRadioRow: false,
             isEditRow: false,
             isAddressRow: true
@@ -529,7 +543,7 @@ define(['dojo/_base/declare',
           tr.keyField = f.keyField;
           tr.parent = this;
           var tdLabel = domConstruct.create('td', {
-            className: "pad-right-10 pad-left-10 label-td"
+            className: "field-control-td text-left"
           }, tr);
           domConstruct.create('div', {
             className: "main-text float-left",
@@ -581,7 +595,9 @@ define(['dojo/_base/declare',
           //use the located address to update whatever fileds we have displayed
           array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
             var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : row.keyField;
-            row.addressValueTextBox.set('value', this._address[keyField]);
+            if (row.addressValueTextBox) {
+              row.addressValueTextBox.set('value', this._address[keyField]);
+            }
           }));
         } else {
           //use the address to update destination layer fields
@@ -610,16 +626,16 @@ define(['dojo/_base/declare',
         //test if a difference exists between address fields and related layer fields
         var hasDifferences = false;
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
-          if (this._syncFields && this._syncFields.hasOwnProperty(row.keyField)) {
-            var value = row.addressValueTextBox.value;
+          if (this._syncFields && this._syncFields.hasOwnProperty(row.keyField) && !hasDifferences) {
+            var value = row.addressValueTextBox.displayedValue;
             var addrField = this._syncFields[row.keyField];
             for (var i = 0; i < this.featureControlTable.rows.length; i++) {
               var featureRow = this.featureControlTable.rows[i];
-              if (featureRow.isEditRow && featureRow.fieldName === addrField.layerFieldName) {
+              if (featureRow.isEditRow && featureRow.fieldName === addrField.layerFieldName && !hasDifferences) {
                 if (this.isDuplicate && this._useValuesFromLayer) {
-                  hasDifferences = featureRow.layerValueTextBox.value !== value;
+                  hasDifferences = featureRow.layerValueTextBox.displayedValue !== value;
                 } else {
-                  hasDifferences = featureRow.fileValueTextBox.value !== value;
+                  hasDifferences = featureRow.fileValueTextBox.displayedValue !== value;
                 }
                 break;
               }
@@ -651,13 +667,12 @@ define(['dojo/_base/declare',
 
       _initLabel: function (tr, value, isFile, isAddress) {
         var tdControl = domConstruct.create('td', {
-          className: !isFile ? 'pad-right-10' : '',
-          style: { 'padding-bottom': "10px" }
+          className: 'field-control-td field-row-width2'
         }, tr);
         var valueTextBox = new ValidationTextBox({
           style: {
             width: "100%",
-            height: "30px"
+            height: "33px"
           },
           title: value,
           invalidMessage: this.nls.review.valuesDoNotMatch
@@ -689,12 +704,12 @@ define(['dojo/_base/declare',
 
       _initValidationBox: function (tr, value, isFile, isAddress) {
         var tdControl = domConstruct.create('td', {
-          className: !isFile ? 'pad-right-10' : ''
+          className: 'field-control-td'
         }, tr);
         var valueTextBox = new ValidationTextBox({
           style: {
             width: "100%",
-            height: "30px"
+            height: "33px"
           },
           title: value
         });
@@ -776,17 +791,18 @@ define(['dojo/_base/declare',
         }));
 
         //check the address rows
-        this._changedAddressRows = [];
-        array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
-          if (row.isAddressRow) {
-            if (row.addressValueTextBox.value !== row.addressValue && (this.isDuplicate &&
-              this._featureToolbar._originalValues.editAddress.Match_addr !== row.addressValueTextBox.value)) {
-              this._changedAddressRows.push(row.rowIndex);
-            }
-          }
-        }));
+        //this._changedAddressRows = [];
+        //array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
+        //  if (row.isAddressRow) {
+        //    if (row.addressValueTextBox.value !== row.addressValue && (this.isDuplicate &&
+        //      this._featureToolbar._originalValues.editAddress.Match_addr !== row.addressValueTextBox.value)) {
+        //      this._changedAddressRows.push(row.rowIndex);
+        //    }
+        //  }
+        //}));
         var rows = this._useValuesFromFile ? this._changedFileAttributeRows : this._changedLayerAttributeRows;
-        this.emit('attribute-change', rows.length > 0 || this._changedAddressRows.length > 0);
+        //this.emit('attribute-change', rows.length > 0 || this._changedAddressRows.length > 0);
+        this.emit('attribute-change', rows.length > 0);
       },
 
       _getValue: function (v) {
@@ -811,7 +827,7 @@ define(['dojo/_base/declare',
 
       _initSelectRow: function (useString, table, func) {
         var tr = domConstruct.create('tr', {
-          className: "radio-row task-instruction-row bottom-border",
+          className: "task-instruction-row bottom-border",
           isRadioRow: true, //TODO update all uses of this...leaving for now
           isEditRow: false
         }, table);
@@ -819,7 +835,7 @@ define(['dojo/_base/declare',
 
         var tdUseLabel = domConstruct.create('td', {}, tr);
         domConstruct.create('div', {
-          className: "main-text float-left pad-left-10",
+          className: "main-text float-left",
           innerHTML: useString
         }, tdUseLabel);
 
@@ -828,7 +844,8 @@ define(['dojo/_base/declare',
 
       _createSelect: function (tr, func) {
         var td = domConstruct.create('td', {
-          colspan: 2
+          colspan: 2,
+          className: "field-control-td"
         }, tr);
 
         var fromSelect = new Select({
@@ -976,13 +993,17 @@ define(['dojo/_base/declare',
             r.layerValueTextBox.set('value', typeof (r.layerValue) !== 'undefined' ? r.layerValue : '');
           }
         }));
+
+        this._changedFileAttributeRows = [];
+        this._changedLayerAttributeRows = [];
       },
 
       resetAddressValues: function (values, duplicateType) {
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (r) {
+          var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : r.keyField;
           if (r.addressValueTextBox) {
             var addr = (this.isDuplicate && this._useGeomFromLayer && (duplicateType !== 'not-duplicate')) ?
-              values.editAddress.Match_addr : r.addressValue;
+              values.editAddress[keyField] : r.addressValue;
             r.addressValueTextBox.set('value', typeof (addr) !== 'undefined' ? addr : '');
           }
         }));
@@ -990,18 +1011,19 @@ define(['dojo/_base/declare',
 
       resetGeometry: function (geometry, duplicateGeometry) {
         console.log(duplicateGeometry);
-        //this._feature.geometry = this.isDuplicate && this._useGeomFromFile ? duplicateGeometry : geometry;
-        //this.feature.geometry = this.isDuplicate && this._useGeomFromFile ? duplicateGeometry : geometry;
         this._feature.geometry = geometry;
         this.feature.geometry = geometry;
         this._featureToolbar._updateLayer(this.layer, null, [this._feature], null, false, true)
           .then(lang.hitch(this, function () {
             this._featureToolbar._flashFeatures([this._feature]);
           }));
+        this.resetFromLayerRows();
+      },
+
+      resetFromLayerRows: function () {
         if (this.isDuplicate) {
           this._useGeomFromLayer = true;
           this._useValuesFromLayer = true;
-
           array.forEach(this.featureControlTable.rows, lang.hitch(this, function (r) {
             if (r.fromSelect) {
               r.fromSelect.set('value', 'layer');

@@ -123,9 +123,17 @@ define(['dojo/_base/declare',
         return true;
       },
 
+      _rdoSingleAddressClick: function () {
+        this.rdoSingleAddress.set('checked', true);
+      },
+
       _rdoSingleAddressChanged: function (v) {
         this.useSingle = v;
         this._toggleVisibility(this.singleFieldTable, v);
+      },
+
+      _rdoMultiAddressClick: function () {
+        this.rdoMultiAddress.set('checked', true);
       },
 
       _rdoMultiAddressChanged: function (v) {
@@ -176,28 +184,28 @@ define(['dojo/_base/declare',
         //Create UI for field controls
         var id = 0;
         array.forEach(controlFields, lang.hitch(this, function (controlField) {
-          var tr = domConstruct.create('tr', {
-            className: "control-row"
-          }, table);
+          var tr = domConstruct.create('tr', { }, table);
           tr.keyField = controlField.value;
           tr.label = controlField.label;
 
           var tdLabel = domConstruct.create('td', {
-            className: "pad-right-10"
+            className: id === 0 ? "sub-field-control-td" : "field-control-td"
           }, tr);
           domConstruct.create('div', {
-            className: "main-text float-left",
+            className: "main-text float-left min-width-80",
             innerHTML: controlField.label
           }, tdLabel);
 
-          var tdControl = domConstruct.create('td', { }, tr);
+          var tdControl = domConstruct.create('td', {
+            className: id === 0 ? "sub-field-control-td" : "field-control-td"
+          }, tr);
 
           var fieldSelect = new Select({
             name: "field" + id,
             fieldName: controlField.label, //TODO does this need to update to be the same as teh rows keyField
             className: "field-control"
           });
-          //domClass.add(fieldSelect.domNode, "field-control");
+
           var options = [{
             label: this.nls.warningsAndErrors.noValue,
             value: this.nls.warningsAndErrors.noValue

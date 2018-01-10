@@ -67,6 +67,14 @@
   padding-right: 10px;
 }
 
+.jimu-widget-setting-critical-facilities .pad-left-20 {
+  padding-left: 20px;
+}
+
+.jimu-rtl .jimu-widget-setting-critical-facilities .pad-left-20 {
+  padding-right: 20px;
+}
+
 /*End Main Section*/
 /*------------------------------------------------------------------------------------------------------------*/
 

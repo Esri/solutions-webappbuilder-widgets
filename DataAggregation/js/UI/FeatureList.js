@@ -153,8 +153,16 @@ define(['dojo/_base/declare',
 
       _initRow: function (f, x) {
         var tr = domConstruct.create('tr', {
-          className: "control-row bottom-border"
+          className: "bottom-border feature-list-row",
+          onclick: lang.hitch(this, function (evt) {
+            console.log(evt.currentTarget.featureView);
+            this.pageContainer.selectView(evt.currentTarget.featureView.index);
+          })
         }, this.featureListTable);
+
+        tr.featureView = this._initFeatureView(f, this.label + "_" + x);
+        tr.fieldInfo = f.fieldInfo;
+
         for (var i = 0; i < f.fieldInfo.length; i++) {
           var fi = f.fieldInfo[i];
           if (fi.name === this.layer.objectIdField) {
@@ -164,29 +172,20 @@ define(['dojo/_base/declare',
         }
 
         var tdLabel = domConstruct.create('td', {
-          className: "pad-left-10 pad-right-10"
+          className: "pad-10"
         }, tr);
         domConstruct.create('div', {
-          className: "main-text float-left",
+          className: "main-text float-left text-left",
           innerHTML: f.label
         }, tdLabel);
 
         var tdArrow = domConstruct.create('td', {
-          className: "width-15",
-          onclick: lang.hitch(this, function (evt) {
-            console.log(evt.currentTarget.featureView);
-            this.pageContainer.selectView(evt.currentTarget.featureView.index);
-          })
+          className: "width-15"
         }, tr);
-
-        var view = this._initFeatureView(f, this.label + "_" + x);
-        tdArrow.featureView = view;
 
         domConstruct.create('div', {
           className: "next-arrow float-right next-arrow-img"
         }, tdArrow);
-
-        tr.fieldInfo = f.fieldInfo;
       },
 
       removeFeature: function (feature, oid) {

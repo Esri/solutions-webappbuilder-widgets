@@ -84,6 +84,10 @@ define(['dojo/_base/declare',
         }
       },
 
+      _rdoAddressClick: function () {
+        this.rdoAddress.set('checked', true);
+      },
+
       _rdoAddressChanged: function (v) {
         this.useAddress = v;
         //altNextIndex should be set to address view when true
@@ -91,6 +95,10 @@ define(['dojo/_base/declare',
           this.altNextIndex = v ? this._addressView.index : this._coordinatesView.index;
         }
         this.parent._locationMappingComplete = false;
+      },
+
+      _rdoCoordinateClick: function () {
+        this.rdoCoordinates.set('checked', true);
       },
 
       _rdoCoordinateChanged: function (v) {

@@ -168,6 +168,7 @@ define(['dojo/_base/declare',
         } else {
           this._updateSaveAndCancel(!(this._hasAttributeEdit || this._hasGeometryEdit));
         }
+        this._updateSync(!this.featureView._validateAddressDifference());
       },
 
       _addressChange: function (v) {
@@ -190,6 +191,8 @@ define(['dojo/_base/declare',
           //no need to reverse geocode again
           if (result) {
             this._reverseLocate(result.graphic.geometry);
+            //when the user moves the graphic no need for locate to stay enabled
+            this._updateLocate(true);
           }
           if (this.featureView._validateAddressDifference()) {
             this._updateSync(false);
@@ -261,20 +264,20 @@ define(['dojo/_base/declare',
       },
 
       _undoEdits: function () {
-        //reset all controls with the original values
-        if (this._hasAttributeEdit) {
-          this.featureView.resetAttributeValues(this._originalValues);
-          this._hasAttributeEdit = false;
-        }
-        if (this._hasAddressEdit || this._hasGeometryEdit) {
-          this.featureView.resetAddressValues(this._originalValues);
-          this._hasAddressEdit = false;
-        }
+        this.featureView.resetAttributeValues(this._originalValues);
+        this._hasAttributeEdit = false;
+
+        this.featureView.resetAddressValues(this._originalValues);
+        this._hasAddressEdit = false;
 
         if (this._hasGeometryEdit){
           this.featureView.resetGeometry(this._originalValues.geometry, this._originalValues.duplicateGeometry);
           this._hasGeometryEdit = false;
+        } else {
+          this.featureView.resetFromLayerRows();
         }
+        this._updateSync(!this.featureView._validateAddressDifference());
+        this._updateLocate(true);
       },
 
       _locate: function () {

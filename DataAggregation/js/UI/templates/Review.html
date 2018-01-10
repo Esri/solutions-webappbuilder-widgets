@@ -6,15 +6,15 @@
           <div class="instruction">${nls.review.reviewMatchedPageHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row" data-dojo-attach-point="matchedControlRow">
-        <td>
+      <tr class="bottom-border task-row" data-dojo-attach-point="matchedControlRow" data-dojo-attach-event="onclick:_reviewMatched">
+        <td class="field-control-td">
           <div class="task-text">${nls.review.reviewMatched}</div>
         </td>
-        <td class="pad-right-15 float-right main-text">
+        <td class="pad-right-15 float-right main-text field-control-td">
           <div data-dojo-attach-point="matchedCount">
           </div>
         </td>
-        <td class="width-15" data-dojo-attach-event="onclick:_reviewMatched">
+        <td class="width-15">
           <div class="next-arrow float-right next-arrow-img">
           </div>
         </td>
@@ -25,15 +25,15 @@
           <div class="instruction pad-top-10">${nls.review.reviewUnMatchedPageHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row" data-dojo-attach-point="unMatchedControlRow">
-        <td>
+      <tr class="bottom-border task-row" data-dojo-attach-point="unMatchedControlRow" data-dojo-attach-event="onclick:_reviewUnMatched">
+        <td class="field-control-td">
           <div class="task-text">${nls.review.reviewUnMatched}</div>
         </td>
-        <td class="pad-right-15 float-right main-text">
+        <td class="pad-right-15 float-right main-text field-control-td">
           <div data-dojo-attach-point="unMatchedCount">
           </div>
         </td>
-        <td class="width-15" data-dojo-attach-event="onclick:_reviewUnMatched">
+        <td class="width-15">
           <div class="next-arrow float-right next-arrow-img"></div>
         </td>
       </tr>
@@ -43,15 +43,15 @@
           <div class="instruction pad-top-10">${nls.review.reviewDuplicatePageHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row" data-dojo-attach-point="duplicateControlRow">
-        <td>
+      <tr class="bottom-border task-row" data-dojo-attach-point="duplicateControlRow" data-dojo-attach-event="onclick:_reviewDuplicate">
+        <td class="field-control-td">
           <div class="task-text">${nls.review.reviewDuplicate}</div>
         </td>
-        <td class="pad-right-15 float-right main-text">
+        <td class="pad-right-15 float-right main-text field-control-td">
           <div data-dojo-attach-point="duplicateCount">
           </div>
         </td>
-        <td class="width-15" data-dojo-attach-event="onclick:_reviewDuplicate">
+        <td class="width-15">
           <div class="next-arrow float-right next-arrow-img"></div>
         </td>
       </tr>

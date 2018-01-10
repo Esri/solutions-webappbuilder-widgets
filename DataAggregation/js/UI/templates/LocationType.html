@@ -6,8 +6,8 @@
           <div class="instruction pad-bottom-10">${nls.locationMapping.locationMappingPageHint}</div>
         </td>
       </tr>
-      <tr class="task-row task-instruction-row">
-        <td class="pad-left-10">
+      <tr class="task-row task-instruction-row" data-dojo-attach-event="onClick:_rdoAddressClick">
+        <td class="field-control-td">
           <input name="lt" data-dojo-type="dijit/form/RadioButton"
                  data-dojo-attach-point="rdoAddress"
                  data-dojo-attach-event="onChange:_rdoAddressChanged"
@@ -20,8 +20,8 @@
           <span class="instruction">${nls.locationMapping.useAddressHint}</span>
         </td>
       </tr>
-      <tr class="task-instruction-row task-row">
-        <td class="pad-left-10">
+      <tr class="task-instruction-row task-row" data-dojo-attach-event="onClick:_rdoCoordinateClick">
+        <td class="field-control-td">
           <input name="lt" data-dojo-type="dijit/form/RadioButton"
                  data-dojo-attach-point="rdoCoordinates"
                  data-dojo-attach-event="onChange:_rdoCoordinateChanged"
