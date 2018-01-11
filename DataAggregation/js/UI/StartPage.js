@@ -208,10 +208,14 @@ define(['dojo/_base/declare',
       },
 
       _locationMappingClick: function () {
+        this.parent._locationMappingComplete = false;
+        this._validateStatus();
         this._setViewByTitle('LocationType');
       },
 
       _schemaMappingClick: function () {
+        this.parent._fieldMappingComplete = false;
+        this._validateStatus();
         this._setViewByTitle('FieldMapping');
       },
 
