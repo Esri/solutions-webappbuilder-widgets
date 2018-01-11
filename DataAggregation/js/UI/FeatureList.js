@@ -148,6 +148,11 @@ define(['dojo/_base/declare',
         });
 
         this.pageContainer.addView(feat);
+
+        if (typeof (this.altNextIndex) === 'undefined') {
+          this.altNextIndex = feat.index;
+        }
+        this.finalFeatureIndex = feat.index;
         return this.pageContainer.getViewByTitle(label);
       },
 

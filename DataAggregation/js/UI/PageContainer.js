@@ -276,7 +276,9 @@ define(['dojo/_base/declare',
           }else {
             this.selectView(view.index);
           }
+          this.emit('nav-view', view.index);
         }
+
       },
 
       getSelectedIndex: function () {

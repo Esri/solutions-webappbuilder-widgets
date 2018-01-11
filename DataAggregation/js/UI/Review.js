@@ -69,6 +69,7 @@ define(['dojo/_base/declare',
       duplicateLayer: null,
       _editToolbar: null,
       _syncFields: {},
+      _currentIndex: 0,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -86,6 +87,36 @@ define(['dojo/_base/declare',
         this._started = true;
         this._updateAltIndexes();
         this._initNavPages();
+
+        this._updateIndexesList();
+        this.altNextIndex = this.altNextIndexes[this._currentIndex];
+        this._currentIndex = (this._currentIndex + 1 < this.altNextIndexes.length) ? this._currentIndex + 1 : 0;
+
+        this.own(on(this.pageContainer, 'nav-view', lang.hitch(this, function (idx) {
+          if (idx === this.index) {
+            this._updateIndexesList();
+            if (this._currentIndex < this.altNextIndexes.length) {
+              this.altNextIndex = this.altNextIndexes[this._currentIndex];
+              this._currentIndex = (this._currentIndex + 1 < this.altNextIndexes.length) ? this._currentIndex + 1 : 0;
+            } else {
+              this._currentIndex = 0;
+              this.altNextIndex = this.altNextIndexes[this._currentIndex];
+            }
+          }
+        })));
+      },
+
+      _updateIndexesList: function () {
+        this.altNextIndexes = [];
+        if (this.matchedList.length > 0) {
+          this.altNextIndexes.push(this._matchedListView.index);
+        }
+        if (this.unMatchedList.length > 0){
+          this.altNextIndexes.push(this._unMatchedListView.index);
+        }
+        if (this.duplicateList.length > 0) {
+          this.altNextIndexes.push(this._duplicateListView.index);
+        }
       },
 
       _initNavPages: function () {
@@ -128,10 +159,6 @@ define(['dojo/_base/declare',
               }
             })));
           }
-
-          this.altNextIndex = this.matchedList.length > 0 ? this._matchedListView.index :
-            this.unMatchedList.length > 0 ? this._unMatchedListView.index :
-              this.duplicateList.length > 0 ? this._duplicateListView.index : this.altNextIndex;
         }
 
         this.pageContainer.selectView(this.index);
@@ -269,7 +296,7 @@ define(['dojo/_base/declare',
         this.editLayer.applyEdits(addFeatures, updateFeatures, null, lang.hitch(this, function () {
           this._updateNode(this.progressNode, false);
           this._navigateHome();
-          this.csvStore._zoomToData(this.editLayer.graphics);
+          this.csvStore._zoomToData(this.editLayer.graphics, true);
         }), lang.hitch(this, function (err) {
           console.log(err);
           new Message({

@@ -172,7 +172,9 @@ define(['dojo/_base/declare',
       },
 
       _updateAltIndexes: function () {
-
+        if (this._parentFeatureList.finalFeatureIndex === this.index) {
+          this.altNextIndex = this.parent._pageContainer.altHomeIndex;
+        }
       },
 
       _getFeature: function () {
