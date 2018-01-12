@@ -110,6 +110,7 @@ define([
     },
 
     queryTabCount: function (incidents, buffers, updateNode, displayCount) {
+      var def = new Deferred();
       this.incidentCount = incidents.length;
       var tabLayers = [this.tab.tabLayers[0]];
       if(this.mapServiceLayer && this.tab.tabLayers.length > 1){
@@ -122,12 +123,24 @@ define([
             var tempFL;
             if (typeof (this.tab.tabLayers[0].infoTemplate) !== 'undefined') {
               this.summaryLayer = this.tab.tabLayers[0];
-              this.summaryFields = this._getFields(this.summaryLayer);
-              tempFL = new FeatureLayer(this.summaryLayer.url);
-              tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
-              tabLayers = [tempFL];
-              this.tab.tabLayers = tabLayers;
-              this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+              if (this.summaryLayer.hasOwnProperty('loaded') && this.summaryLayer.loaded) {
+                this.summaryFields = this._getFields(this.summaryLayer);
+                this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                  def.resolve(r);
+                });
+              } else {
+                tempFL = new FeatureLayer(this.summaryLayer.url);
+                tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
+                tabLayers = [tempFL];
+                this.tab.tabLayers = tabLayers;
+                on(tempFL, "load", lang.hitch(this, function () {
+                  this.summaryLayer = tempFL;
+                  this.summaryFields = this._getFields(this.summaryLayer);
+                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
+                }));
+              }
             } else {
               if (!this.loading) {
                 tempFL = new FeatureLayer(this.tab.tabLayers[0].url);
@@ -155,7 +168,9 @@ define([
                   tabLayers = [tempFL];
                   this.tab.tabLayers = tabLayers;
                   this.loading = false;
-                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
                 }));
               }
             }
@@ -163,11 +178,15 @@ define([
         }
       }
       if (!this.mapServiceLayer) {
-        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+          def.resolve(r);
+        });
       }
+      return def;
     },
 
     _performQuery: function (incidents, buffers, updateNode, displayCount, tabLayers) {
+      var def = new Deferred();
       var defArray = [];
       var geom;
       var prevArray;
@@ -209,7 +228,9 @@ define([
         if (this.queryOnLoad) {
           lang.hitch(this, this._queryFeatures(this.summaryGeoms));
         }
+        def.resolve(length);
       }));
+      return def;
     },
 
     updateTabCount: function (count, updateNode, displayCount) {
@@ -323,10 +344,21 @@ define([
         def = new Deferred();
       }
       var defArray = [];
+
+      var id = this.tab.tabLayers[0].id;
+      var expr = "";
+      this.parent.opLayers.traversal(function (layerInfo) {
+        if (id === layerInfo.id && layerInfo.getFilter()) {
+          expr = layerInfo.getFilter();
+          return true;
+        }
+      });
+
       var query = new Query();
       for (var i = 0; i < geoms.length; i++) {
         var geom = geoms[i];
         query.geometry = geom;
+        query.where = expr;
         defArray.push(this.summaryLayer.queryIds(query));
       }
 
@@ -414,6 +446,7 @@ define([
         includeGeom = true;
       }
       query.returnGeometry = includeGeom;
+      query.outSpatialReference = this.parent.map.spatialReference;
       var outFields = [];
       array.forEach(this.summaryFields, function (f) {
         outFields.push(f.field);
@@ -608,11 +641,12 @@ define([
           } else if (this.summaryLayer.renderer && this.summaryLayer.renderer.getSymbol) {
             gra.symbol = this.summaryLayer.renderer.getSymbol(gra);
           }
+          var g = gra.toJson ? new Graphic(gra.toJson()) : gra;
           if (!snapShot && gl) {
-            this.graphicsLayer.add(gra);
-            this.tab.tabLayers[1].add(gra);
+            this.graphicsLayer.add(g);
+            this.tab.tabLayers[1].add(g);
           } else {
-            snapShotGraphics.push(gra);
+            snapShotGraphics.push(g);
           }
         }
       }
@@ -745,27 +779,34 @@ define([
 
       if (this.allFields) {
         layer_field_loop:
-          for (var j = 0; j < layer.fields.length; j++) {
-            var f = layer.fields[j];
-            //need to verify that this field is not in the list
-            // may be a cleaner way to do this test but this should work for POC
-            var addField = true;
-            add_loop:
-              for (var k = 0; k < fields.length; k++) {
-                if (f.name === fields[k].field) {
-                  addField = false;
-                  break add_loop;
-                }
-              }
-            if (skipFields.indexOf(f.name) === -1 && addField) {
-              fields.push({
-                field: f.name,
-                alias: f.alias,
-                type: f.type
-              });
+        for (var j = 0; j < layer.fields.length; j++) {
+          var f = layer.fields[j];
+          //need to verify that this field is not in the list
+          // may be a cleaner way to do this test but this should work for POC
+          var addField = true;
+          add_loop:
+          for (var k = 0; k < fields.length; k++) {
+            if (f.name === fields[k].field) {
+              addField = false;
+              break add_loop;
             }
           }
+          if (skipFields.indexOf(f.name) === -1 && addField) {
+            fields.push({
+              field: f.name,
+              alias: f.alias,
+              type: f.type
+            });
+          }
+        }
       }
+
+      var spFields = analysisUtils.getSpecialFields(layer);
+      this.dateFields = spFields.dateFields;
+      this.specialFields = spFields.specialFields;
+      this.typeIdField = spFields.typeIdField;
+      this.types = spFields.types;
+
       return fields;
     }
   });

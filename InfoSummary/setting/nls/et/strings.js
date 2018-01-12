@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Saate objektide koguarvu kuvamise lubada/keelata.",
   "panelIconOptionHelp": "Saate logo kuvamise põhipaneelil lubada/keelata.",
   "rdoGroupByField": "välja järgi",
-  "rdoGroupByRenderer": "renderdaja järgi"
+  "rdoGroupByRenderer": "renderdaja järgi",
+  "expandList": "Laienda loend käivitamisel",
+  "expandListHelp": "Luba/keela loendi vaikimisi laiendamine.",
+  "chkFeatureDisplay": "Keela objektiloend",
+  "showAllFeaturesHelp": "Luba/keela kõikide objektide kuvamine olenemata ulatusest.",
+  "showAllFeatures": "Kuva kõik objektid",
+  "fieldsWarning": "Hüpikaknas pole väljasid määratletud. Valikuline: kasutage paneeli kuvamisvalikute määratlemiseks muutmise toimingut."
 });

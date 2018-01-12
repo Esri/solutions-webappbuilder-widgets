@@ -1,4 +1,4 @@
-﻿///////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////
 // Copyright © 2016 Esri. All Rights Reserved.
 //
 // Licensed under the Apache License Version 2.0 (the "License");
@@ -112,11 +112,14 @@ define([
       this.config = parent.config;
       this.graphicsLayer = null;
       this.specialFields = {};
+      this.typeIdField = "";
+      this.types = [];
       this.dateFields = {};
       this.baseLabel = tab.label !== "" ? tab.label : tab.layerTitle ? tab.layerTitle : tab.layers;
     },
 
     queryTabCount: function (incidents, buffers, updateNode, displayCount) {
+      var def = new Deferred();
       this.displayCount = displayCount;
       this.incidentCount = incidents.length;
       var tabLayers = [this.tab.tabLayers[0]];
@@ -130,12 +133,24 @@ define([
             var tempFL;
             if (typeof (this.tab.tabLayers[0].infoTemplate) !== 'undefined') {
               this.summaryLayer = this.tab.tabLayers[0];
-              this.summaryFields = this._getFields(this.summaryLayer);
-              tempFL = new FeatureLayer(this.summaryLayer.url);
-              tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
-              tabLayers = [tempFL];
-              this.tab.tabLayers = tabLayers;
-              this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+              if (this.summaryLayer.hasOwnProperty('loaded') && this.summaryLayer.loaded) {
+                this.summaryFields = this._getFields(this.summaryLayer);
+                this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                  def.resolve(r);
+                });
+              } else {
+                tempFL = new FeatureLayer(this.summaryLayer.url);
+                tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
+                tabLayers = [tempFL];
+                this.tab.tabLayers = tabLayers;
+                on(tempFL, "load", lang.hitch(this, function () {
+                  this.summaryLayer = tempFL;
+                  this.summaryFields = this._getFields(this.summaryLayer);
+                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
+                }));
+              }
             } else {
               if (!this.loading) {
                 tempFL = new FeatureLayer(this.tab.tabLayers[0].url);
@@ -160,7 +175,9 @@ define([
                   tabLayers = [tempFL];
                   this.tab.tabLayers = tabLayers;
                   this.loading = false;
-                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
                 }));
               }
             }
@@ -168,11 +185,15 @@ define([
         }
       }
       if (!this.mapServiceLayer) {
-        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+          def.resolve(r);
+        });
       }
+      return def;
     },
 
     _performQuery: function (incidents, buffers, updateNode, displayCount, tabLayers) {
+      var def = new Deferred();
       var defArray = [];
       var geom;
       var prevArray;
@@ -214,7 +235,9 @@ define([
         if (this.queryOnLoad) {
           lang.hitch(this, this._queryFeatures(this.summaryGeoms));
         }
+        def.resolve(length);
       }));
+      return def;
     },
 
     updateTabCount: function (count, updateNode, displayCount) {
@@ -342,10 +365,19 @@ define([
         def = new Deferred();
       }
       var defArray = [];
+      var id = this.tab.tabLayers[0].id;
+      var expr = "";
+      this.parent.opLayers.traversal(function (layerInfo) {
+        if (id === layerInfo.id && layerInfo.getFilter()) {
+          expr = layerInfo.getFilter();
+          return true;
+        }
+      });
       var query = new Query();
       for (var i = 0; i < geoms.length; i++) {
         var geom = geoms[i];
         query.geometry = geom;
+        query.where = expr;
         defArray.push(this.summaryLayer.queryIds(query));
       }
 
@@ -432,6 +464,7 @@ define([
         includeGeom = true;
       }
       query.returnGeometry = includeGeom;
+      query.outSpatialReference = this.parent.map.spatialReference;
       var outFields = [];
       array.forEach(this.summaryFields, function (f) {
         outFields.push(f.field);
@@ -510,7 +543,7 @@ define([
         if (typeof (this.summaryFields) !== 'undefined' && this.summaryFields.length > 0) {
           var v = feat.attributes[this.summaryFields[0].field];
           var fVal = analysisUtils.getFieldValue(this.summaryFields[0].field, v,
-            this.specialFields, this.dateFields, 'longMonthDayYear');
+            this.specialFields, this.dateFields, 'longMonthDayYear', this.typeIdField, this.types);
           var val;
           if (typeof (fVal) !== 'undefined' && fVal !== null) {
             val = utils.stripHTML(fVal.toString());
@@ -637,7 +670,9 @@ define([
       var gl = this.graphicsLayer !== null;
       if (!snapShot && gl) {
         this.graphicsLayer.clear();
-        this.tab.tabLayers[1].clear();
+        if (this.tab.tabLayers[1]) {
+          this.tab.tabLayers[1].clear();
+        }
       }
       if (this.summaryFeatures) {
         for (var ii = 0; ii < this.summaryFeatures.length; ii++) {
@@ -653,11 +688,12 @@ define([
           } else if (this.summaryLayer.renderer && this.summaryLayer.renderer.getSymbol) {
             gra.symbol = this.summaryLayer.renderer.getSymbol(gra);
           }
+          var g = gra.toJson ? new Graphic(gra.toJson()) : gra;
           if (!snapShot && gl) {
-            this.graphicsLayer.add(gra);
-            this.tab.tabLayers[1].add(gra);
+            this.graphicsLayer.add(g);
+            this.tab.tabLayers[1].add(g);
           } else {
-            snapShotGraphics.push(gra);
+            snapShotGraphics.push(g);
           }
         }
       }
@@ -730,6 +766,8 @@ define([
       var spFields = analysisUtils.getSpecialFields(layer);
       this.dateFields = spFields.dateFields;
       this.specialFields = spFields.specialFields;
+      this.typeIdField = spFields.typeIdField;
+      this.types = spFields.types;
 
       if (this.allFields) {
         for (var j = 0; j < layer.fields.length; j++) {

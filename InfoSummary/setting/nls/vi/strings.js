@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Bật/Tắt hiển thị số lượng đối tượng.",
   "panelIconOptionHelp": "Bật/Tắt hiển thị logo trên bảng điều khiển chính.",
   "rdoGroupByField": "theo trường",
-  "rdoGroupByRenderer": "theo trình kết xuất"
+  "rdoGroupByRenderer": "theo trình kết xuất",
+  "expandList": "Mở rộng danh sách trong Khởi động",
+  "expandListHelp": "Bật/Tắt mở rộng danh sách mặc định.",
+  "chkFeatureDisplay": "Tắt danh sách đối tượng",
+  "showAllFeaturesHelp": "Bật/Tắt hiển thị tất cả các đối tượng bất kể phạm vi.",
+  "showAllFeatures": "Hiện Tất cả các đối tượng",
+  "fieldsWarning": "Không có trường nào được xác định trong cửa sổ pop-up: Sử dụng thao tác chỉnh sửa để xác định các tùy chọn hiển thị bảng điều khiển."
 });

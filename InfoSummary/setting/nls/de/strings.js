@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Anzeige der Feature-Anzahl aktivieren/deaktivieren",
   "panelIconOptionHelp": "Anzeige eines Logos im Hauptbereich aktivieren/deaktivieren",
   "rdoGroupByField": "nach Feld",
-  "rdoGroupByRenderer": "nach Renderer"
+  "rdoGroupByRenderer": "nach Renderer",
+  "expandList": "Liste beim Start erweitern",
+  "expandListHelp": "Standardmäßiges Erweitern der Liste aktivieren/deaktivieren",
+  "chkFeatureDisplay": "Feature-Liste deaktivieren",
+  "showAllFeaturesHelp": "Anzeige aller Features ungeachtet der Ausdehnung aktivieren/deaktivieren",
+  "showAllFeatures": "Alle Features anzeigen",
+  "fieldsWarning": "Im Pop-up sind keine Felder definiert. Verwenden Sie die Aktion  \"Bearbeiten \", um die Optionen der Anzeige im Bereich zu definieren."
 });

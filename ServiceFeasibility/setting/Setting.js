@@ -100,6 +100,7 @@ define([
       this._initializeBusinessLayerSelect();
       this._initializeAccessPointLayersCheckboxes();
       this._addBufferUnits();
+      this._addRouteLengthUnits();
       this._addConfigParameters();
       this._onSetBtnClick();
       this._onTravelModeChange();
@@ -162,6 +163,16 @@ define([
           if (this.selectBufferUnits.options[i].value === this.config
             .bufferEsriUnits) {
             this.selectBufferUnits.set("value", this.selectBufferUnits
+              .options[i].value);
+          }
+        }
+      }
+      // if route length unit is available and set config value to dropdown
+      if (this.config && this.config.routeLengthEsriUnits) {
+        for (i = 0; i < this.selectLengthUnits.options.length; i++) {
+          if (this.selectLengthUnits.options[i].value === this.config
+            .routeLengthEsriUnits) {
+            this.selectLengthUnits.set("value", this.selectLengthUnits
               .options[i].value);
           }
         }
@@ -982,7 +993,37 @@ define([
         this.selectedBufferUnit = value;
       }));
     },
-
+    _addRouteLengthUnits: function () {
+      var i;
+      this.esriUnit = [{
+        label: this.nls.esriUnit.defaultUnit,
+        value: -1
+      },{
+        label: this.nls.esriUnit.esriCTFeets,
+        value: 9002
+      }, {
+        label: this.nls.esriUnit.esriCTMiles,
+        value: 9030
+      }, {
+        label: this.nls.esriUnit.esriCTMeters,
+        value: 9001
+      }, {
+        label: this.nls.esriUnit.esriCTKilometers,
+        value: 9036
+      }];
+      for (i = 0; i < this.esriUnit.length; i++) {
+        this.selectLengthUnits.addOption({
+          value: this.esriUnit[i].value,
+          label: this.esriUnit[i].label
+        });
+      }
+      this.selectLengthUnits.set("value",-1);
+     
+      on(this.selectLengthUnits, "change", lang.hitch(this, function (
+        value) {
+        this.selectedLengthUnits = value;
+      }));
+    },
     /**
     * This function set the closest facility parameters
     * @memberOf widgets/ServiceFeasibility/setting/Settings
@@ -1631,10 +1672,12 @@ define([
         }
         businessLayerName = bussinessLayerIndex !== "" ? this.operationalLayers[
           bussinessLayerIndex].title : "";
+
         this.config = {
           "businessesLayerName": businessLayerName,
           "accessPointsLayersName": accessLayerName,
           "routeLengthLabelUnits": this.txtRouteLength.value,
+          "routeLengthEsriUnits": this.selectLengthUnits.value,
           "routeUnitsRoundingOption": this.selectRoundingOption.value,
           "bufferEsriUnits": bufferUnit,
           "bufferDistance": bufferDistance,

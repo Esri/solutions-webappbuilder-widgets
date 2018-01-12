@@ -420,7 +420,7 @@
   float: left;
   height: 100px;
   border-left: none;
-  margin-left: 15px;
+  margin-left: 5px;
   padding: 0 10px;
   user-select: none;
   -moz-user-select: none;
@@ -435,7 +435,12 @@
   float: right;
   border-right: none;
   overflow: hidden;
-  margin-right: 15px;
+  margin-right: 5px;
+}
+
+.jimu-widget-SAT .borderCol {
+  height: 100px;
+  float: left;
 }
 
 /*TODO see what this is form not sure iframe it's height needs to change*/
@@ -513,7 +518,7 @@
   width: 32px;
   height: 32px;
   border-radius: 2px;
-  margin-right: 15px;
+  margin-right: 5px;
   cursor: pointer;
 }
 
@@ -624,38 +629,6 @@
   background-image: url('images/loading.gif');
   background-repeat: no-repeat;
   background-position: center 10px;
-}
-
-.jimu-widget-SAT .snapshot {
-  background-image: url('images/snapshot.png');
-  background-repeat: no-repeat;
-  background-position: center center;
-  height: 32px;
-  width: 32px;
-}
-
-.jimu-widget-SAT .snapshotProcessing {
-  background-image: url('images/processing.gif');
-  background-repeat: no-repeat;
-  background-position: center center;
-  height: 32px;
-  width: 32px;
-}
-
-.jimu-widget-SAT .downloadAll {
-  background-image: url('images/download_all.png');
-  background-repeat: no-repeat;
-  background-position: center center;
-  height: 32px;
-  width: 32px;
-}
-
-.jimu-widget-SAT .save {
-  background-image: url('images/save.png');
-  background-repeat: no-repeat;
-  background-position: center center;
-  height: 32px;
-  width: 32px;
 }
 
 .jimu-widget-SAT .btnDisabled {
@@ -859,6 +832,60 @@
   right: 270px;
   line-height: 26px;
   font-size: 13px;
+}
+
+.jimu-widget-SAT .pad-top-5{
+  padding-top: 5px;
+}
+
+.jimu-widget-SAT .pad-top-10{
+  padding-top: 10px;
+}
+
+
+.jimu-widget-SAT-property-helper .pad-top-5{
+  padding-top: 5px;
+}
+
+.jimu-widget-SAT-property-helper .pad-top-10{
+  padding-top: 10px;
+}
+
+.jimu-widget-SAT-property-helper .pad-right-5{
+  padding-right: 5px;
+}
+
+.jimu-rtl .jimu-widget-SAT-property-helper .pad-right-5{
+  padding-left: 5px;
+}
+
+.jimu-widget-SAT-property-helper .commentTextArea{
+  width: 100%;
+}
+
+.jimu-widget-SAT-property-helper .width-all{
+  width: 100%;
+}
+
+.jimu-widget-SAT-property-helper .display-on{
+  display: block;
+}
+
+.jimu-widget-SAT-property-helper .display-off{
+  display: none;
+}
+
+.jimu-widget-SAT-property-helper .dijitSelectLabel {
+    text-align: left;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 130px;
+}
+
+.jimu-widget-SAT-property-helper .hintText {
+  font-size: 12px;
+  color: #a0acbf;
+  font-style: oblique;
 }
 
 /*********about attributeInspector**********/

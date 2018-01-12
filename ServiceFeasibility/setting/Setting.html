@@ -1,4 +1,4 @@
-﻿<div style="width: 100%; height: 100%;">
+<div style="width: 100%; height: 100%;">
     <fieldset class="fldSetClosestFacilityParameters row">
         <legend class="fieldSetLegend esriCTEllipsisFieldSet" title="${nls.captionClosestFacilityParameters}">
             ${nls.captionClosestFacilityParameters}</legend>
@@ -182,6 +182,17 @@
         </div>
         <div class="esriCTHint esriCTMargin">
             ${nls.hintText.hintLabelForBox}</div>
+    </div>
+    <div class="divCostEquationContainer row">
+        <div class="SFlabel" title="${nls.lblLengthUnits}">
+            ${nls.lblLengthUnits}
+        </div>
+        <div class="inputbox" title="${nls.lblLengthUnits}">
+            <select data-dojo-attach-point="selectLengthUnits" data-dojo-type="dijit/form/Select"></select>
+        </div>
+        <div class="esriCTHint esriCTMargin">
+            ${nls.hintText.lengthUnitsText}
+        </div>
     </div>
     <div class="divCostEquationContainer row" title="${nls.lblForExpression}">
         <div class="SFlabel" data-dojo-attach-point="costExpressionLabel">

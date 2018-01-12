@@ -1,0 +1,23 @@
+﻿.jimu-widget-NetworkTrace .flagbutton
+{
+
+    background-image: url("../images/add-flags-select.png")!important;
+
+}
+
+.jimu-widget-NetworkTrace .barrierButton {
+    background-image: url("../images/add-barriers-select.png") !important;
+}
+
+.jimu-widget-NetworkTrace .barrierButtonselected {
+    background-image: url("../images/add-barriers.png");
+    background-color: cornsilk;
+}
+
+.jimu-widget-NetworkTrace .flagButtonselected
+{
+   ;
+    background-image: url("../images/add-flags.png");
+    background-color:cornsilk;
+
+}

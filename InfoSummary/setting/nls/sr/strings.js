@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Omogućite/onemogućite prikazivanje broja geoobjekata.",
   "panelIconOptionHelp": "Omogućite/onemogućite prikazivanje logotipa na glavom panelu.",
   "rdoGroupByField": "po polju",
-  "rdoGroupByRenderer": "po prikazivaču"
+  "rdoGroupByRenderer": "po prikazivaču",
+  "expandList": "Proširi listu pri pokretanju",
+  "expandListHelp": "Omogući/onemogući podrazumevano proširivanjem liste.",
+  "chkFeatureDisplay": "Onemogući listu geoobjekata",
+  "showAllFeaturesHelp": "Omogući/onemogući prikaz svih geoobjekata bez obzira na obuhvat.",
+  "showAllFeatures": "Prikaži sve geoobjekte",
+  "fieldsWarning": "Nema definisanih polja u iskačućem prozoru. Opciono: koristite radnju uređivanja da biste definisali opcije prikaza tabele."
 });

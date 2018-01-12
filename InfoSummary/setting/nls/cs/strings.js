@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Povolí nebo zakáže počty prvků.",
   "panelIconOptionHelp": "Povolí nebo zakáže logo na hlavním panelu.",
   "rdoGroupByField": "podle pole",
-  "rdoGroupByRenderer": "podle vykreslovače"
+  "rdoGroupByRenderer": "podle vykreslovače",
+  "expandList": "Rozbalit list po spuštění",
+  "expandListHelp": "Povolit/zakázat výchozí rozbalení seznamu",
+  "chkFeatureDisplay": "Zakázat seznam prvků",
+  "showAllFeaturesHelp": "Povolit/zakázat zobrazení všech prvků bez ohledu na rozsah",
+  "showAllFeatures": "Zobrazit všechny prvky",
+  "fieldsWarning": "Ve vyskakovacím okně nejsou definována žádná pole. Volitelné: Pomocí akce Upravit definujte možnosti zobrazení panelu."
 });

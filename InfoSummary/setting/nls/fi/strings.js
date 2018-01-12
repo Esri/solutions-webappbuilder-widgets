@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Ota käyttöön tai poista käytöstä kohdemäärän näyttö.",
   "panelIconOptionHelp": "Ota käyttöön tai poista käytöstä pääpaneelin logon näyttö.",
   "rdoGroupByField": "kentän mukaan",
-  "rdoGroupByRenderer": "hahmontimen mukaan"
+  "rdoGroupByRenderer": "hahmontimen mukaan",
+  "expandList": "Laajenna luettelo käynnistyksen yhteydessä",
+  "expandListHelp": "Ota käyttöön tai poista käytöstä luettelon oletuslaajennus.",
+  "chkFeatureDisplay": "Poista kohdeluettelo käytöstä",
+  "showAllFeaturesHelp": "Ota käyttöön tai poista käytöstä kaikkien kohteiden näyttäminen laajuudesta huolimatta.",
+  "showAllFeatures": "Näytä kaikki kohteet",
+  "fieldsWarning": "Yhtään kenttää ei ole määritetty ponnahdusikkunassa. Valinnainen: määritä paneelin näyttöasetukset muokkaustoiminnon avulla."
 });

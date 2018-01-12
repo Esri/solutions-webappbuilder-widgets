@@ -36,6 +36,7 @@ define([
     'dijit/popup',
     'dojo/_base/lang',
     'dojo/DeferredList',
+    'dojo/Deferred',
     'dojo/on',
     'dojo/dom-style',
     'dojo/_base/html',
@@ -65,6 +66,7 @@ define([
     dijitPopup,
     lang,
     DeferredList,
+    Deferred,
     on,
     domStyle,
     html,
@@ -83,8 +85,8 @@ define([
       postCreate: function () {
         this.inherited(arguments);
 
-        var opLayers = this.map.itemInfo.itemData.operationalLayers;
-        if (opLayers.length === 0) {
+        this.opLayers = this.map.itemInfo.itemData.operationalLayers;
+        if (this.opLayers.length === 0) {
           domStyle.set(this.btnAddLayer, "display", "none");
           domStyle.set(this.optionsContainer, "display", "none");
           domStyle.set(this.displayOptionsContainer, "display", "none");
@@ -102,10 +104,14 @@ define([
           this.hidePanel = v;
           this.panelCountOptions.set('disabled', v);
           this.panelIconOptions.set('disabled', v);
+          this.expandListOptions.set('disabled', v);
+          this.showAllFeaturesOptions.set('disabled', v);
           var previewContainer;
           if (v) {
             html.addClass(this.panelIconOptionsLabel, 'text-disabled');
             html.addClass(this.panelCountOptionsLabel, 'text-disabled');
+            html.addClass(this.expandListOptionsLabel, 'text-disabled');
+            html.addClass(this.showAllFeaturesOptionsLabel, 'text-disabled');
             this.displayPanelIcon = false;
             previewContainer = query('.mainPanelPreviewContainerOn', this.mainPanelPreviewContainer.domNode)[0];
             if (previewContainer) {
@@ -119,6 +125,8 @@ define([
           } else {
             html.removeClass(this.panelIconOptionsLabel, 'text-disabled');
             html.removeClass(this.panelCountOptionsLabel, 'text-disabled');
+            html.removeClass(this.expandListOptionsLabel, 'text-disabled');
+            html.removeClass(this.showAllFeaturesOptionsLabel, 'text-disabled');
             if (this.panelIconOptions.checked) {
               this.displayPanelIcon = true;
               previewContainer = query('.mainPanelPreviewContainerOff', this.mainPanelPreviewContainer.domNode)[0];
@@ -169,6 +177,7 @@ define([
         html.place(this.imageChooser.domNode, this.mainPanelPreviewButton, 'replace');
 
         this.connect(this.imageChooser, "onImageChange", "uploadImage");
+        this.isInitalLoad = false;
       },
 
       setupRefreshInterval: function () {
@@ -182,13 +191,13 @@ define([
           title: this.nls.layerName,
           "class": "label",
           type: "empty",
-          width: "328px"
+          width: "320px"
         }, {
           name: "label",
           "class": "label",
           title: this.nls.layerLabel,
           type: "empty",
-          width: "263px"
+          width: "255px"
         }, {
           name: "image",
           "class": "label",
@@ -208,7 +217,7 @@ define([
           title: this.nls.actions,
           type: "actions",
           actions: ["up", "down", "delete"],
-          width: "77px"
+          width: "93px"
         }];
 
         this.displayLayerTable = new Table({
@@ -227,155 +236,234 @@ define([
         if (this.map.itemId) {
           LayerInfos.getInstance(this.map, this.map.itemInfo)
             .then(lang.hitch(this, function (operLayerInfos) {
-              this.opLayers = operLayerInfos;
-              this._setLayers();
-              this.setConfig(this.config);
+              this.operLayerInfos = operLayerInfos;
+              this.wmLayerInfos = operLayerInfos.getLayerInfoArrayOfWebmap();
+              this.configLayerInfos = this.config.layerInfos;
+              this._updateLayerIDs();
+              if (this.config.upgradeFields) {
+                this._upgradeFields();
+              }
+              this._setLayers(operLayerInfos.getLayerInfoArray()).then(lang.hitch(this, function () {
+                this.setConfig(this.config);
+              }));
             }));
         }
       },
 
-      _getInfoTemplate: function (originOpLayer) {
-        var infoTemplate;
-        if (originOpLayer) {
-          if (originOpLayer.parentLayerInfo) {
-            if (originOpLayer.parentLayerInfo.controlPopupInfo) {
-              var infoTemplates = originOpLayer.parentLayerInfo.controlPopupInfo.infoTemplates;
-              if (infoTemplates) {
-                var url = originOpLayer.url;
-                if (!url && originOpLayer.layerObject) {
-                  url = originOpLayer.layerObject.url;
-                }
-                if (url) {
-                  var subLayerId = url.split("/").pop();
-                  if (subLayerId) {
-                    if (infoTemplates.indexOf) {
-                      if (infoTemplates.indexOf(subLayerId) > -1) {
-                        infoTemplate = infoTemplates[subLayerId].infoTemplate;
-                      }
-                    } else if (infoTemplates.hasOwnProperty(subLayerId)) {
-                      infoTemplate = infoTemplates[subLayerId].infoTemplate;
-                    }
-                  }
-                }
+      _updateLayerIDs: function () {
+        var removeIDs = [];
+        config_layer_loop:
+        for (var i = 0; i < this.configLayerInfos.length; i++) {
+          var configLayer = this.configLayerInfos[i];
+          var jimuLayerInfo = this.operLayerInfos.getLayerInfoById(configLayer.id);
+
+          //If we cannot find the jimu layer info based on the stored ID we need to determine it
+          if (!jimuLayerInfo) {
+            var updated = false;
+            wm_layer_loop:
+            for (var ii = 0; ii < this.wmLayerInfos.length; ii++) {
+              var _opLayer = this.wmLayerInfos[ii];
+              //var opLayer = this.layerInfos[ii];
+              var originOpLayer = _opLayer ? _opLayer.originOperLayer : undefined;
+
+              var urlId = this._compareURL(originOpLayer, configLayer);
+              var itemId = this._compareItemID(originOpLayer, configLayer);
+              var subId = this._compareSubId(_opLayer, configLayer);
+
+              var id = urlId ? urlId : itemId ? itemId : subId ? subId : undefined;
+              jimuLayerInfo = id ? this.operLayerInfos.getLayerInfoById(id) : jimuLayerInfo;
+
+              if (jimuLayerInfo) {
+                this.configLayerInfos[i].id = jimuLayerInfo.id;
+                this.configLayerInfos[i].layer = jimuLayerInfo.id;
+                updated = true;
+                break wm_layer_loop;
               }
+            }
+
+            if (!updated && !jimuLayerInfo) {
+              removeIDs.push(i);
             }
           }
         }
-        return infoTemplate;
+
+        if (removeIDs.length > 0) {
+          //removeIDs.sort((a, b) => (b - a));
+          removeIDs.sort(function (a, b) { return b - a; });
+          array.forEach(removeIDs, lang.hitch(this, function (id) {
+            this.configLayerInfos.splice(id, 1);
+          }));
+        }
       },
 
-      _setLayers: function () {
-        var supportedLayerTypes = ["ArcGISFeatureLayer", "ArcGISMapServiceLayer", "CSV",
-                                   "KML", "GeoRSS", "ArcGISStreamLayer", "Feature Layer"];
+      _compareSubId: function (opLayer, configLayer) {
+        if (opLayer && opLayer.subId && opLayer.subId.indexOf(configLayer.id) > -1) {
+          if (opLayer.layerObject) {
+            var geomMatch = this._compareGeom(opLayer.layerObject, configLayer);
+            var fieldMatch = this._compareFields(opLayer.layerObject, configLayer);
+            if (geomMatch && fieldMatch) {
+              return opLayer.subId;
+            }
+          }
+        }
+        return undefined;
+      },
+
+      _compareItemID: function (originOpLayer, configLayer) {
+        if (originOpLayer && originOpLayer.itemId && originOpLayer.itemId === configLayer.itemId) {
+          if (originOpLayer.featureCollection && originOpLayer.featureCollection.layers &&
+            originOpLayer.featureCollection.layers.hasOwnProperty('length')) {
+            var fcLayers = originOpLayer.featureCollection.layers;
+            for (var i = 0; i < fcLayers.length; i++) {
+              var fcLayer = fcLayers[i];
+              if (this._compareGeom(fcLayer, configLayer)) {
+                if (this._compareFields(fcLayer, configLayer)) {
+                  return fcLayer.id;
+                }
+              }
+            }
+            return undefined;
+          }
+        }
+      },
+
+      _compareURL: function (originOpLayer, configLayer) {
+        return (originOpLayer && originOpLayer.url && configLayer.url && originOpLayer.url === configLayer.url) ?
+          originOpLayer.id : undefined;
+      },
+
+      _compareGeom: function (layerObject, configLayer) {
+        return (layerObject && layerObject.geometryType && configLayer.geometryType) ?
+          layerObject.geometryType === configLayer.geometryType : undefined;
+      },
+
+      _compareFields: function (layerObject, configLayer) {
+        var fieldMatch;
+        if (layerObject && layerObject.fields && configLayer.fields &&
+          layerObject.fields.length === configLayer.fields.length) {
+          //test if Names match
+          var matchingFields = layerObject.fields.filter(function (f) {
+            for (var fn = 0; fn < configLayer.fields.length; fn++) {
+              var configField = configLayer.fields[fn];
+              if (f.name === configField.name) {
+                return f;
+              }
+            }
+          });
+          fieldMatch = matchingFields.length === layerObject.fields.length;
+        }
+        return fieldMatch;
+      },
+
+      /*jshint loopfunc:true */
+      _setLayers: function (layerInfos) {
+        var def = new Deferred();
+        var unSupportedLayerTypes = ["esri.layers.WMSLayer", "esri.layers.ArcGISImageServiceLayer",
+          "esri.layers.ArcGISImageServiceVectorLayer", "esri.layers.ArcGISTiledMapServiceLayer", "ClusterLayer"];
         this.gtQueries = [];
         this.gtQueryUrls = [];
         var options = [];
-        for (var i = 0; i < this.opLayers._layerInfos.length; i++) {
-          var supportsDL = true;
-          var OpLyr = this.opLayers._layerInfos[i];
-          var originOpLayer;
-
-          if (OpLyr.originOperLayer) {
-            originOpLayer = OpLyr.originOperLayer;
-            var lyrType = originOpLayer.layerType;
-            if (typeof (lyrType) === 'undefined') {
-              if (OpLyr.layerObject) {
-                lyrType = OpLyr.layerObject.type;
+        var rootLayerIDs = [];
+        for (var i = 0; i < layerInfos.length; i++) {
+          var layerInfo = layerInfos[i];
+          var supportsDL = layerInfo.layerObject.hasOwnProperty('supportsDynamicLayers') ?
+            layerInfo.layerObject.supportsDynamicLayers : true;
+          var type = layerInfo.layerObject.declaredClass;
+          var itemId;
+          //some FC return this others return FeatureLayer
+          if (type === "esri.layers.FeatureCollection") {
+            itemId = layerInfo.isItemLayer();
+            itemId = itemId.itemId || itemId;
+          } else if (type === "esri.layers.FeatureLayer" || type === 'FeatureLayer'){
+            op_layer_loop:
+            for (var b = 0; b < this.opLayers.length; b++) {
+              var opLayer = this.opLayers[b];
+              if (opLayer && opLayer.id && (opLayer.id === layerInfo.id || layerInfo.id.indexOf(opLayer.id) > -1)) {
+                type = opLayer.type;
+                if (type === 'Feature Collection') {
+                  itemId = opLayer.itemId;
+                }
+                break op_layer_loop;
               }
-            }
-            if (supportedLayerTypes.indexOf(lyrType) === -1) {
-              continue;
             }
           }
 
-          if (OpLyr.newSubLayers.length > 0) {
-            var hasNested = this.checkNestedGroups(OpLyr.newSubLayers);
-            if (!hasNested) {
-              var subLayers = OpLyr.newSubLayers;
-              var parentID;
-              if (originOpLayer.type === "KML") {
-                subLayers = originOpLayer.layerObject.getLayers();
-                parentID = originOpLayer.id;
+          var hasMultiSubLayers = false;
+          if (layerInfo.newSubLayers && layerInfo.newSubLayers.length && layerInfo.newSubLayers.length > 0) {
+            sub_layer_loop:
+            for (var g = 0; g < layerInfo.newSubLayers.length; g++) {
+              var lInfo = layerInfo.newSubLayers[g];
+              if (lInfo.newSubLayers && lInfo.newSubLayers.length && lInfo.newSubLayers.length > 0) {
+                hasMultiSubLayers = true;
+                break sub_layer_loop;
               }
-              this._recurseOpLayers(subLayers, options, parentID);
-            } else {
-              continue;
             }
-          } else if (OpLyr.featureCollection) {
-            if (OpLyr.layers.length > 1) {
-              this._recurseOpLayers(OpLyr.layers, options, undefined);
-            }
-          } else if (originOpLayer) {
-            if (originOpLayer.featureCollection) {
-              if (originOpLayer.featureCollection.layers.length > 1) {
-                this._recurseOpLayers(originOpLayer.featureCollection.layers, options, undefined);
-              } else {
-                options.unshift({
-                  label: OpLyr.title,
-                  value: OpLyr.id,
-                  url: undefined,
-                  imageData: OpLyr.imageData,
-                  id: OpLyr.id,
-                  geometryType: originOpLayer.featureCollection.layers[0].layerObject.geometryType,
-                  fields: originOpLayer.featureCollection.layers[0].layerObject.fields,
-                  type: OpLyr.type,
-                  renderer: originOpLayer.featureCollection.layers[0].layerObject.renderer,
-                  itemId: originOpLayer.itemId,
-                  infoTemplate: originOpLayer ? this._getInfoTemplate(originOpLayer) : undefined,
-                  lyrType: "Feature Collection",
-                  panelImageData: OpLyr.panelImageData,
-                  supportsDynamic: supportsDL
-                });
-              }
-            } else {
-              if (typeof (OpLyr.layerObject.geometryType) === 'undefined') {
-                this.setGeometryType(OpLyr.layerObject);
-              }
+          }
 
-              if (OpLyr && OpLyr.resourceInfo) {
-                supportsDL = OpLyr.resourceInfo.supportsDynamicLayers;
-              }
+          if (!hasMultiSubLayers && unSupportedLayerTypes.indexOf(type) === -1){
+            var rootLayerInfo = layerInfo.getRootLayerInfo();
+            if (rootLayerIDs.indexOf(rootLayerInfo.id) === -1) {
+              rootLayerIDs.push(rootLayerInfo.id);
+              var parentLayerIDs = [];
+              var parentLayerTitles = [];
+              rootLayerInfo.traversal(lang.hitch(this, function (subLayerInfo) {
+                //check if this is a parent layer
+                if (subLayerInfo.newSubLayers && subLayerInfo.newSubLayers.length > 0) {
+                  //may not need to do this if we can use the layerInfo object to control
+                  // layer visibility up the chain
+                  parentLayerTitles = [];
+                  parentLayerIDs = [];
+                  if (parentLayerIDs.indexOf(rootLayerInfo.id) === -1) {
+                    parentLayerIDs.push(rootLayerInfo.id);
+                  }
+                  if (parentLayerIDs.indexOf(subLayerInfo.id) === -1) {
+                    parentLayerIDs.push(subLayerInfo.id);
+                    parentLayerTitles.unshift(subLayerInfo.title);
+                  }
+                } else {
+                  //geomType is necessary for getting and showing symbol options
+                  if (typeof (subLayerInfo.layerObject.geometryType) === 'undefined') {
+                    this.setGeometryType(subLayerInfo.layerObject);
+                  }
 
-              options.unshift({
-                label: OpLyr.title,
-                value: OpLyr.id,
-                url: OpLyr.layerObject.url,
-                imageData: OpLyr.imageData,
-                id: OpLyr.id,
-                type: OpLyr.type,
-                renderer: OpLyr.layerObject.renderer,
-                geometryType: OpLyr.layerObject.geometryType,
-                fields: OpLyr.layerObject.fields,
-                infoTemplate: originOpLayer ? this._getInfoTemplate(originOpLayer) : undefined,
-                lyrType: "Map Service Layer",
-                panelImageData: OpLyr.panelImageData,
-                supportsDynamic: supportsDL
-              });
-            }
-          } else {
-            if (typeof (OpLyr.layerObject.geometryType) === 'undefined') {
-              this.setGeometryType(OpLyr.layerObject);
-            }
+                  var url = subLayerInfo.getUrl();
 
-            if (OpLyr && OpLyr.resourceInfo) {
-              supportsDL = OpLyr.resourceInfo.supportsDynamicLayers;
-            }
+                  var lyrType;
+                  if (url) {
+                    lyrType = url.indexOf('MapServer') > -1 ? "Map Service Layer" : "";
+                  } else if (type === "esri.layers.FeatureCollection" || type === "Feature Collection") {
+                    lyrType = "Feature Collection";
+                  } else {
+                    lyrType = "";
+                  }
 
-            options.unshift({
-              label: OpLyr.title,
-              value: OpLyr.id,
-              url: OpLyr.layerObject.url,
-              imageData: OpLyr.imageData,
-              id: OpLyr.id,
-              type: OpLyr.type,
-              renderer: OpLyr.layerObject.renderer,
-              geometryType: OpLyr.layerObject.geometryType,
-              fields: OpLyr.layerObject.fields,
-              lyrType: "",
-              infoTemplate: originOpLayer ? this._getInfoTemplate(originOpLayer) : undefined,
-              panelImageData: OpLyr.panelImageData,
-              supportsDynamic: supportsDL
-            });
+                  //changed from unshift to push
+                  options.push({
+                    label: parentLayerTitles.length > 0 ?
+                      (parentLayerTitles.join("-") + "-" + subLayerInfo.title) : subLayerInfo.title,
+                    value: subLayerInfo.id,
+                    url: url,
+                    imageData: subLayerInfo.imageData,
+                    id: subLayerInfo.id,
+                    geometryType: subLayerInfo.layerObject.geometryType,
+                    fields: subLayerInfo.layerObject.fields,
+                    _type: type, //NEW type is set...check BC
+                    renderer: subLayerInfo.layerObject.renderer,
+                    itemId: itemId,
+                    infoTemplate: subLayerInfo.getInfoTemplate(),
+                    lyrType: lyrType,
+                    panelImageData: subLayerInfo.panelImageData,
+                    supportsDynamic: supportsDL,
+                    oidFieldName: subLayerInfo.layerObject.objectIdField, //NEW...check BC
+                    parentLayerIDs: parentLayerIDs,//NEW...check BC
+                    parentLayerID: rootLayerInfo.id, //keeping for BC
+                    subLayerId: url ? parseInt(url.substr(url.lastIndexOf('/') + 1), 10) : undefined,
+                    scaleRange: subLayerInfo.getScaleRange(),//NEW...check BC
+                    selfType: subLayerInfo.originOperLayer.selfType//NEW...check BC
+                  });
+                }
+              }));
+            }
           }
         }
 
@@ -386,6 +474,7 @@ define([
           html.removeClass(this.btnAddLayer, "btn-add-section enable");
           html.addClass(this.btnAddLayer, "btn-add-section-disabled");
           queryList.then(lang.hitch(this, function (queryResults) {
+            var deleteIds = [];
             if (queryResults) {
               if (queryResults.length > 0) {
                 for (var q = 0; q < queryResults.length; q++) {
@@ -399,20 +488,25 @@ define([
                     }
                   }
                   if (typeof (lIdx) !== 'undefined') {
-                    this.layer_options[lIdx].geometryType = resultInfo.geometryType;
-                    if (typeof (resultInfo.drawingInfo) !== 'undefined') {
-                      this.layer_options[lIdx].renderer = resultInfo.drawingInfo.renderer;
-                      this.layer_options[lIdx].drawingInfo = resultInfo.drawingInfo;
-                      this.layer_options[lIdx].fields = resultInfo.fields;
+                    if (resultInfo.geometryType) {
+                      this.layer_options[lIdx].geometryType = resultInfo.geometryType;
+                      if (typeof (resultInfo.drawingInfo) !== 'undefined') {
+                        this.layer_options[lIdx].renderer = resultInfo.drawingInfo.renderer;
+                        this.layer_options[lIdx].drawingInfo = resultInfo.drawingInfo;
+                        this.layer_options[lIdx].fields = resultInfo.fields;
 
-                      var f;
-                      for (var ii = 0; ii < resultInfo.fields.length; ii++) {
-                        f = resultInfo.fields[ii];
-                        if (f.type === "esriFieldTypeOID") {
-                          break;
+                        var f;
+                        for (var ii = 0; ii < resultInfo.fields.length; ii++) {
+                          f = resultInfo.fields[ii];
+                          if (f.type === "esriFieldTypeOID") {
+                            break;
+                          }
                         }
+                        this.layer_options[lIdx].oidFieldName = f.name;
                       }
-                      this.layer_options[lIdx].oidFieldName = f;
+                    } else {
+                      //some layers from the traffic service don't have a geom type or fields
+                      deleteIds.push(lIdx);
                     }
                   }
                 }
@@ -421,18 +515,16 @@ define([
                 html.addClass(this.btnAddLayer, "btn-add-section enable");
               }
             }
+            array.forEach(deleteIds.reverse(), lang.hitch(this, function (id) {
+              this.layer_options.splice(id, 1);
+            }));
+            def.resolve();
           }));
+        } else {
+          def.resolve();
         }
         this.layer_options = lang.clone(options);
-      },
-
-      checkNestedGroups: function (group) {
-        for (var i = 0; i < group.length; i++) {
-          if (group[i].newSubLayers && group[i].newSubLayers.length > 0) {
-            return true;
-          }
-        }
-        return false;
+        return def;
       },
 
       setConfig: function (config) {
@@ -468,10 +560,14 @@ define([
           this.hidePanelOptions.set('checked', this.hidePanel);
           this.panelCountOptions.set('disabled', this.hidePanel);
           this.panelIconOptions.set('disabled', this.hidePanel);
+          this.expandListOptions.set('disabled', this.hidePanel);
+          this.showAllFeaturesOptions.set('disabled', this.hidePanel);
 
           if (this.hidePanel) {
             html.addClass(this.panelIconOptionsLabel, 'text-disabled');
             html.addClass(this.panelCountOptionsLabel, 'text-disabled');
+            html.addClass(this.expandListOptionsLabel, 'text-disabled');
+            html.addClass(this.showAllFeaturesOptionsLabel, 'text-disabled');
             if (domClass.contains(this.hidePanelHelpText, 'help-off')) {
               html.removeClass(this.hidePanelHelpText, 'help-off');
             }
@@ -479,6 +575,8 @@ define([
           } else {
             html.removeClass(this.panelIconOptionsLabel, 'text-disabled');
             html.removeClass(this.panelCountOptionsLabel, 'text-disabled');
+            html.removeClass(this.expandListOptionsLabel, 'text-disabled');
+            html.removeClass(this.showAllFeaturesOptionsLabel, 'text-disabled');
             if (domClass.contains(this.hidePanelHelpText, 'help-on')) {
               html.removeClass(this.hidePanelHelpText, 'help-on');
             }
@@ -488,19 +586,25 @@ define([
           if (this.config.displayPanelIcon) {
             this.panelIconOptions.set('checked', this.config.displayPanelIcon);
           }
+          if (this.config.expandList) {
+            this.expandListOptions.set('checked', this.config.expandList);
+          }
+
+          var showAllFeatures = typeof (this.config.showAllFeatures) === 'undefined' ?
+            false : this.config.showAllFeatures;
+          this.showAllFeaturesOptions.set('checked', showAllFeatures);
 
           this.displayLayerTable.clear();
           this.isInitalLoad = true;
-          this.layerLoadCount = 0;
           for (var i = 0; i < this.config.layerInfos.length; i++) {
             var lyrInfo = this.config.layerInfos[i];
             this._populateLayerRow(lyrInfo, i);
-            this.layerLoadCount += 1;
           }
           this._updateLayerLists();
           var rows = this.displayLayerTable.getRows();
           for (var r = 0; r < rows.length; r++) {
             this._updateLayerListRows(true, rows[r]);
+            this._updateRefresh(rows[r]);
           }
           if (this.displayLayerTable.getRows().length < this.layer_options.length) {
             html.removeClass(this.btnAddLayer, "btn-add-section-disabled");
@@ -508,6 +612,83 @@ define([
           } else {
             html.addClass(this.btnAddLayer, "btn-add-section-disabled");
             html.removeClass(this.btnAddLayer, "btn-add-section enable");
+          }
+        }
+      },
+
+      //added for backwards compatability
+      //could not handle directly in VersionManager as some stored layerInfos
+      // do not have a valid infoTemplate saved
+      _upgradeFields: function () {
+        if (this.config.layerInfos) {
+          for (var i = 0; i < this.config.layerInfos.length; i++) {
+            var li = this.config.layerInfos[i];
+            if (li && li.symbolData && li.symbolData.featureDisplayOptions) {
+              var lyrInfo = this.operLayerInfos.getLayerInfoById(li.id);
+              var fields = li.symbolData.featureDisplayOptions.fields;
+              //At previous releases we would use the first field from the infoTemplate or
+              //the first non-OID field from the layer if no fields were selected by the user
+              if (typeof (fields) === 'undefined' || (fields.hasOwnProperty('length') && fields.length === 0)) {
+                //check layer fields
+                var layerObject = (lyrInfo && lyrInfo.layerObject) ? lyrInfo.layerObject : undefined;
+                var oidFieldName = (layerObject && layerObject.objectIdField) ? layerObject.objectIdField : undefined;
+                var firstLayerFieldName = "";
+                var firstLayerFieldAlias = "";
+                var layerFields = li.fields ? li.fields : layerObject ? layerObject.fields : undefined;
+                if (layerFields && layerFields.length > 0) {
+                  layer_field_loop:
+                  for (var _i = 0; _i < layerFields.length; _i++) {
+                    var f = layerFields[_i];
+                    if (firstLayerFieldName === "" && f.type !== "esriFieldTypeOID" &&
+                      f.type !== "esriFieldTypeGeometry" && f.name !== oidFieldName) {
+                      firstLayerFieldName = f.name;
+                      firstLayerFieldAlias = f.alias || f.name;
+                    }
+                    if (!oidFieldName) {
+                      oidFieldName = f.type === "esriFieldTypeOID" ? f.name : undefined;
+                    }
+                    if (oidFieldName && firstLayerFieldName !== "") {
+                      break layer_field_loop;
+                    }
+                  }
+                }
+
+                //check popup fields
+                var keyFieldName = "";
+                var keyFieldAlias = "";
+                var infoTemplate = li.infoTemplate && li.infoTemplate.info && li.infoTemplate.info.fieldInfos ?
+                  li.infoTemplate : lyrInfo ? lyrInfo.getInfoTemplate() : undefined;
+                if (!infoTemplate) {
+                  var subLayers = lyrInfo.getSubLayers();
+                  sub_layers_loop:
+                  for (var sli = 0; sli < subLayers.length; sli++) {
+                    var sl = subLayers[sli];
+                    if (sl.title && sl.layerObject && sl.layerObject.name && sl.title === sl.layerObject.name) {
+                      infoTemplate = sl.getInfoTemplate ? sl.getInfoTemplate() : infoTemplate;
+                      break sub_layers_loop;
+                    }
+                  }
+                }
+                var popupFields = infoTemplate ? infoTemplate.info.fieldInfos : [];
+                popup_field_loop:
+                for (var j = 0; j < popupFields.length; j++) {
+                  var popupField = popupFields[j];
+                  if (popupField && popupField.visible) {
+                    if (!oidFieldName || oidFieldName !== popupField.fieldName) {
+                      keyFieldName = popupField.fieldName;
+                      keyFieldAlias = popupField.label || popupField.fieldName;
+                      break popup_field_loop;
+                    }
+                  }
+                }
+
+                //update the config
+                this.config.layerInfos[i].symbolData.featureDisplayOptions.fields = [{
+                  name: keyFieldName ? keyFieldName : firstLayerFieldName,
+                  label: keyFieldName ? keyFieldAlias : firstLayerFieldAlias
+                }];
+              }
+            }
           }
         }
       },
@@ -643,11 +824,11 @@ define([
         if (result.success && result.tr) {
           var tr = result.tr;
           html.addClass(tr.cells[2], "displayOptions");
+          //this._addLayerDropDown(tr, layerInfo, addFromButtonClick);
           this._addLayersOption(tr);
           this._addLabelOption(tr);
           this._addRefreshOption(tr);
-          //tr.selectLayers.set("value", this.oldConfig === true ? lyrInfo.id : lyrInfo.label);
-          tr.selectLayers.set("value", lyrInfo.id);
+          tr.selectLayers.set("value", lyrInfo.id, !this.isInitalLoad);
           tr.labelText.set("value", lyrInfo.label);
           tr.refreshBox.set("checked", lyrInfo.refresh);
           tr.imageData = lyrInfo.panelImageData;
@@ -668,6 +849,7 @@ define([
           cLo.symbolData = lyrInfo.symbolData;
           tr.symbolData = lyrInfo.symbolData;
           this._updateLayerLists();
+          this.validateFields(tr.symbolData, tr);
         }
       },
 
@@ -704,17 +886,100 @@ define([
             this._updateRefresh(tr);
             this._updateLayerLists();
             this._updateLayerListRows(true, tr);
-            if (!this.isInitalLoad) {
-              this._addDefaultSymbol(tr);
-              tr.labelText.set('value', "");
-            }
-            this.layerLoadCount -= 1;
-            if (this.layerLoadCount === 0) {
-              this.isInitalLoad = false;
-            }
+            this._addDefaultSymbol(tr);
+            tr.labelText.set('value', "");
           })));
         }
       },
+
+      //////////////////////////////////////////////////////////////////////////////////////
+      //TODO Consider adding this stuff
+      // provides a better experience for selecting sub-layers
+      // make sure we can re-populate with what we have
+      // make sure we can catch and prevent adding duplicates
+      //_addLayerDropDown: function (tr, selectedLayer, addFromButtonClick) {
+      //  var td, layerChooserFromMapArgs, layerSelector, layerChooserFromMap;
+      //  if (tr.layerSelector) {
+      //    tr.layerSelector.destroy();
+      //  }
+      //  //create layerChooser args
+      //  layerChooserFromMapArgs = this._createLayerChooserMapArgs();
+      //  layerChooserFromMap = new LayerChooserFromMap(layerChooserFromMapArgs);
+      //  layerChooserFromMap.startup();
+
+      //  td = dojoQuery('.simple-table-cell', tr)[0];
+      //  domClass.add(td, "esriCTLayerInputCell");
+
+      //  layerSelector =
+      //    new LayerChooserFromMapWithDropbox({ layerChooser: layerChooserFromMap });
+      //  layerSelector.placeAt(td);
+      //  layerSelector.startup();
+
+      //  tr.layerSelector = layerSelector;
+
+      //  if (selectedLayer) {
+      //    //setSelectedLayer in rows layerSelector
+      //    layerSelector.setSelectedLayer(selectedLayer);
+      //    this._addLayer(tr, selectedLayer, addFromButtonClick);
+      //  }
+      //  this.own(on(layerSelector, 'selection-change',
+      //    lang.hitch(this, function (updatedLayer) {
+      //      //if selected layer is valid then update the selected layer in layer dropdown
+      //      if (updatedLayer && updatedLayer.length > 0 && updatedLayer[0] &&
+      //        updatedLayer[0].hasOwnProperty('id')) {
+      //        if (tr.layerInfo && updatedLayer[0].id !== tr.layerInfo.id) {
+      //          this._updateLayer(tr, updatedLayer);
+      //        }
+      //      }
+      //      //if selected layer is not valid remove it form the row and show error message
+      //      else {
+      //        this._errorMessage(this.nls.errorMsg.errorInSelectingLayer);
+      //        this._deleteLayer(tr);
+      //        this._addLayerTable.deleteRow(tr);
+      //      }
+      //    })));
+      //},
+
+      //_createLayerChooserSelect: function (bindEvent) {
+      //  if (this.layerChooserSelect) {
+      //    this.layerChooserSelect.destroy();
+      //  }
+      //  this.layerChooserSelect = null;
+
+      //  var layerChooserFromMap = new EditablePointFeatureLayerChooserFromMap({
+      //    multiple: false,
+      //    showLayerFromFeatureSet: false,
+      //    showTable: false,
+      //    onlyShowVisible: false,
+      //    createMapResponse: this.map.webMapResponse
+      //  });
+      //  layerChooserFromMap.startup();
+
+      //  this.layerChooserSelect = new LayerChooserFromMapSelect({
+      //    layerChooser: layerChooserFromMap
+      //  });
+      //  this.layerChooserSelect.placeAt(this.layerTd);
+      //  this.layerChooserSelect.startup();
+      //  if (bindEvent) {
+      //    this.own(on(this.layerChooserSelect, 'selection-change', lang.hitch(this, this._onLayerChanged)));
+      //  }
+      //},
+
+      //_onLayerChanged: function () {
+      //  var item = this.layerChooserSelect.getSelectedItem();
+      //  if (!item) {
+      //    return;
+      //  }
+
+      //  //TODO work through what all to do here
+      //  var jimuLayerInfo = item.layerInfo;
+      //  var jimuLayerObject = item.layerInfo.layerObject;
+
+      //  //var defaultLayerInfo = this._getDefaultLayerInfo(this.jimuLayerObject);
+      //  //var configLayerInfo = this._getLayerInfoFromConfiguration(this.jimuLayerObject);
+      //  //this.layerInfo = configLayerInfo || defaultLayerInfo;
+      //},
+      //////////////////////////////////////////////////////////////////////////////////////
 
       _updateLayerListRows: function (rowDeleted, tr) {
         var s;
@@ -733,7 +998,6 @@ define([
         }
 
         var rows = this.displayLayerTable.getRows();
-        rows_loop:
         for (var i = 0; i < rows.length; i++) {
           var row = rows[i];
           var value = row.selectLayers.value;
@@ -762,9 +1026,8 @@ define([
             }
           }
         }
-
         if (typeof (tr) !== 'undefined') {
-          tr.selectLayers.set("value", s);
+          tr.selectLayers.set("value", s, !this.isInitalLoad);
         }
       },
 
@@ -844,7 +1107,7 @@ define([
           refreshCheckBox = tr.refreshBox;
         }
 
-        if (lInfo.lyrType === 'Feature Collection') {
+        if (lInfo.lyrType === 'Feature Collection' && typeof (lInfo.itemId) !== 'undefined') {
           refreshCheckBox.set('disabled', false);
           refreshCheckBox.set('title', this.nls.enableRefresh);
         } else {
@@ -912,6 +1175,7 @@ define([
               this.curRow.cells[2].removeChild(s);
             }
             this.curRow.symbolData = sourceDijit.symbolInfo;
+            this.validateFields(this.curRow.symbolData, this.curRow);
             a = domConstruct.create("div", { 'class': "imageDataGFX margin2" }, this.curRow.cells[2]);
             if (this.curRow.symbolData.svg !== null &&
               typeof (this.curRow.symbolData.svg) !== 'undefined') {
@@ -927,6 +1191,7 @@ define([
               this.curRow.cells[2].removeChild(s);
             }
             this.curRow.symbolData = lo.symbolData;
+            this.validateFields(this.curRow.symbolData, this.curRow);
             a = domConstruct.create("div", { 'class': "imageDataGFX margin2" }, this.curRow.cells[2]);
             a.appendChild(this.curRow.symbolData.svg);
             this.curRow.imageData = this.curRow.symbolData.panelHTML;
@@ -943,69 +1208,29 @@ define([
         }
       },
 
-      _recurseOpLayers: function (pNode, pOptions, parentID) {
-        var nodeGrp = pNode;
-        array.forEach(nodeGrp, lang.hitch(this, function (Node) {
-          var infoTemplate;
-          if (Node.getImages) {
-            return;
-          }
-          if (Node.newSubLayers && Node.newSubLayers.length > 0) {
-            this._recurseOpLayers(Node.newSubLayers, pOptions, undefined);
-          } else if (Node.featureCollection) {
-            if (Node.layers.length > 1) {
-              this._recurseOpLayers(Node.layers, pOptions, undefined);
-            }
+      validateFields: function (symbolData, tr) {
+        var isValid;
+        if (symbolData && symbolData.featureDisplayOptions && symbolData.featureDisplayOptions.fields) {
+          isValid = symbolData.featureDisplayOptions.fields.length > 0;
+        } else {
+          isValid = false;
+        }
+        var td = query('.simple-table-cell', tr)[4];
+        if (td && !isValid) {
+          if (!tr.errorDiv) {
+            tr.errorDiv = domConstruct.create("div", {
+              'class': "field-error"
+            }, td);
+            tr.errorSpan = domConstruct.create("span", {
+              'class': "jimu-icon jimu-icon-error",
+              title: this.nls.fieldsWarning
+            }, tr.errorDiv);
           } else {
-            if (typeof (Node.layerObject) !== 'undefined') {
-              if (typeof (Node.layerObject.geometryType) === 'undefined') {
-                this.setGeometryType(Node.layerObject);
-              }
-            }
-            var OpLyr2;
-            if (Node.hasOwnProperty("parentLayerInfo")) {
-              if (Node.parentLayerInfo.hasOwnProperty("originOperLayer")) {
-                OpLyr2 = Node.parentLayerInfo.originOperLayer;
-                infoTemplate = this._getInfoTemplate(OpLyr2);
-              }
-            }
-
-            if (Node.originOperLayer) {
-              infoTemplate = this._getInfoTemplate(Node.originOperLayer);
-            }
-
-            var u;
-            var subLayerId;
-            if (Node.layerObject) {
-              if (Node.layerObject.url) {
-                u = Node.layerObject.url;
-                subLayerId = parseInt(u.substr(u.lastIndexOf('/') + 1), 10);
-              }
-            }
-
-            var supportsDL = true;
-            if(OpLyr2 && OpLyr2.resourceInfo){
-              supportsDL = OpLyr2.resourceInfo.supportsDynamicLayers;
-            }
-            pOptions.push({
-              label: Node.title ? Node.title : Node.id,
-              value: Node.id,
-              url: u,
-              imageData: Node.imageData,
-              id: Node.id,
-              parentLayerID: OpLyr2 ? OpLyr2.id : parentID,
-              type: Node.type,
-              itemId: OpLyr2 ? OpLyr2.itemId : undefined,
-              renderer: Node.layerObject ? Node.layerObject.renderer : Node.renderer,
-              geometryType: Node.layerObject ? Node.layerObject.geometryType : Node.geometryType,
-              fields: Node.layerObject ? Node.layerObject.fields : Node.fields,
-              subLayerId: subLayerId,
-              infoTemplate: infoTemplate,
-              lyrType: OpLyr2 ? OpLyr2.type : undefined,
-              supportsDynamic: supportsDL
-            });
+            domStyle.set(tr.errorSpan, 'display', 'inline-block');
           }
-        }));
+        } else if (isValid && tr.errorSpan) {
+          domStyle.set(tr.errorSpan, 'display', 'none');
+        }
       },
 
       _pickSymbol: function (tr) {
@@ -1038,6 +1263,7 @@ define([
             this.curRow.cells[2].removeChild(s);
           }
           this.curRow.symbolData = data;
+          this.validateFields(this.curRow.symbolData, this.curRow);
           var a = domConstruct.create("div", { 'class': "imageDataGFX margin2" }, this.curRow.cells[2]);
           a.appendChild(data.svg);
           this.curRow.imageData = data.panelHTML;
@@ -1056,7 +1282,7 @@ define([
       },
 
       setGeometryType: function (OpLayer) {
-        if (typeof (OpLayer.url) !== 'undefined') {
+        if (OpLayer.url && OpLayer.url.indexOf) {
           if (OpLayer.url.indexOf("MapServer") > -1) {
             this.gtQueries.push(esriRequest({ "url": OpLayer.url + "?f=json" }));
             this.gtQueryUrls.push(OpLayer.url);
@@ -1127,6 +1353,9 @@ define([
         this.config.displayPanelIcon = this.displayPanelIcon;
         this.config.hidePanel = this.hidePanel;
         this.config.continuousRefreshEnabled = this.hidePanel;
+        this.config.expandList = this.expandListOptions.checked;
+        this.config.showAllFeatures = this.showAllFeaturesOptions.checked;
+        this.config.upgradeFields = false;
 
         return this.config;
       },

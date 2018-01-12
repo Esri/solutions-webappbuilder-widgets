@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Activez/désactivez l'affichage du nombre d'entités.",
   "panelIconOptionHelp": "Activez/désactivez l'affichage d'un logo dans le volet principal.",
   "rdoGroupByField": "par champ",
-  "rdoGroupByRenderer": "par moteur de rendu"
+  "rdoGroupByRenderer": "par moteur de rendu",
+  "expandList": "Développer la liste au démarrage",
+  "expandListHelp": "Activez/Désactivez le développement par défaut de la liste.",
+  "chkFeatureDisplay": "Désactiver la liste des entités",
+  "showAllFeaturesHelp": "Activez/Désactivez l'affichage de toutes les entités quelle que soit l'étendue.",
+  "showAllFeatures": "Afficher toutes les entités",
+  "fieldsWarning": "Aucun champ n'est défini dans la fenêtre contextuelle. Facultatif : utilisez l'action de mise à jour pour définir les options d'affichage de volet."
 });

@@ -28,6 +28,7 @@
     lblBlockLocHeader: "Block Locations (0)",
     atLeastOneInputLoc: "At least one Input Location is required.",
     inputTabTitle: "Input",
-    outputTabTitle: "Output"
+    outputTabTitle: "Output",
+    lblSelectAll:"Select All"
   })
 });

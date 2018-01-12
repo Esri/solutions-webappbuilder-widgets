@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Weergave van objecttelling inschakelen/uitschakelen.",
   "panelIconOptionHelp": "Weergave van een logo op het hoofdvenster inschakelen/uitschakelen.",
   "rdoGroupByField": "op veld",
-  "rdoGroupByRenderer": "op renderer"
+  "rdoGroupByRenderer": "op renderer",
+  "expandList": "Lijst uitvouwen bij opstarten",
+  "expandListHelp": "Standaard uitvouwen van de lijst inschakelen/uitschakelen.",
+  "chkFeatureDisplay": "Objectlijst uitschakelen",
+  "showAllFeaturesHelp": "Weergave van alle objecten ongeacht de extent inschakelen/uitschakelen.",
+  "showAllFeatures": "Alle objecten weergeven",
+  "fieldsWarning": "Geen velden gedefinieerd in popup. Optioneel: Gebruik Bewerken om weergave-opties deelvenster te bepalen."
 });

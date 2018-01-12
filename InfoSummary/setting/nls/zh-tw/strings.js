@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "啟用/停用圖徵計數的顯示。",
   "panelIconOptionHelp": "啟用/停用主面板上的標誌顯示。",
   "rdoGroupByField": "按欄位",
-  "rdoGroupByRenderer": "按渲染器"
+  "rdoGroupByRenderer": "按渲染器",
+  "expandList": "啟動時展開清單",
+  "expandListHelp": "啟用/停用清單的預設展開。",
+  "chkFeatureDisplay": "停用圖徵清單",
+  "showAllFeaturesHelp": "啟用/停用所有圖徵的顯示，不論範圍為何。",
+  "showAllFeatures": "顯示所有圖徵",
+  "fieldsWarning": "快顯視窗未定義欄位。選用: 使用編輯動作來定義面板顯示選項。"
 });

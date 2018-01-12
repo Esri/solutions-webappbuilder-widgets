@@ -3,18 +3,8 @@
   height: 100%;
 }
 
-.jimu-widget-SAT-setting .tabs-section-Label {
-  font-weight: bold;
-}
-
-.jimu-widget-SAT-setting .general-setting-Label {
-  padding-top: 15px;
-  font-weight: bold;
-}
-
-.jimu-widget-SAT-setting .currentlySelectedLayer {
-  padding-top: 15px; 
-  padding-left:15px;
+.jimu-widget-SAT-setting .select-units {
+  width: 70%;
 }
 
 .jimu-widget-SAT-setting .pad-row15 {
@@ -29,10 +19,6 @@
   margin-left: 10px;
 }
 
-/*.jimu-widget-SAT-setting .tpd {
-  margin-right: 15px;
-}*/
-
 .jimu-widget-SAT-setting .chk_display {
   padding-top: 15px; 
   padding-bottom: 15px;
@@ -43,8 +29,7 @@
 }
 
 .jimu-widget-SAT-setting .chk_snapshot {
-  padding-top: 15px; 
-  padding-bottom: 15px;
+
 }
 
 .jimu-widget-SAT-setting .snapshot-checkbox {
@@ -244,11 +229,7 @@
 }
 
 .jimu-widget-SAT-setting .div_edit_options {
-  padding-left: 10px;
-}
-
-.jimu-rtl .jimu-widget-SAT-setting .div_edit_options {
-  padding-right: 10px;
+  padding-top: 5px;
 }
 
 .jimu-widget-SAT-setting .edit_options {
@@ -256,16 +237,169 @@
 }
 
 .jimu-widget-SAT-setting .td-padding {
-  padding-bottom: 10px;
-  padding-left: 10px;
+  padding-bottom: 5px;
+  padding-left: 5px;
 }
 
 .jimu-rtl .jimu-widget-SAT-setting .td-padding {
-  padding-bottom: 10px;
+  padding-bottom: 5px;
+  padding-right: 5px;
+}
+
+.jimu-widget-SAT-setting .pad-right-10 {
   padding-right: 10px;
 }
 
-.jimu-widget-SAT-setting .select-width {
-  width: 100%;
+.jimu-rtl .jimu-widget-SAT-setting .pad-right-10 {
+  padding-left: 10px;
 }
 
+
+.jimu-widget-SAT-setting .select-width {
+  width: 250px;
+}
+
+.jimu-widget-SAT-setting .select-width .dijitSelectLabel {
+  max-width: 250px;
+  text-overflow: ellipsis;
+  text-align: left;
+  overflow: hidden;
+}
+
+.jimu-rtl .jimu-widget-SAT-setting .select-width .dijitSelectLabel {
+  max-width: 250px;
+  text-overflow: ellipsis;
+  text-align: right;
+  overflow: hidden;
+}
+
+.jimu-widget-SAT-setting .hintText {
+  font-size: 12px;
+  color: #a0acbf;
+  font-style: oblique;
+}
+
+/*report*/
+.jimu-widget-SAT-setting .fieldSet {
+  height: auto;
+  width: 100%;
+  border: 1px solid #a0acbf;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #596679;
+  margin-bottom: 10px;
+  min-width: 0px;
+}
+
+.jimu-widget-SAT-setting .downloadTabFieldSet {
+  padding: 15px 0px;
+}
+
+.jimu-widget-SAT-setting .fieldSetLegend {
+  margin-left: 20px;
+}
+
+.jimu-widget-SAT-setting .col-pad-12 {
+  padding-left: 12px;
+}
+
+.jimu-rtl .jimu-widget-SAT-setting .col-pad-12 {
+  padding-right: 12px;
+}
+
+
+.jimu-widget-SAT-setting .settingsContainer {
+  margin-left: auto;
+  margin-right: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  width: 98%;
+}
+
+.jimu-rtl .jimu-widget-SAT-setting .settingsContainer {
+  margin-right: auto;
+  margin-left: 0px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  width: 98%;
+}
+
+.jimu-widget-SAT-setting .downloadTabInputContainer {
+  width: 100%;
+  float: left;
+  margin-bottom: 15px;
+}
+
+.jimu-widget-SAT-setting .downloadTabLabel {
+  width: 35%;
+  line-height: 30px;
+  float: left;
+  clear: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.jimu-widget-SAT-setting .downloadTabTextbox {
+  width: 55%;
+  float: left;
+}
+
+.jimu-widget-SAT-setting .downloadTabSetButton {
+  width: 8%;
+  float: left;
+  margin-left: 17px;
+  line-height: 28px;
+}
+
+.jimu-widget-SAT-setting .downloadTabLabel {
+  width: 35%;
+  line-height: 30px;
+  float: left;
+  clear: left;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.jimu-widget-SAT-setting .logoChooserDiv {
+  width: 65%;
+  float: left;
+}
+
+.jimu-widget-SAT-setting .imageChooserPreviewContainer {
+  position: relative;
+}
+
+.jimu-widget-SAT-setting .imageChooserPreview {
+  position: absolute;
+  height: 55px;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+.jimu-widget-SAT-setting .imageChooserContent {
+  height: 50px !important;
+  width: 50px !important;
+}
+
+.jimu-widget-SAT-setting .hint {
+  margin: 5px 5px 10px 0px;
+  float: left;
+  font-size: 12px;
+  color: #a0acbf;
+  font-style: oblique;
+}
+
+.jimu-widget-SAT-setting .footnoteTextArea {
+  width: 65% !important;
+  padding: 5px !important;
+  float: right;
+  color: #596679;
+}
+
+.jimu-widget-SAT-setting .textColorContainer{
+  padding-top: 10px;
+}
+
+/*report*/

@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "フィーチャ数の表示を有効化/無効化します。",
   "panelIconOptionHelp": "メイン パネル上のロゴの表示を有効化/無効化します。",
   "rdoGroupByField": "フィールド",
-  "rdoGroupByRenderer": "レンダリング"
+  "rdoGroupByRenderer": "レンダリング",
+  "expandList": "起動時にリストを展開",
+  "expandListHelp": "リストのデフォルトの展開を有効化/無効化します。",
+  "chkFeatureDisplay": "フィーチャ リストの無効化",
+  "showAllFeaturesHelp": "範囲に関係なく、すべてのフィーチャの表示を有効化/無効化します。",
+  "showAllFeatures": "すべてのフィーチャを表示",
+  "fieldsWarning": "ポップアップにフィールドが定義されていません。 オプション: パネル表示オプションを定義するには、編集アクションを使用してください。"
 });

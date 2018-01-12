@@ -2,7 +2,7 @@ define({
   "addLayer": "Pievienot slāni",
   "layerName": "Slānis",
   "layerRefresh": "Atjaunot",
-  "layerLabel": "Etiķete",
+  "layerLabel": "Nosaukums",
   "actions": "Darbības",
   "mainPanelTextPlaceholder": "ār.: pēdējā atjaunināšana:",
   "invalidInterval": "Drīkst izmantot tikai pozitīvus veselus skaitļus",
@@ -13,7 +13,7 @@ define({
   "mainPanelText": "Galvenā paneļa teksts",
   "mainPanelIcon": "Galvenā paneļa attēls",
   "refreshIntervalInstruction": "Atsvaidzināt slāņus ik pēc:",
-  "optionsText": "Varianti",
+  "optionsText": "Iespējas",
   "symbolOptionsText": "Kartes simboloģija",
   "iconOptionsText": "Paneļa simboloģija",
   "sympolPopupTitle": "Parādīt iestatījumus",
@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Elementu skaita rādīšanas iespējošana/atspējošana.",
   "panelIconOptionHelp": "Logotipa rādīšanas galvenajā panelī iespējošana/atspējošana.",
   "rdoGroupByField": "pēc lauka",
-  "rdoGroupByRenderer": "pēc renderētāja"
+  "rdoGroupByRenderer": "pēc renderētāja",
+  "expandList": "Izvērst sarakstu startēšanas laikā",
+  "expandListHelp": "Aktivizējiet/deaktivizējiet saraksta noklusējuma izvēršanu.",
+  "chkFeatureDisplay": "Deaktivizēt elementu sarakstu",
+  "showAllFeaturesHelp": "Aktivizējiet/deaktivizējiet visu elementu rādīšanu neatkarīgi no pārklājuma.",
+  "showAllFeatures": "Rādīt visus elementus",
+  "fieldsWarning": "Uznirstošajā lodziņā nav definēti lauki. Papildiespēja: izmantojiet rediģēšanas darbību, lai definētu paneļa rādīšanas opcijas."
 });

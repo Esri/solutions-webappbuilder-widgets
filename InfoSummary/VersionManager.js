@@ -136,6 +136,28 @@ function (BaseVersionManager) {
         }
         return oldConfig;
       }
+    }, {
+      version: '2.2',
+      upgrader: function (oldConfig) {
+        return oldConfig;
+      }
+    }, {
+      version: '2.3',
+      upgrader: function (oldConfig) {
+        return oldConfig;
+      }
+    }, {
+      version: '2.4',
+      upgrader: function (oldConfig) {
+        return oldConfig;
+      }
+    },{
+      version: '2.5',
+      upgrader: function (oldConfig) {
+        var newConfig = oldConfig;
+        newConfig.upgradeFields = true;
+        return newConfig;
+      }
     }];
   }
 

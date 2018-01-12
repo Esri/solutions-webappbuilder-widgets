@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Aktivér/deaktivér visning af objekttællinger.",
   "panelIconOptionHelp": "Aktivér/deaktivér visning af et logo på hovedpanelet.",
   "rdoGroupByField": "efter felt",
-  "rdoGroupByRenderer": "efter gengivelse"
+  "rdoGroupByRenderer": "efter gengivelse",
+  "expandList": "Udvid liste ved start",
+  "expandListHelp": "Aktivér/Deaktivér standardudvidelse af liste.",
+  "chkFeatureDisplay": "Deaktivér objektliste",
+  "showAllFeaturesHelp": "Aktivér/Deaktivér visning af alle objekter uanset indhold.",
+  "showAllFeatures": "Vis alle objekter",
+  "fieldsWarning": "Ingen felter defineret i pop-up. Valgfrit: Brug redigeringshandling til at definere panelvisningsindstillinger."
 });

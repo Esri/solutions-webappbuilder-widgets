@@ -1,5 +1,3 @@
-@import url('http://js.arcgis.com/3.12/dijit/themes/claro/claro.css');
-
 @media only screen and (min-device-width : 320px) and (max-device-width : 1024px)
 {
     html
@@ -83,7 +81,7 @@
     width: 40px;
     height: 40px;
     background-repeat: no-repeat;
-    background-image: url("../images/add-barriers-select .png");
+    background-image: url("../images/add-barriers-select.png");
     background-color: #858585;
     background-size: 40px 40px;
 }
@@ -192,6 +190,7 @@
 {
     background-image: url("../images/skip.png");
     background-color: #666666;
+    border-radius:2px;
 }
 
 .resultItemButtonSkipIconSelected
@@ -507,6 +506,18 @@
     font-family: Avenir LT 35 Light;
     width: 100%;
     border-bottom: 1px solid #F5F5F5;
+}
+.jimu-widget-NetworkTrace .esriCTSelectAll
+{
+    padding: 10px 0px 10px 0px;
+    clear: both;
+    float: left;
+    height: 40px;
+    color: #3e3e3e;
+    font-size: 14px;
+    font-family: Avenir LT 35 Light;
+    width: 100%;
+    cursor: pointer; cursor: hand;
 }
 
 .jimu-widget-NetworkTrace .esriCTWidth

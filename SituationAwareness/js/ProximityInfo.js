@@ -79,6 +79,8 @@ define([
       this.incident = null;
       this.graphicsLayer = null;
       this.specialFields = {};
+      this.typeIdField = "";
+      this.types = [];
       this.dateFields = {};
       this.config = parent.config;
       this.baseLabel = tab.label !== "" ? tab.label : tab.layerTitle ? tab.layerTitle : tab.layers;
@@ -91,6 +93,7 @@ define([
     //but we should not have to do that so frequently
 
     queryTabCount: function (incidents, buffers, updateNode, displayCount) {
+      var def = new Deferred();
       this.incidentCount = incidents.length;
       var tabLayers = [this.tab.tabLayers[0]];
       if (this.mapServiceLayer && this.tab.tabLayers.length > 1) {
@@ -103,12 +106,24 @@ define([
             var tempFL;
             if (typeof (this.tab.tabLayers[0].infoTemplate) !== 'undefined') {
               this.summaryLayer = this.tab.tabLayers[0];
-              this.summaryFields = this._getFields(this.summaryLayer);
-              tempFL = new FeatureLayer(this.summaryLayer.url);
-              tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
-              tabLayers = [tempFL];
-              this.tab.tabLayers = tabLayers;
-              this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+              if (this.summaryLayer.hasOwnProperty('loaded') && this.summaryLayer.loaded) {
+                this.summaryFields = this._getFields(this.summaryLayer);
+                this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                  def.resolve(r);
+                });
+              } else {
+                tempFL = new FeatureLayer(this.summaryLayer.url);
+                tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
+                tabLayers = [tempFL];
+                this.tab.tabLayers = tabLayers;
+                on(tempFL, "load", lang.hitch(this, function () {
+                  this.summaryLayer = tempFL;
+                  this.summaryFields = this._getFields(this.summaryLayer);
+                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
+                }));
+              }
             } else {
               if (!this.loading) {
                 tempFL = new FeatureLayer(this.tab.tabLayers[0].url);
@@ -132,7 +147,10 @@ define([
                   }
                   this.tab.tabLayers = [tempFL];
                   this.loading = false;
-                  this._performQuery(incidents, buffers, updateNode, displayCount, this.tab.tabLayers);
+                  this._performQuery(incidents, buffers, updateNode, displayCount,
+                    this.tab.tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
                 }));
               }
             }
@@ -140,11 +158,15 @@ define([
         }
       }
       if (!this.mapServiceLayer) {
-        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+          def.resolve(r);
+        });
       }
+      return def;
     },
 
     _performQuery: function (incidents, buffers, updateNode, displayCount, tabLayers) {
+      var def = new Deferred();
       var defArray = [];
       var geom;
       var prevArray;
@@ -183,7 +205,9 @@ define([
           }
         }
         this.updateTabCount(length, updateNode, displayCount);
+        def.resolve(length);
       }));
+      return def;
     },
 
     updateTabCount: function (count, updateNode, displayCount) {
@@ -205,12 +229,14 @@ define([
       var isSnapShot = typeof (snapShot) !== 'undefined';
       var def;
       array.forEach(this.tab.tabLayers, lang.hitch(this, function (tab) {
-        if (typeof (tab.empty) !== 'undefined' && tab.url) {
-          var tempFL = new FeatureLayer(tab.url);
+        if (isSnapShot) {
+          def = new Deferred();
+        }
+        if (tab.url) {
+          var tempFL = new FeatureLayer(tab.url, { mode: FeatureLayer.MODE_ONDEMAND, infoTemplate: tab.infoTemplate });
           on(tempFL, "load", lang.hitch(this, function () {
             this.tab.tabLayers = [tempFL];
             if (isSnapShot) {
-              def = new Deferred();
               this.processIncident(incidents, distance, graphicsLayer, snapShot).then(lang.hitch(this,
                 function (results) {
                 def.resolve(results);
@@ -224,7 +250,6 @@ define([
           }));
         } else {
           if (isSnapShot) {
-            def = new Deferred();
             this.processIncident(incidents, distance, graphicsLayer, snapShot).then(lang.hitch(this,
               function (results) {
               def.resolve(results);
@@ -338,6 +363,7 @@ define([
       for (var i = 0; i < inc_buffers.length; i++) {
         var query = new Query();
         query.returnGeometry = true;
+        query.outSpatialReference = this.parent.map.spatialReference;
         query.geometry = inc_buffers[i].buffer;
         if (this.parent.config.csvAllFields === "true" || this.parent.config.csvAllFields === true) {
           query.outFields = ['*'];
@@ -364,11 +390,7 @@ define([
               if (Array.isArray(inc_geom)) {
                 var dist_;
                 for (var c = 0; c < inc_geom.length; c++) {
-                  var pp = inc_geom[c];
-                  if (pp.type !== 'point') {
-                    pp = inc_geom[c].getExtent().getCenter();
-                  }
-                  var _dist = analysisUtils.getDistance(pp, geom, this.parent.config.distanceUnits);
+                  var _dist = analysisUtils.getDistance(inc_geom[c], geom, this.parent.config.distanceUnits);
                   if (typeof (dist_) === 'undefined' || _dist < dist_) {
                     dist_ = _dist;
                   }
@@ -378,11 +400,7 @@ define([
                   DISTANCE: dist_
                 };
               } else {
-                var p = inc_geom;
-                if (inc_geom.type !== 'point') {
-                  p = inc_geom.getExtent().getCenter();
-                }
-                dist = analysisUtils.getDistance(p, geom, this.parent.config.distanceUnits);
+                dist = analysisUtils.getDistance(inc_geom, geom, this.parent.config.distanceUnits);
                 newAttr = {
                   DISTANCE: dist
                 };
@@ -413,7 +431,9 @@ define([
             analysisResults: results.length,
             context: this
           };
-          def.resolve(finalResults);
+          this._processResults(results, true).then(lang.hitch(this, function (reportResults) {
+            def.resolve(lang.mixin(finalResults, reportResults));
+          }));
         }
       }), lang.hitch(this, function (err) {
         console.error(err);
@@ -424,35 +444,45 @@ define([
       }
     },
 
-    _processResults: function (results) {
-      this.container.innerHTML = "";
-      domClass.remove(this.container, "loading");
-      this.graphicsLayer.clear();
-      if (results[0].geometry.type !== 'point') {
-        for (var gi = results.length - 1; gi >= 0; gi--){
-          var ext = results[gi].geometry.getExtent();
-          if (typeof (ext) === 'undefined') {
-            results.splice(gi, 1);
+    _processResults: function (results, report) {
+      var def;
+      var tpc;
+      var hasResults = results && results.length > 0;
+      if (hasResults) {
+        if (results[0].geometry.type !== 'point') {
+          for (var gi = results.length - 1; gi >= 0; gi--) {
+            var ext = results[gi].geometry.getExtent();
+            if (typeof (ext) === 'undefined') {
+              results.splice(gi, 1);
+            }
           }
         }
       }
 
-      var tpc = domConstruct.create("div", {
-        "class": "SAT_tabPanelContent"
-      }, this.container);
+      if (report) {
+        def = new Deferred();
+      } else {
+        this.container.innerHTML = "";
+        domClass.remove(this.container, "loading");
+        this.graphicsLayer.clear();
+        if (hasResults) {
+          tpc = domConstruct.create("div", {
+            "class": "SAT_tabPanelContent"
+          }, this.container);
+
+          var div_results_extra = domConstruct.create("div", {}, tpc);
+          domClass.add(div_results_extra, "SATcolExport");
+          domClass.add(div_results_extra, this.parent.lightTheme ? 'lightThemeBorder' : 'darkThemeBorder');
+          var div_exp = domConstruct.create("div", {
+            title: this.parent.nls.downloadCSV
+          }, div_results_extra);
+          domClass.add(div_exp, "btnExport");
+          on(div_exp, "click", lang.hitch(this, this._exportToCSV, results));
+        }
+      }
 
       var unit = this.parent.config.distanceUnits;
       var units = this.parent.nls[unit];
-
-      var div_results_extra = domConstruct.create("div", {}, tpc);
-      domClass.add(div_results_extra, "SATcolExport");
-      domClass.add(div_results_extra, this.parent.lightTheme ? 'lightThemeBorder' : 'darkThemeBorder');
-      var div_exp = domConstruct.create("div", {
-        title: this.parent.nls.downloadCSV
-      }, div_results_extra);
-      domClass.add(div_exp, "btnExport");
-      on(div_exp, "click", lang.hitch(this, this._exportToCSV, results));
-
       var displayFields;
       if (typeof (this.tab.advStat) !== 'undefined' &&
         typeof (this.tab.advStat.stats) !== 'undefined' &&
@@ -501,107 +531,126 @@ define([
       }
 
       var _w = 220;
-      for (var i = 0; i < results.length; i++) {
-        var num = i + 1;
-        var gra = results[i];
-        var geom = gra.geometry;
-        var loc = geom;
-        if (geom.type !== "point") {
-          loc = geom.getExtent().getCenter();
-        }
-        var attr = gra.attributes;
-        var distLbl;
-        if (this.incidents[0].geometry.type === "point") {
-          var dist = attr.DISTANCE;
-          distLbl = (Math.round(dist * 100) / 100) + " " + units + " (" + this.parent.nls.approximate + ")";
-        }
-        var info = "";
-        var c = 0;
-        for (var prop in attr) {
-          if (prop !== "DISTANCE" && c < 3) {
-            if (typeof (displayFields) !== 'undefined') {
-              for (var ij = 0; ij < displayFields.length; ij++) {
-                var field = displayFields[ij];
-                if (field.expression === prop) {
-                  var fVal = analysisUtils.getFieldValue(prop, attr[prop], this.specialFields,
-                    this.dateFields, 'longMonthDayYear');
-                  var value;
-                  if (typeof (fVal) !== 'undefined' && fVal !== null) {
-                    value = utils.stripHTML(fVal.toString());
-                  } else {
-                    value = "";
-                  }
-                  var label;
-                  if (gra._layer && gra._layer.fields) {
-                    var cF = analysisUtils.getField(gra._layer.fields, prop);
-                    if (cF) {
-                      label = cF.alias;
+      var reportResults = [];
+      if(hasResults){
+        for (var i = 0; i < results.length; i++) {
+          var num = i + 1;
+          var gra = results[i];
+          var geom = gra.geometry;
+          var loc = geom;
+          if (geom.type !== "point") {
+            loc = geom.getExtent().getCenter();
+          }
+          var attr = gra.attributes;
+          var distLbl;
+          if (this.incidents[0].geometry.type === "point") {
+            var dist = attr.DISTANCE;
+            distLbl = (Math.round(dist * 100) / 100) + " " + units + " (" + this.parent.nls.approximate + ")";
+          }
+          var info = "";
+          var c = 0;
+          var row = [];
+          if (typeof (displayFields) !== 'undefined') {
+            for (var ij = 0; ij < displayFields.length; ij++) {
+              var field = displayFields[ij];
+              for (var prop in attr) {
+                if (prop !== "DISTANCE" && c < 3) {
+                  if (field.expression === prop) {
+                    var fVal = analysisUtils.getFieldValue(prop, attr[prop], this.specialFields,
+                      this.dateFields, 'longMonthDayYear', this.typeIdField, this.types);
+                    var value;
+                    if (typeof (fVal) !== 'undefined' && fVal !== null) {
+                      value = utils.stripHTML(fVal.toString());
+                    } else {
+                      value = "";
                     }
+                    var label;
+                    var _fields = (gra._layer && gra._layer.fields) ? gra._layer.fields :
+                      (this.tab.tabLayers && this.tab.tabLayers[0]) ? this.tab.tabLayers[0].fields : undefined;
+                    if (_fields) {
+                      var cF = analysisUtils.getField(_fields, prop);
+                      if (cF) {
+                        label = cF.alias;
+                      }
+                    }
+                    if (typeof (label) === 'undefined' || label in ['', ' ', null, undefined]) {
+                      label = prop;
+                    }
+                    if (analysisUtils.isURL(value)) {
+                      value = '<a href="' + value + '" target="_blank" style="color: inherit;">' + label + '</a>';
+                    } else if (analysisUtils.isEmail(value)) {
+                      value = '<a href="mailto:' + value + '" style="color: inherit;">' + label + '</a>';
+                    }
+                    info += (value + "<br/>");
+                    c += 1;
+                    row.push({ label: label, value: value });
                   }
-                  if (typeof (label) === 'undefined' || label in ['', ' ', null, undefined]) {
-                    label = prop;
-                  }
-                  if (analysisUtils.isURL(value)) {
-                    value = '<a href="' + value + '" target="_blank" style="color: inherit;">' + label + '</a>';
-                  } else if (analysisUtils.isEmail(value)) {
-                    value = '<a href="mailto:' + value + '" style="color: inherit;">' + label + '</a>';
-                  }
-                  info += (value + "<br/>");
-                  c += 1;
                 }
               }
             }
+            if (row.length > 0) {
+              reportResults.push(row);
+            }
+          }
+
+          if (!report) {
+            var div = domConstruct.create("div", {}, tpc);
+            domClass.add(div, "SATcolRec");
+            domClass.add(div, this.parent.lightTheme ? 'lightThemeBorder' : 'darkThemeBorder');
+
+            var div1 = domConstruct.create("div", {}, div);
+            domClass.add(div1, "SATcolRecBar");
+
+            var div2 = domConstruct.create("div", {
+              innerHTML: num
+            }, div1);
+            domClass.add(div2, "SATcolRecNum");
+            domStyle.set(div2, "backgroundColor", this.parent.config.activeColor);
+            on(div2, "click", lang.hitch(this, this._zoomToLocation, loc));
+
+            if (distLbl) {
+              var div3 = domConstruct.create("div", {
+                innerHTML: distLbl
+              }, div1);
+              domClass.add(div3, "SATcolDistance");
+            }
+
+            if (this.parent.config.enableRouting) {
+              var div4 = domConstruct.create("div", { title: this.parent.nls.get_directions }, div1);
+              domClass.add(div4, "SATcolDir");
+              on(div4, "click", lang.hitch(this, this._routeToIncident, loc));
+            }
+
+            var div5 = domConstruct.create("div", {
+              'class': 'SATcolWrap',
+              innerHTML: info
+            }, div);
+            domClass.add(div5, "SATcolInfo");
+
+            _w += domGeom.position(div).w;
+
+            var sls = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
+              new Color.fromString(this.parent.config.activeMapGraphicColor), 1);
+            var sms = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 24, sls,
+              new Color.fromString(this.parent.config.activeMapGraphicColor));
+            var fnt = new Font();
+            fnt.family = "Arial";
+            fnt.size = "12px";
+            var symText = new TextSymbol(num, fnt, new esriColor(this.parent.config.fontColor));
+            symText.setOffset(0, -4);
+            this.graphicsLayer.add(new Graphic(loc, sms, attr));
+            this.graphicsLayer.add(new Graphic(loc, symText, attr));
           }
         }
-
-        var div = domConstruct.create("div", {}, tpc);
-        domClass.add(div, "SATcolRec");
-        domClass.add(div, this.parent.lightTheme ? 'lightThemeBorder' : 'darkThemeBorder');
-
-        var div1 = domConstruct.create("div", {}, div);
-        domClass.add(div1, "SATcolRecBar");
-
-        var div2 = domConstruct.create("div", {
-          innerHTML: num
-        }, div1);
-        domClass.add(div2, "SATcolRecNum");
-        domStyle.set(div2, "backgroundColor", this.parent.config.activeColor);
-        on(div2, "click", lang.hitch(this, this._zoomToLocation, loc));
-
-        if (distLbl) {
-          var div3 = domConstruct.create("div", {
-            innerHTML: distLbl
-          }, div1);
-          domClass.add(div3, "SATcolDistance");
-        }
-
-        if (this.parent.config.enableRouting) {
-          var div4 = domConstruct.create("div", { title: this.parent.nls.get_directions }, div1);
-          domClass.add(div4, "SATcolDir");
-          on(div4, "click", lang.hitch(this, this._routeToIncident, loc));
-        }
-
-        var div5 = domConstruct.create("div", {
-          'class': 'SATcolWrap',
-          innerHTML: info
-        }, div);
-        domClass.add(div5, "SATcolInfo");
-
-        _w += domGeom.position(div).w;
-
-        var sls = new SimpleLineSymbol(SimpleLineSymbol.STYLE_SOLID,
-          new Color.fromString(this.parent.config.activeMapGraphicColor), 1);
-        var sms = new SimpleMarkerSymbol(SimpleMarkerSymbol.STYLE_CIRCLE, 24, sls,
-          new Color.fromString(this.parent.config.activeMapGraphicColor));
-        var fnt = new Font();
-        fnt.family = "Arial";
-        fnt.size = "12px";
-        var symText = new TextSymbol(num, fnt, new esriColor(this.parent.config.fontColor));
-        symText.setOffset(0, -4);
-        this.graphicsLayer.add(new Graphic(loc, sms, attr));
-        this.graphicsLayer.add(new Graphic(loc, symText, attr));
       }
-      domStyle.set(tpc, 'width', _w + 'px');
+      if (!report && hasResults) {
+        domStyle.set(tpc, 'width', _w + 'px');
+      } else {
+        def.resolve({
+          reportResults: reportResults
+        });
+        return def;
+      }
     },
 
     _exportToCSV: function (results, snapShot, downloadAll, analysisResults) {
@@ -623,6 +672,9 @@ define([
       var fieldDetails = analysisUtils.getFields(layer, this.tab, this.allFields, this.parent);
       this.dateFields = fieldDetails.dateFields;
       this.specialFields = fieldDetails.specialFields;
+      this.typeIdField = fieldDetails.typeIdField;
+      this.types = fieldDetails.types;
+      this.displayFields = analysisUtils.getDisplayFields(this.tab);
       return fieldDetails.fields;
     },
 

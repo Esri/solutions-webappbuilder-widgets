@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "启用/禁用要素计数显示。",
   "panelIconOptionHelp": "启用/禁用主面板上的徽标显示。",
   "rdoGroupByField": "按字段",
-  "rdoGroupByRenderer": "按渲染器"
+  "rdoGroupByRenderer": "按渲染器",
+  "expandList": "启动时展开列表",
+  "expandListHelp": "启用/禁用默认展开列表。",
+  "chkFeatureDisplay": "禁用要素列表",
+  "showAllFeaturesHelp": "启用/禁用所有要素显示(不考虑范围)。",
+  "showAllFeatures": "显示所有要素",
+  "fieldsWarning": "弹出窗口中未定义任何字段。可选：使用编辑操作可定义面板显示选项。"
 });

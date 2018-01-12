@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "피처 개수 보기를 활성화/비활성화합니다.",
   "panelIconOptionHelp": "기본 패널에서 로고 보기를 활성화/비활성화합니다.",
   "rdoGroupByField": "필드 기준",
-  "rdoGroupByRenderer": "렌더러 기준"
+  "rdoGroupByRenderer": "렌더러 기준",
+  "expandList": "시작 시 목록 확장",
+  "expandListHelp": "목록의 기본 확장을 활성화/비활성화합니다.",
+  "chkFeatureDisplay": "피처 목록 비활성화",
+  "showAllFeaturesHelp": "범위에 관계없이 모든 피처 보기를 활성화/비활성화합니다.",
+  "showAllFeatures": "모든 피처 보기",
+  "fieldsWarning": "팝업에 정의된 필드가 없습니다. 선택: 패널 디스플레이 옵션을 정의하려면 편집 작업을 사용합니다."
 });

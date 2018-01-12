@@ -4,19 +4,19 @@
   "2D": true,
   "3D": false,
   "platform": "HTML",
-  "version": "2.3",
-  "wabVersion": "2.3",
+  "version": "2.7",
+  "wabVersion": "2.7",
   "author": "Esri Inc",
   "description": "SituationAwareness",
   "copyright": "Copyright 2016 Esri Inc.",
   "license": "http://links.esri.com/solutions/license",
   "properties": {
-      "inPanel": false,
-      "hasConfig": true,
-      "hasUIFile": true,
-      "supportMultiInstance": false,
-      "keepConfigAfterMapSwitched": false
-    },
+    "inPanel": false,
+    "hasConfig": true,
+    "hasUIFile": true,
+    "supportMultiInstance": false,
+    "keepConfigAfterMapSwitched": false
+  },
   "featureActions": [{
     "name": "ActionLabel",
     "uri": "SetAsIncident"

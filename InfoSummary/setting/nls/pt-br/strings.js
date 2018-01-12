@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Habilitar/Desabilitar visualização da contagem de feições.",
   "panelIconOptionHelp": "Habilitar/Desabilitar visualização de um logo no painel principal.",
   "rdoGroupByField": "por campo",
-  "rdoGroupByRenderer": "por renderizador"
+  "rdoGroupByRenderer": "por renderizador",
+  "expandList": "Expandir Lista na Inicialização",
+  "expandListHelp": "Habilitar/Desabilitar expansão de lista padrão.",
+  "chkFeatureDisplay": "Desabilitar Lista de Feição",
+  "showAllFeaturesHelp": "Habilitar/Desabilitar a exibição de todas as feições, independentemente da extensão.",
+  "showAllFeatures": "Mostrar Todas as Feições",
+  "fieldsWarning": "Nenhum campo definido no pop-up. Opcional: Utilize a ação de edição para definir as opções de exibição do painel."
 });

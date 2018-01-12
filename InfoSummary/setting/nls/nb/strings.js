@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Aktiver/deaktiver visning av antall geoobjekter.",
   "panelIconOptionHelp": "Aktiver/deaktiver visning av en logo på hovedpanelet.",
   "rdoGroupByField": "etter felt",
-  "rdoGroupByRenderer": "etter opptegner"
+  "rdoGroupByRenderer": "etter opptegner",
+  "expandList": "Utvid liste ved oppstart",
+  "expandListHelp": "Aktiver/deaktiver standardinnstillingen for utvidelse av listen",
+  "chkFeatureDisplay": "Deaktiver geoobjektliste",
+  "showAllFeaturesHelp": "Aktiver/deaktiver visning av alle geoobjekter uavhengig av utstrekning.",
+  "showAllFeatures": "Vis alle geoobjekter",
+  "fieldsWarning": "Ingen felt definert i popup. Valgfritt: Bruk redigeringsfunksjonen til å definere alternativer for panelvisning."
 });

@@ -2,7 +2,7 @@
   <div data-dojo-attach-point="panelBottom" class="panelBottom">
 
     <!-- Panel Footer -->
-    <div data-dojo-attach-point="footerNode" class="SA_panelFooter jimu-main-background">
+    <div data-dojo-attach-point="footerNode" class="SA_panelFooter dart-bgcolor box-bgcolor jimu-main-background">
       <div data-dojo-attach-point="panelLeft" class="SA_panelLeft" data-dojo-attach-event="onclick:_navTabsLeft"></div>
       <div data-dojo-attach-point="footerContentNode" class="SA_panelFooterContent">
         <!-- Tabs -->
@@ -13,11 +13,11 @@
     </div>
 
     <!--Panel Container -->
-    <div data-dojo-attach-point="panelContainer" class="panelContainer jimu-main-background">
+    <div data-dojo-attach-point="panelContainer" class="panelContainer dart-bgcolor box-bgcolor jimu-main-background">
       <!-- Panel Incident -->
       <div data-dojo-attach-point="innerBL" class="innerBL" data-dojo-attach-event="onclick:_navLeft"></div>
       <div data-dojo-attach-point="SA_tabPanel0" class="SAT_tabPanel">
-        <div class="SAT_tabPanelContent" style="min-width: 680px">
+        <div class="SAT_tabPanelContent" style="min-width: 650px">
           <div data-dojo-attach-point="incidentsLocate" class="SATcolLocate" style="width:auto; min-width:220px">
             <div data-dojo-attach-point="locateIncident" class="label locateIncident"></div>
             <div data-dojo-attach-point="clearIncident" class="label clearIncident" data-dojo-attach-event="onclick:_clear">
@@ -45,6 +45,7 @@
           </div>
           <div data-dojo-attach-point="saveOptions" class="SATcol2">
           </div>
+          <div data-dojo-attach-point="borderCol" class="borderCol display-off"></div>
           <div data-dojo-attach-point="div_reverse_geocoding" class="SATcol reverseGeocodingDIV">
             <div class="label">
               ${nls.reverse_geocoded_address}

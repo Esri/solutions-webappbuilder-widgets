@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Įjungti / išjungti elementų skaičiaus rodymą.",
   "panelIconOptionHelp": "Įjungti / išjungti logotipo pagrindiniame skydelyje rodymą.",
   "rdoGroupByField": "pagal lauką",
-  "rdoGroupByRenderer": "pagal atvaizdavimą"
+  "rdoGroupByRenderer": "pagal atvaizdavimą",
+  "expandList": "Išplėsti sąrašą paleidžiant",
+  "expandListHelp": "Įjungti / išjungti numatytąjį sąrašo išplėtimą.",
+  "chkFeatureDisplay": "Išjungti elementų sąrašą",
+  "showAllFeaturesHelp": "Įjungti / išjungti visų elementų rodymą, nepaisant aprėpties.",
+  "showAllFeatures": "Rodyti visus elementus",
+  "fieldsWarning": "Iššokančiame lange laukai neapibrėžti. Neprivaloma: naudodami redagavimo veiksmą apibrėžkite skydelio rodymo parinktis."
 });

@@ -1,6 +1,0 @@
-{
-  "coordinateconversion": {
-      "zoomScale": 50000,
-      "initialCoords": ["DDM", "DMS", "MGRS", "UTM"]
-  }
-}

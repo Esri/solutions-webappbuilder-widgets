@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "تمكين/تعطيل عرض تعدادات المعلم",
   "panelIconOptionHelp": "تمكين/تعطيل عرض الشعارات في اللوحة الرئيسية.",
   "rdoGroupByField": "بواسطة الحقل",
-  "rdoGroupByRenderer": "بواسطة جهاز العرض"
+  "rdoGroupByRenderer": "بواسطة جهاز العرض",
+  "expandList": "توسيع القائمة عند بدء التشغيل",
+  "expandListHelp": "تمكين/تعطيل التوسيع الافتراضي للقائمة.",
+  "chkFeatureDisplay": "تعطيل قائمة المعالم",
+  "showAllFeaturesHelp": "تمكين/تعطيل عرض كل المعالم دون التقيُّد بالمدى.",
+  "showAllFeatures": "عرض كل المعالم",
+  "fieldsWarning": "لا توجد معالم معرفة في العنصر المنبثق. اختياريًا: استخدم إجراءات التحرير لتعريف لوحة خيارات العرض."
 });

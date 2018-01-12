@@ -260,11 +260,13 @@ function (declare,
         }
       }));
       if (this.layerList.layerObject.empty) {
-        var tempFL = new FeatureLayer(this.layerList.layerObject.url);
-        on(tempFL, "load", lang.hitch(this, function () {
-          this._completeMapLayers(tempFL, test);
-          def.resolve('sucess');
-        }));
+        if (this.layerList.layerObject.url) {
+          var tempFL = new FeatureLayer(this.layerList.layerObject.url);
+          on(tempFL, "load", lang.hitch(this, function () {
+            this._completeMapLayers(tempFL, test);
+            def.resolve('sucess');
+          }));
+        }
       } else {
         this._completeMapLayers(this.layerList, test);
         def.resolve('sucess');
@@ -354,29 +356,29 @@ function (declare,
                 var maxCount = this.callerTab.type === 'summary' ? 21 : 4;
                 var x = 0;
                 field_loop:
-                  for (var i = 0; i < fll; i++) {
-                    var add = false;
-                    var f = this.fieldsList[i];
-                    if (hasPopupFields) {
-                      var popupField = this.popUpFields[i];
-                      popup_field_loop:
-                        for (var ii = 0; ii < this.fieldsList.length; ii++) {
-                          f = this.fieldsList[ii];
-                          if (f.value === popupField) {
-                            add = true;
-                            break popup_field_loop;
-                          }
-                        }
-                    }
-                    if (add) {
-                      x += 1;
-                      if (x < maxCount) {
-                        this._addTabRow(f);
-                      } else {
-                        break field_loop;
+                for (var i = 0; i < fll; i++) {
+                  var add = false;
+                  var f = this.fieldsList[i];
+                  if (hasPopupFields) {
+                    var popupField = this.popUpFields[i];
+                    popup_field_loop:
+                    for (var ii = 0; ii < this.fieldsList.length; ii++) {
+                      f = this.fieldsList[ii];
+                      if (f.value === popupField) {
+                        add = true;
+                        break popup_field_loop;
                       }
                     }
                   }
+                  if (add) {
+                    x += 1;
+                    if (x < maxCount) {
+                      this._addTabRow(f);
+                    } else {
+                      break field_loop;
+                    }
+                  }
+                }
               } else {
                 domClass.add(this.btnAddField, 'btn-add-disabled');
                 this.hasFields = false;
@@ -398,13 +400,13 @@ function (declare,
         for (var i = 0; i < this.popUpFields.length; i++) {
           var pf = this.popUpFields[i];
           field_loop:
-            for (var ii = 0; ii < this.fields.length; ii++) {
-              var f = this.fields[ii];
-              if (pf === f.name) {
-                temp_fields.push(f);
-                break field_loop;
-              }
+          for (var ii = 0; ii < this.fields.length; ii++) {
+            var f = this.fields[ii];
+            if (pf === f.name) {
+              temp_fields.push(f);
+              break field_loop;
             }
+          }
         }
 
         //force summary type checks
@@ -515,21 +517,6 @@ function (declare,
             'label': field.alias,
             'value': field.name
           });
-
-          //if (checkPopup) {
-          //  if (this.popUpFields && this.popUpFields.indexOf(field.name) > -1) {
-          //    options.push({
-          //      'label': field.alias,
-          //      'value': field.name
-          //    });
-          //    popupFieldsForType.push(field.name);
-          //  }
-          //} else {
-          //  options.push({
-          //    'label': field.alias,
-          //    'value': field.name
-          //  });
-          //}
         }
       }));
       if (options.length < 1) {
@@ -582,6 +569,7 @@ function (declare,
         if (field) {
           tr.selectFields.set("value", field.value);
         }
+        this._enableOk();
       }
     },
 
@@ -676,6 +664,44 @@ function (declare,
       return skipFields;
     },
 
+    getDefaultFields: function (fields, summaryFields, type) {
+      //similar to updateSummaryType
+      // get the same fields that would be used as the default if
+      // valid fields are found and the user never visits the field picker to explicitly define the fields
+      var advStat = {
+        stats: {
+          fields: [],
+          tabCount: false
+        }
+      };
+      if (type !== "summary" && type !== "groupedSummary") {
+        var flds = [];
+        for (var i = 0; i < (fields.length < 3 ? fields.length : 3); i++) {
+          var field = fields[i];
+          flds.push({
+            value: 0,
+            expression: field.name,
+            label: field.alias
+          });
+        }
+        if (flds.length > 0) {
+          advStat.stats.outFields = flds;
+        }
+      } else if (type === 'summary') {
+        if (summaryFields && summaryFields.hasOwnProperty('length') && summaryFields.length > 0) {
+          advStat.stats.sum = [];
+          array.forEach(summaryFields, lang.hitch(this, function (field) {
+            advStat.stats.sum.push({
+              value: 0,
+              expression: field.name || field.value,
+              label: field.alias ? field.alias : field.label ? field.label : field.name || field.value
+            });
+          }));
+        }
+      }
+      return advStat;
+    },
+
     updateSummaryType: function () {
       var trs = this.displayFieldsTable.getRows();
       if (this.callerTab.type !== "summary" && this.callerTab.type !== "groupedSummary") {
@@ -762,6 +788,16 @@ function (declare,
     chkCountChanged: function (v) {
       if (this.callerTab.type === "summary") {
         this.updateLabel(this.featureCountLabel, v);
+        if (!v) {
+          var trs = this.displayFieldsTable.getRows();
+          if (trs.length === 0) {
+            this._disableOk();
+          } else {
+            this._enableOk();
+          }
+        } else {
+          this._enableOk();
+        }
       }
     },
 
@@ -810,6 +846,30 @@ function (declare,
 
     _rowDeleted: function () {
       this.validateAll();
+      var trs = this.displayFieldsTable.getRows();
+      if (trs.length === 0) {
+        if (this.callerTab.type === "summary" && this.chk_count.checked) {
+          this._enableOk();
+        } else {
+          this._disableOk();
+        }
+      } else {
+        this._enableOk();
+      }
+    },
+
+    _disableOk: function () {
+      var s = query('.field-picker-footer')[0];
+      if (s) {
+        html.addClass(s.children[0], 'jimu-state-disabled');
+      }
+    },
+
+    _enableOk: function () {
+      var s = query('.field-picker-footer')[0];
+      if (s) {
+        html.removeClass(s.children[0], 'jimu-state-disabled');
+      }
     },
 
     destroy: function () {

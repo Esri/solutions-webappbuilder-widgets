@@ -78,6 +78,8 @@ define([
       this.graphicsLayer = null;
       this.map = parent.map;
       this.specialFields = {};
+      this.typeIdField = "";
+      this.types = [];
       this.dateFields = {};
       this.config = parent.config;
       this.baseLabel = tab.label !== "" ? tab.label : tab.layerTitle ? tab.layerTitle : tab.layers;
@@ -95,6 +97,7 @@ define([
     //So it could be possible that the buffer distance exceeds the max distance defined in the config.
     //This would mean that you have a feature in the buffer that is not returned...is this correct?
     queryTabCount: function (incidents, buffers, updateNode, displayCount) { // jshint ignore:line
+      var def = new Deferred();
       this.incidentCount = incidents.length;
       var unit = this.parent.config.distanceUnits;
       var unitCode = this.parent.config.distanceSettings[unit];
@@ -115,12 +118,24 @@ define([
             var tempFL;
             if (typeof (this.tab.tabLayers[0].infoTemplate) !== 'undefined') {
               this.summaryLayer = this.tab.tabLayers[0];
-              this.summaryFields = this._getFields(this.summaryLayer);
-              tempFL = new FeatureLayer(this.summaryLayer.url);
-              tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
-              tabLayers = [tempFL];
-              this.tab.tabLayers = tabLayers;
-              this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+              if (this.summaryLayer.hasOwnProperty('loaded') && this.summaryLayer.loaded) {
+                this.summaryFields = this._getFields(this.summaryLayer);
+                this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                  def.resolve(r);
+                });
+              } else {
+                tempFL = new FeatureLayer(this.summaryLayer.url);
+                tempFL.infoTemplate = this.tab.tabLayers[0].infoTemplate;
+                tabLayers = [tempFL];
+                this.tab.tabLayers = tabLayers;
+                on(tempFL, "load", lang.hitch(this, function () {
+                  this.summaryLayer = tempFL;
+                  this.summaryFields = this._getFields(this.summaryLayer);
+                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
+                }));
+              }
             } else {
               if (!this.loading) {
                 tempFL = new FeatureLayer(this.tab.tabLayers[0].url);
@@ -145,7 +160,9 @@ define([
                   tabLayers = [tempFL];
                   this.tab.tabLayers = tabLayers;
                   this.loading = false;
-                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+                  this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+                    def.resolve(r);
+                  });
                 }));
               }
             }
@@ -153,12 +170,16 @@ define([
         }
       }
       if (!this.mapServiceLayer) {
-        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers);
+        this._performQuery(incidents, buffers, updateNode, displayCount, tabLayers).then(function (r) {
+          def.resolve(r);
+        });
       }
+      return def;
     },
 
     //buffers will be populated with max dist from incidents
     _performQuery: function (incidents, buffers, updateNode, displayCount, tabLayers) { // jshint ignore:line
+      var def = new Deferred();
       var defArray = [];
       var geom;
       var prevArray;
@@ -198,7 +219,9 @@ define([
           }
         }
         this.updateTabCount(length, updateNode, displayCount);
+        def.resolve(length);
       }));
+      return def;
     },
 
     updateTabCount: function (count, updateNode, displayCount) {
@@ -220,12 +243,14 @@ define([
       var isSnapShot = typeof (snapShot) !== 'undefined';
       var def;
       array.forEach(this.tab.tabLayers, lang.hitch(this, function (tab) {
-        if (typeof (tab.empty) !== 'undefined' && tab.url) {
-          var tempFL = new FeatureLayer(tab.url);
+        if (isSnapShot) {
+          def = new Deferred();
+        }
+        if(tab.url){
+          var tempFL = new FeatureLayer(tab.url, { mode: FeatureLayer.MODE_ONDEMAND, infoTemplate: tab.infoTemplate });
           on(tempFL, "load", lang.hitch(this, function () {
             this.tab.tabLayers = [tempFL];
             if (isSnapShot) {
-              def = new Deferred();
               this.processIncident(incidents, distance, graphicsLayer, snapShot).then(lang.hitch(this, function (r) {
                 def.resolve(r);
               }), lang.hitch(this, function (err) {
@@ -238,7 +263,6 @@ define([
           }));
         } else {
           if (isSnapShot) {
-            def = new Deferred();
             this.processIncident(incidents, distance, graphicsLayer, snapShot).then(lang.hitch(this,
               function (results) {
               def.resolve(results);
@@ -290,6 +314,7 @@ define([
       for (var i = 0; i < inc_buffers.length; i++) {
         var query = new Query();
         query.returnGeometry = true;
+        query.outSpatialReference = this.parent.map.spatialReference;
         query.geometry = inc_buffers[i].buffer;
         if (this.parent.config.csvAllFields === "true" || this.parent.config.csvAllFields === true) {
           query.outFields = ['*'];
@@ -310,14 +335,9 @@ define([
             var inc_geom = inc_buffers[r].geometry;
             if (graphics && graphics.length > 0) {
               for (var g = 0; g < graphics.length; g++) {
-                //var gra = graphics[g];
                 var gra = new Graphic(graphics[g].toJson());
                 var geom = gra.geometry;
-                var p = inc_geom;
-                if (inc_geom.type !== 'point') {
-                  p = inc_geom.getExtent().getCenter();
-                }
-                var dist = analysisUtils.getDistance(p, geom, this.parent.config.distanceUnits);
+                var dist = analysisUtils.getDistance(inc_geom, geom, this.parent.config.distanceUnits);
                 var newAttr = {
                   DISTANCE: dist
                 };
@@ -418,23 +438,27 @@ define([
           var info = "";
           var c = 0;
           var row = [];
-          for (var prop in attr) {
-            if (prop !== "DISTANCE" && c < 3) {
-              if (typeof (this.displayFields) !== 'undefined') {
-                for (var ij = 0; ij < this.displayFields.length; ij++) {
-                  var field = this.displayFields[ij];
+          if (typeof (this.displayFields) !== 'undefined') {
+            for (var ij = 0; ij < this.displayFields.length; ij++) {
+              var field = this.displayFields[ij];
+              prop_field_loop:
+              for (var prop in attr) {
+                if (prop !== "DISTANCE" && c < 3) {
+                  //TODO should break this inner loop when the stuff has been set no need to go back through it after
                   if (field.expression === prop) {
                     var fVal = analysisUtils.getFieldValue(prop, attr[prop], this.specialFields,
-                      this.dateFields, 'longMonthDayYear');
+                      this.dateFields, 'longMonthDayYear', this.typeIdField, this.types);
                     var value;
                     if (typeof (fVal) !== 'undefined' && fVal !== null) {
                       value = utils.stripHTML(fVal.toString());
                     } else {
                       value = "";
                     }
-                    var label;
-                    if (gra._layer && gra._layer.fields) {
-                      var cF = analysisUtils.getField(gra._layer.fields, prop);
+                    var label = typeof (field.label) !== 'undefined' ? field.label : undefined;
+                    var _fields = (gra._layer && gra._layer.fields) ? gra._layer.fields :
+                      (this.tab.tabLayers && this.tab.tabLayers[0]) ? this.tab.tabLayers[0].fields : undefined;
+                    if (_fields) {
+                      var cF = analysisUtils.getField(_fields, prop);
                       if (cF) {
                         label = cF.alias;
                       }
@@ -453,6 +477,7 @@ define([
                       value: value.indexOf(',') > -1 ? value.replace(',', '') : value,
                       label: label
                     });
+                    break prop_field_loop;
                   }
                 }
               }
@@ -544,6 +569,8 @@ define([
       var fieldDetails = analysisUtils.getFields(layer, this.tab, this.allFields, this.parent);
       this.dateFields = fieldDetails.dateFields;
       this.specialFields = fieldDetails.specialFields;
+      this.typeIdField = fieldDetails.typeIdField;
+      this.types = fieldDetails.types;
       this.displayFields = analysisUtils.getDisplayFields(this.tab);
       return fieldDetails.fields;
     },

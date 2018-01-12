@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Aktivera/inaktivera visning av antalet geoobjekt.",
   "panelIconOptionHelp": "Aktivera/inaktivera visning av en logotyp på huvudpanelen.",
   "rdoGroupByField": "efter fält",
-  "rdoGroupByRenderer": "efter renderare"
+  "rdoGroupByRenderer": "efter renderare",
+  "expandList": "Expandera lista vid start",
+  "expandListHelp": "Aktivera/inaktivera standardinställningen för expandering av listan.",
+  "chkFeatureDisplay": "Inaktivera geoobjektlista",
+  "showAllFeaturesHelp": "Aktivera/inaktivera visning av alla geoobjekt oavsett utbredning.",
+  "showAllFeatures": "Visa alla geoobjekt",
+  "fieldsWarning": "Inga fält definieras i popupfönstret. Valfritt: Använd redigeringsåtgärden för att definiera panelvisningsalternativen."
 });

@@ -127,7 +127,7 @@ define([
         }
       } else {
         for (i = 0; i < this.inputTypeData.options.length; i++) {
-          if (this.data.name.indexOf(this.inputTypeData.options[i].value) >
+          if (this.data.name.toString().toUpperCase().indexOf(this.inputTypeData.options[i].value.toString().toUpperCase()) >
             -1) {
             this.inputTypeData.set("value", this.inputTypeData.options[
               i].value);

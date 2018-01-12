@@ -56,6 +56,8 @@ define([
   "dojo/promise/all",
   "jimu/dijit/CheckBox",
   "esri/geometry/geometryEngine",
+  "esri/geometry/scaleUtils",
+  "esri/units",
   "esri/dijit/AttributeInspector",
   "dijit/TooltipDialog",
   "jimu/utils",
@@ -104,6 +106,8 @@ define([
   all,
   CheckBox,
   geometryEngine,
+  scaleUtils,
+  Units,
   AttributeInspector,
   TooltipDialog,
   jimuUtils,
@@ -1840,13 +1844,48 @@ define([
     * @params{object}routes: object containing the information of closest route
     * @memberOf widgets/ServiceFeasibility/Widget
     **/
+    getLengthOfGeometry: function (geometry, lengthUnit) {
+      var length, simplifiedGeometry;
+      length = 0;
+      if (geometry.spatialReference) {
+        //Used to get unit of feature, but not needed as if omited, geometry unit is returned
+        //if (lengthUnit == null)
+        //{
+        //  lengthUnit = scaleUtils.getUnitValueForSR(geometry.spatialReference);
+        // }
+        simplifiedGeometry = geometryEngine.simplify(geometry);
+        if (simplifiedGeometry) {
+          //Check if feature's SpatialReference is webMercator or non-webMercator
+          //to calculate length either in geodesic or planar respectively
+          if (geometry.spatialReference.isWebMercator() || geometry.spatialReference
+            .wkid === 4326) {
+            length = geometryEngine.geodesicLength(simplifiedGeometry, lengthUnit);
+          } else {
+            length = geometryEngine.planarLength(simplifiedGeometry, lengthUnit);
+          }
+        }
+        return length;
+      }
+      else {
+        return null;
+      }
+    },
     _showFinalRoute: function (routes) {
       var lineSymbol, finalRoute, pathLine, routeSymbolData,
         routeUnitVal,
         routeLayerInfos = [],
         routeFieldInfo = [],
         variable, resultVariable, result, routeGeometry;
-      variable = routes.attributes.Shape_Length.toString();
+      var lengthUnit = null;
+      if (this.config && this.config.routeLengthEsriUnits && this.config.routeLengthEsriUnits != -1) {
+        lengthUnit = this.config.routeLengthEsriUnits
+      }
+      this._routeLength = this.getLengthOfGeometry(routes.geometry, lengthUnit);
+      if (this._routeLength === null) {
+        this._routeLength = routes.attributes.Shape_Length;
+      }
+      this._routeLength = this._calculateRouteUnit(this._routeLength);
+      variable = this._routeLength;
       if (this.config && this.config.LabelForBox) {
         this.lblForBox.innerHTML = this.config.LabelForBox;
       }
@@ -1863,7 +1902,7 @@ define([
         }
         this._routeCost = routeUnitVal;
       }
-      this._routeLength = this._calculateRouteUnit(routes.attributes.Shape_Length);
+      
       if (this.config && this.config.symbol && this.config.symbol.length &&
         this.config.symbol.length > 0) {
         routeSymbolData = this._getSymbolJson("routeSymbol");
@@ -2102,6 +2141,7 @@ define([
     **/
     _showBusinessDataOnMap: function (queryResult) {
       // when features length inside buffer is grater than 0 show the features on map else show the empty grid with no features on map
+      
       if (queryResult && queryResult.length > 0) {
         this.businessPassedCountValue.innerHTML = queryResult.length;
         this._businessPassed = queryResult.length;
@@ -2131,7 +2171,8 @@ define([
         domClass.add(this.resultListContainer.childNodes[0],
           "esriCTDefaultCursor");
         if (this.ExportToLayer) {
-          domStyle.set(this.ExportToLayer, "display", "none");
+          domStyle.set(this.ExportToLayer, "display", "inline-block");
+          //domStyle.set(this.ExportToLayer, "display", "none");
         }
         this.resultListContainer.disabled = true;
         this._switchToResultPanel();
@@ -2142,6 +2183,7 @@ define([
           "esriCTListLabelArrow");
         domClass.add(this.businessPassedResultListLabel,
           "esriCTListLabelFullWidth");
+        this._setRouteAttributes();
       }
     },
 
@@ -2206,6 +2248,15 @@ define([
             }
             domClass.remove(this.divExportToLayerButtons,
               "esriCTHidePanel");
+            if (this._businessPassed == 0) {
+              domStyle.set(this.businessLayerChkbox, "display",
+                "none");
+            }
+            else {
+              domStyle.set(this.businessLayerChkbox, "display",
+                "block");
+
+            }
           } else if (this.tabContainer.controlNodes[j].innerHTML ===
             this.nls.searchContainerHeading) {
             domClass.replace(this.tabContainer.controlNodes[j],
@@ -2411,7 +2462,10 @@ define([
       } else {
         domClass.add(this.sortIconDiv, "esriCTHidePanel");
         domStyle.set(this.exportToCSVContainer, "display", "none");
-        domStyle.set(this.ExportToLayer, "display", "none");
+        if (this.ExportToLayer) {
+          domStyle.set(this.ExportToLayer, "display", "inline-block");
+          //domStyle.set(this.ExportToLayer, "display", "none");
+        }
       }
     },
 

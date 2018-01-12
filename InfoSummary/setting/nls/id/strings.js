@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Aktifkan/Nonaktifkan tampilan jumlah fitur.",
   "panelIconOptionHelp": "Aktifkan/Nonaktifkan tampilan logo pada panel utama.",
   "rdoGroupByField": "menurut kolom",
-  "rdoGroupByRenderer": "menurut render"
+  "rdoGroupByRenderer": "menurut render",
+  "expandList": "Perluas Daftar pada Startup",
+  "expandListHelp": "Aktifkan/Nonaktifkan perluasan daftar secara default.",
+  "chkFeatureDisplay": "Nonaktifkan Daftar Fitur",
+  "showAllFeaturesHelp": "Aktifkan/Nonaktifkan tampilan semua fitur tanpa memperhatikan jangkauan.",
+  "showAllFeatures": "Tampilkan Semua Fitur",
+  "fieldsWarning": "Tidak ada kolom yang ditentukan dalam popup. Opsional: Gunakan tindakan edit untuk menentukan opsi tampilan panel."
 });

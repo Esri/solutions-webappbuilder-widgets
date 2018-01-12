@@ -1,0 +1,60 @@
+﻿<div>  
+  <div class="jimu-r-row">
+    <table class="width-all">
+      <!--name-->
+      <tr data-dojo-attach-point="nameRow">
+        <td class="col-1-2">
+          <span class="label" data-dojo-attach-point="nameSpan"></span>
+        </td>
+        <td class="col-1-2">
+          <input class="width-all" data-dojo-attach-point="snapshotName" data-dojo-type="dijit/form/ValidationTextBox" />
+        </td>
+      </tr>
+      <!--share-->
+      <tr data-dojo-attach-point="shareRow">
+        <td class="width-all pad-top-10">
+          <span class="hintText">${nls.select_group_instruction}</span>
+        </td>
+        <td class="col-1-2 pad-top-10">
+          <span class="label" data-dojo-attach-point="shareSpan"></span>
+        </td>
+        <td class="col-1-2 pad-top-10">
+          <div data-dojo-attach-point="shareSelect"></div>
+        </td>
+      </tr>
+      <!--orientation-->
+      <tr data-dojo-attach-point="orientationRow">
+        <td class="col-1-2 pad-top-10">
+          <span class="label" data-dojo-attach-point="orientationSpan">${nls.orientation}:</span>
+        </td>
+        <td class="col-1-2 pad-top-10">
+          <div data-dojo-attach-point="orientationSelect"></div>
+        </td>
+      </tr>
+      <!--page size-->
+      <tr data-dojo-attach-point="pageSizeRow">
+        <td class="col-1-2 pad-top-10">
+          <span class="label" data-dojo-attach-point="pageSizeSpan">${nls.pageSize}:</span>
+        </td>
+        <td class="col-1-2 pad-top-10">
+          <div data-dojo-attach-point="pageSizeSelect"></div>
+        </td>
+      </tr>
+    </table>
+  </div>
+  <!--comments-->
+  <div class="display-off pad-top-10" data-dojo-attach-point="commentsRow">
+    <div class="jimu-r-row pad-top-5">
+      <div class="jimu-r-row">
+        <span class="label" data-dojo-attach-point="commentsSpan">${nls.comments}:</span>
+      </div>
+    </div>
+    <div class="jimu-r-row pad-top-5">
+      <textarea class="commentTextArea" data-dojo-attach-point="commentTextArea" rows="5"></textarea>
+    </div>
+  </div>
+  <div class="snapshot-name-footer jimu-float-trailing pad-top-10">
+    <div class="jimu-btn ok pad-right-5 jimu-state-disabled" data-dojo-attach-point="btnOk"></div>
+    <div class="jimu-btn cancel" data-dojo-attach-point="btnCancel"></div>
+  </div>
+</div>

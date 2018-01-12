@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Ativar/Desativar exibição de contagens de elementos.",
   "panelIconOptionHelp": "Ativar/Desativar exibição de um logótipo no painel principal.",
   "rdoGroupByField": "por campo",
-  "rdoGroupByRenderer": "por renderizador"
+  "rdoGroupByRenderer": "por renderizador",
+  "expandList": "Expandir Lista ao Iniciar",
+  "expandListHelp": "Ativar/Desativar expansão automática da lista.",
+  "chkFeatureDisplay": "Desativar Lista de Elementos",
+  "showAllFeaturesHelp": "Ativar/Desativar exibição de todos os elementos, independentemente da extensão.",
+  "showAllFeatures": "Exibir Todos os Elementos",
+  "fieldsWarning": "Não se encontram definidos campos na janela pop-up. Opcional: Utilize a ação editar para definir opções de exibição do painel."
 });

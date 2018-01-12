@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Activaţi/dezactivaţi afişarea numerelor de obiecte spaţiale.",
   "panelIconOptionHelp": "Activaţi/dezactivaţi afişarea unei sigle pe panoul principal.",
   "rdoGroupByField": "după câmp",
-  "rdoGroupByRenderer": "după modul de redare"
+  "rdoGroupByRenderer": "după modul de redare",
+  "expandList": "Extindere listă la pornire",
+  "expandListHelp": "Activaţi/Dezactivaţi extinderea implicită a listei.",
+  "chkFeatureDisplay": "Dezactivare listă obiecte spaţiale",
+  "showAllFeaturesHelp": "Activaţi/Dezactivaţi afişarea tuturor obiectelor spaţiale, indiferent de extindere.",
+  "showAllFeatures": "Afişare toate obiectele spaţiale",
+  "fieldsWarning": "Niciun câmp definit în pop-up. Opţional: Utilizaţi acţiunea de editare pentru a defini opţiunile de afişare în panou."
 });

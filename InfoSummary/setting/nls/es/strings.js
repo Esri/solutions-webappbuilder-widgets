@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Habilita o deshabilita la visualización de los recuentos de entidades.",
   "panelIconOptionHelp": "Habilita o deshabilita la visualización de un logotipo en el panel principal.",
   "rdoGroupByField": "por campo",
-  "rdoGroupByRenderer": "por renderizador"
+  "rdoGroupByRenderer": "por renderizador",
+  "expandList": "Expandir lista al iniciar",
+  "expandListHelp": "Habilite/deshabilite la expansión predeterminada de la lista.",
+  "chkFeatureDisplay": "Deshabilitar lista de entidades",
+  "showAllFeaturesHelp": "Habilite/deshabilite la visualización de todas las entidades con independencia de la extensión.",
+  "showAllFeatures": "Mostrar todas las entidades",
+  "fieldsWarning": "No se han definido campos en el elemento emergente. Opcional: use una acción de edición para definir las opciones de visualización del panel."
 });

@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Włącz/Wyłącz wyświetlanie liczby obiektów.",
   "panelIconOptionHelp": "Włącz/Wyłącz wyświetlanie logo na panelu głównym.",
   "rdoGroupByField": "według pola",
-  "rdoGroupByRenderer": "według modułu renderowania"
+  "rdoGroupByRenderer": "według modułu renderowania",
+  "expandList": "Rozwiń listę przy uruchamianiu",
+  "expandListHelp": "Włącz/wyłącz domyślne rozwijanie listy.",
+  "chkFeatureDisplay": "Wyłącz listę obiektów",
+  "showAllFeaturesHelp": "Włącz/wyłącz wyświetlanie wszystkich obiektów niezależnie od zasięgu.",
+  "showAllFeatures": "Pokaż wszystkie obiekty",
+  "fieldsWarning": "Brak pól zdefiniowanych w oknie podręcznym. Możesz zdefiniować opcje wyświetlania panelu przy użyciu działania edycji."
 });

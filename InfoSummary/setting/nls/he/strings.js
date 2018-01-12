@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "הפעל/השבת תצוגת ספירת ישויות.",
   "panelIconOptionHelp": "הפעל /השבת תצוגה של לוגו בחלונית הראשית.",
   "rdoGroupByField": "לפי שדה",
-  "rdoGroupByRenderer": "לפי Renderer"
+  "rdoGroupByRenderer": "לפי Renderer",
+  "expandList": "הרחב רשימה בעת ההפעלה",
+  "expandListHelp": "הפעל/השבת הרחבת ברירת מחדל של הרשימה.",
+  "chkFeatureDisplay": "‏השבת רשימת ישויות",
+  "showAllFeaturesHelp": "הפעל/השבת תצוגה של כל היישויות, ללא קשר לתיחום.",
+  "showAllFeatures": "הצג את כל היישויות",
+  "fieldsWarning": "לא הוגדרות שדות בחלון המוקפץ. אופציונלי: השתמש בפעולת עריכה כדי להגדיר אפשרויות תצוגה של הפאנל."
 });

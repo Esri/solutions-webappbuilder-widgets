@@ -25,6 +25,7 @@ define({
     captionServiceAreaParameters: "Selection layer settings",
     lblBufferDistanceToGenerateServiceArea: "Buffer distance to generate service area",
     lblBufferUnits: "Buffer units",
+    lblLengthUnits: "Route length conversion units",
     captionClosestFacilityParameters: "Closest facility parameters",
     lblClosestFacilityServiceUrl: "Closest facility service URL",
     btnSet: "Set",
@@ -104,7 +105,8 @@ define({
       esriCTMeters: "Meters",
       esriCTMiles: "Miles",
       esriCTFeets: "Feet",
-      esriCTKilometers: "Kilometers"
+      esriCTKilometers: "Kilometers",
+      defaultUnit: "Default"
     },
     routeLengthroundingOption: {
       oneDecimalName: "one decimal",
@@ -142,6 +144,7 @@ define({
       AttributeParameterValueText2: "Configure attribute parameters from closest facility task.",
       bussinessLayerText: "Hint: Select a results selection layer whose geometry type is same as the selection layer.",
       routeLayerText: "Hint: Select route layer.",
+      lengthUnitsText: "Hint: Select length conversion unit.",
       routeLengthText: "Hint: Select field of route layer to save route length.",
       routeNameFieldText: "Hint: Select route name field.",
       saveBussinessText: "Hint: Select field of route layer to save selection count.",

@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Detay sayısı görüntülemeyi etkinleştirin/devre dışı bırakın.",
   "panelIconOptionHelp": "Ana panel üzerinde logo görüntülemeyi etkinleştirin/devre dışı bırakın.",
   "rdoGroupByField": "alana göre",
-  "rdoGroupByRenderer": "işlemciye göre"
+  "rdoGroupByRenderer": "işlemciye göre",
+  "expandList": "Başlarken Listeyi Genişlet",
+  "expandListHelp": "Listenin varsayılan genişletmesini etkinleştirin/devre dışı bırakın.",
+  "chkFeatureDisplay": "Detay Listesini Devre Dışı Bırak",
+  "showAllFeaturesHelp": "Yayılımdan bağımsız olarak tüm detayların görüntülenmesini etkinleştirin/devre dışı bırakın.",
+  "showAllFeatures": "Tüm Detayları Göster",
+  "fieldsWarning": "Açılır pencerede tanımlı alan yok. İsteğe Bağlı: Panel görüntüleme tercihlerini tanımlamak için düzenleme işlemini kullanın."
 });

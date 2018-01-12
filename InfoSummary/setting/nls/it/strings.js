@@ -50,5 +50,11 @@ define({
   "panelCountOptionHelp": "Abilita/disabilita visualizzazione numero di feature.",
   "panelIconOptionHelp": "Abilita/disabilita visualizzazione di un logo sul pannello principale.",
   "rdoGroupByField": "per campo",
-  "rdoGroupByRenderer": "per renderer"
+  "rdoGroupByRenderer": "per renderer",
+  "expandList": "Espandi elenco all'avvio",
+  "expandListHelp": "Abilitare/disabilitare l'espansione predefinita dell'elenco.",
+  "chkFeatureDisplay": "Disabilita elenco feature",
+  "showAllFeaturesHelp": "Abilitare/disabilitare la visualizzazione di tutte le feature indipendentemente dall'estensione.",
+  "showAllFeatures": "Mostra tutte le feature",
+  "fieldsWarning": "Nessun campo definito nel popup. Optional: impiegare l'azione Modifica per definire le opzioni di visualizzazione del pannello."
 });

@@ -13,7 +13,8 @@
   cursor: pointer;
   font-size: 13px;
   color: #538ec8;
-  margin-top: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .jimu-widget-InfoSummary-setting .btn-add-section-disabled {
@@ -25,7 +26,8 @@
   cursor: default;
   font-size: 13px;
   color: #a0acbf;
-  margin-top: 8px;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .jimu-widget-InfoSummary-setting .jimu-icon-edit {
@@ -125,14 +127,14 @@
   height: auto;
   float: left;
   display: block;
-  padding-bottom: 10px;
+  padding-left: 10px;
 }
 
 .jimu-rtl .jimu-widget-InfoSummary-setting .displayOptionsContainer {
   height: auto;
   float: right;
   display: block;
-  padding-bottom: 10px;
+  padding-right: 10px;
 }
 
 .jimu-widget-InfoSummary-setting .marginLR20 {
@@ -304,11 +306,13 @@
 }
 
 .jimu-widget-InfoSummary-setting .displayOptions {
-  padding-left: 40px !important;
+  padding-left: 40px;
+  padding-right: 0px;
 }
 
 .jimu-rtl .jimu-widget-InfoSummary-setting .displayOptions {
-  padding-right: 40px !important;
+  padding-right: 40px;
+  padding-left: 0px;
 }
 
 .jimu-widget-InfoSummary-setting .symPickers{
@@ -372,11 +376,12 @@
   width: 360px;
   max-height: 130px;
   overflow-y: auto;
+  padding-left: 5px;
+  padding-right: 5px;
 }
 
 .jimu-widget-InfoSummary-setting .groupOptions {
-  position: relative; 
-  margin-top: 15px;
+  position: relative;
 }
 
 .jimu-widget-InfoSummary-setting .groupFieldOptions {
@@ -468,7 +473,12 @@
 
 .jimu-widget-InfoSummary-setting .refreshOptions{
   float:right;
-  padding-bottom: 10px;
+  padding-right: 10px;
+}
+
+.jimu-rtl .jimu-widget-InfoSummary-setting .refreshOptions {
+  float: left;
+  padding-left: 10px;
 }
 
 .jimu-widget-InfoSummary-setting .refreshIntervalTitle{
@@ -580,13 +590,51 @@
 }
 
 .jimu-widget-InfoSummary-setting .groupByOptions {
-  padding-left: 10px;
+ 
 }
 
 .jimu-rtl .jimu-widget-InfoSummary-setting .groupByOptions {
-  padding-right: 10px;
+  
 }
 
 .jimu-widget-InfoSummary-setting .rdoGroupField{
   vertical-align: middle;
+}
+
+.jimu-widget-InfoSummary-setting .fieldSet {
+  height: auto;
+  width: 100%;
+  border: 1px solid #a0acbf;
+  border-radius: 5px;
+  font-size: 14px;
+  color: #596679;
+  margin-bottom: 10px;
+  min-width: 0px;
+}
+
+.jimu-widget-InfoSummary-setting .optionsFieldSet {
+  padding: 15px 0px;
+}
+
+.jimu-widget-InfoSummary-setting .fieldSetLegend {
+  margin-left: 20px;
+}
+
+.jimu-widget-InfoSummary-setting .padBottom20 {
+  padding-bottom: 20px;
+}
+
+.jimu-widget-InfoSummary-setting .feature-display {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+.jimu-widget-InfoSummary-setting .field-error {
+  float: right;
+  line-height: 0;
+}
+
+.jimu-rtl .jimu-widget-InfoSummary-setting .field-error {
+  float: left;
+  line-height: 0;
 }

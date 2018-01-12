@@ -52,6 +52,8 @@ define([
   "jimu/dijit/TabContainer",
   "dojo/dom",
   "dojo/has",
+  'jimu/utils',
+  'jimu/exportUtils',
   "dojo/sniff"
 ], function (
   declare,
@@ -90,7 +92,9 @@ define([
   Query,
   JimuTabContainer,
   dom,
-  has
+  has,
+  utils,
+  exportUtils
 ) {
   return declare([BaseWidget], {
     baseClass: 'jimu-widget-NetworkTrace',
@@ -126,7 +130,7 @@ define([
     _tabContainer: null, // to store object of tab container
     _outputResultCount: 0, // to track count of output service execution
     _outputResultArr: [], // to store output response
-	_numTimesOpened: 0,
+  _numTimesOpened: 0,
     savedLayers: [],
     savedFeatureObjectId: null,
 
@@ -157,6 +161,7 @@ define([
         this.panelManager = PanelManager.getInstance();
         this._enhanceTabThemeStyle();
         this._enhanceDartThemeStyle();
+        this._setTheme();
         widgetPanel = query(".jimu-widget-NetworkTrace")[0];
         if (widgetPanel) {
           style.set(widgetPanel, {
@@ -185,14 +190,28 @@ define([
       }, this.tabContainerNetworkTrace);
       this._tabContainer.startup();
     },
+    /*jshint unused:true */
+    _setTheme: function () {
 
+      var styleLink;
+      if (this.appConfig.theme.name === "DartTheme") {
+        utils.loadStyleLink('dartOverrideCSS', this.folderUrl + "/css/dartTheme.css", null);
+      }
+      else {
+        styleLink = document.getElementById("dartOverrideCSS");
+        if (styleLink) {
+          styleLink.disabled = true;
+        }
+      }
+
+    },
     destroy: function () {
       this._clearResults();
       this._removeAllGraphicLayers();
       this.inherited(arguments);
     },
-	
-	/**
+
+  /**
      * Add back the graphic layers upon opening.
      */
     onOpen: function() {
@@ -214,13 +233,13 @@ define([
       this.inherited(arguments);
     },
 
-	/**
-	 * Adds all graphic layers back to the map if they already exist.  This allows
-	 * multiple instances of the network trace widget to be used in the same application.
-	 *
-	 * @private
-	 */
-	_addGraphicLayersBackToMap: function() {
+  /**
+   * Adds all graphic layers back to the map if they already exist.  This allows
+   * multiple instances of the network trace widget to be used in the same application.
+   *
+   * @private
+   */
+  _addGraphicLayersBackToMap: function() {
       for (var i in this.resultLayers) {
         this.map.addLayer(this.resultLayers[i]);
       }
@@ -240,7 +259,7 @@ define([
       for (var k in this.gpInputDetails) {
         this.map.addLayer(this.gpInputDetails[k]);
       }
-	},
+  },
 
     /**
     * This function will set the display text for run button
@@ -683,6 +702,23 @@ define([
         });
       });
     },
+    _onSelectAllCSV: function () {
+      array.forEach(this.checkBoxCSV, function (checkBox) {
+        //checkBox.setValue(true);
+        checkBox.check();
+      });
+
+
+    },
+    _onSelectAll: function () {
+      array.forEach(this.saveCheckBoxs, function (checkBox) {
+        //checkBox.setValue(true);
+        checkBox.check();
+      });
+      this._displayOutageAreaDetail();
+
+    },
+
     /**
     *This Function is used to save layer which type is result.
     **/
@@ -831,6 +867,7 @@ define([
     *This function will execute when User click on 'Export to CSV icon' .
     **/
     _displayExportToCSVPanel: function () {
+      this.checkBoxCSV = [];
       var labelText, saveButton, checkboxDiv, btnExportToLayerDiv,
         exportToLayerCheckBox;
       domConstruct.empty(this.exportToCSVBottomDiv);
@@ -845,6 +882,7 @@ define([
             "name": output.paramName,
             "class": "esriCTChkExportToLayer"
           }, domConstruct.create("div", {}, checkboxDiv));
+          this.checkBoxCSV.push(exportToLayerCheckBox);
           exportToLayerCheckBox.title = output.paramName;
           domAttr.set(exportToLayerCheckBox.domNode, "ObJID",
             output.paramName);
@@ -914,7 +952,7 @@ define([
           array.forEach(results, function (result) {
             TempString = (result.csvdata).split(",");
             lang.hitch(this, this._exportToCSVComplete(
-              result, TempString[0]));
+              result, TempString[0], result.orgResults));
           }, this);
         }
 
@@ -930,14 +968,24 @@ define([
     * @param{object}csvdata: object containing information regarding csv data.
     * @param{string}fileName: name of the csv file.
     **/
-    _exportToCSVComplete: function (csvdata, fileName) {
+    _exportToCSVComplete: function (csvdata, fileName, orgData) {
       var link, oWin, click_ev;
       if (this.IsIE) {
+        /*
         oWin = window.top.open("about:blank", "_blank");
         oWin.document.write(csvdata.csvdata);
         oWin.document.close();
         oWin.document.execCommand('SaveAs', true, fileName);
         oWin.close();
+        */
+        var ds = exportUtils.createDataSource({
+          type: exportUtils.TYPE_FEATURESET,
+          filename: fileName,
+          data: utils.toFeatureSet(orgData.features)
+        });
+
+        ds.setFormat(exportUtils.FORMAT_CSV);
+        ds.download();
       } else {
         link = domConstruct.create("a", {
           href: 'data:attachment/csv;charset=utf-8,' +
@@ -1016,7 +1064,8 @@ define([
           csvContent += atts.join(",") + csvNewLineChar;
         }
         deferred.resolve({
-          "csvdata": csvContent
+          "csvdata": csvContent,
+          "orgResults": results
         });
       }, 1000));
       return deferred;
@@ -1045,6 +1094,8 @@ define([
     *This function is used to display 'Save to Layer' panel.
     **/
     _displaySaveLayerPanel: function () {
+      this.saveCheckBoxs = [];
+
       var otherLayercheckBox, checkboxDiv, overviewLayerFields,
         overviewLayerInfos;
       domConstruct.empty(this.outageCheckBoxDiv);
@@ -1063,6 +1114,7 @@ define([
           "class": "clearInstance saveToLayerData",
           "style": "float: left;"
         }, this.outageAreaDiv);
+        this.saveCheckBoxs.push(this.CheckBoxOutageArea);
         this.CheckBoxOutageArea.title = this.nls.outageAreaLabel;
         domConstruct.create("label", {
           "innerHTML": this.nls.outageAreaLabel,
@@ -1114,7 +1166,7 @@ define([
               "class": "saveToLayerData",
               "style": "float: left;"
             }, domConstruct.create("div", {}, checkboxDiv));
-
+            this.saveCheckBoxs.push(otherLayercheckBox);
             domConstruct.create("label", {
               "class": "esriCTChkLabel",
               "innerHTML": output.panelText
@@ -1178,7 +1230,7 @@ define([
       }
 
       return array.filter(fieldInfo, function (field) {
-        return field.isEditable;
+        return field.visible;
       });
     },
 

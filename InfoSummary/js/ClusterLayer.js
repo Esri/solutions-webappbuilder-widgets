@@ -75,12 +75,12 @@ define([
     //TODO change size breaks to equal interval eg. breaks = (max - min) / numRanges;
     constructor: function (options) {
       //Defaults
-      this.clusterGraphics = null;
+      this.clusterGraphics = [];
       this.cancelRequest = false;
       this.clusterSize = 120;
       this._singles = [];
       this._showSingles = true;
-      this.updateFeatures = [];
+      this.updateFeatures = undefined;
 
       //Options
       this.hidePanel = options.hidePanel;
@@ -113,6 +113,10 @@ define([
       this.lyrInfo = options.lyrInfo;
       this.lyrType = options.lyrType;
       this.filter = options.filter;
+      this.showAllFeatures = options.showAllFeatures;
+      this.listDisabled = options.listDisabled;
+      this.selfType = options.selfType;
+
       this._setupSymbols();
       this._setFieldNames();
       this.countFeatures(this._parentLayer);
@@ -120,13 +124,12 @@ define([
       if(this._parentLayer.refreshInterval > 0) {
         setInterval(lang.hitch(this, this._updateEnd), this._parentLayer.refreshInterval * 60000);
       }
-
     },
 
     countFeatures: function (lyr) {
       //Query the features based on map extent for supported layer types
       var q = new Query();
-      q.geometry = this._map.extent;
+      q.geometry = !this.showAllFeatures ? this._map.extent : lyr.fullExtent;
       if (lyr.queryCount) {
         lyr.queryCount(q, lang.hitch(this, function (r) {
           if (r > 0) {
@@ -158,14 +161,14 @@ define([
       var loading = true;
       var q = new Query();
       var staticLayers = ["CSV", "Feature Collection", "GeoRSS", "KML"];
-      if (staticLayers.indexOf(this.lyrType) > -1 || this.url === null) {
+      if ((staticLayers.indexOf(this.lyrType) > -1 || !this.url) && lyr.graphics) {
         this._getSourceFeatures(lyr.graphics);
         this.clusterFeatures();
       } else if (typeof (this.url) !== 'undefined') {
         this.loadData(this.url);
       } else {
-        q.where = this.filter ? this.filter : "1=1";
-        q.outFields = this._fieldNames;
+        q.where = (!this.showAllFeatures && this.filter) ? this.filter : "1=1";
+        q.outFields = ['*'];
         q.returnGeometry = true;
         if (lyr.queryFeatures) {
           lyr.queryFeatures(q).then(lang.hitch(this, function (results) {
@@ -296,12 +299,8 @@ define([
       if (!this.hidePanel) {
         var q = new Query();
         q.returnGeometry = false;
-        q.geometry = this._map.extent;
-        if (this.filter) {
-          q.where = this.filter;
-        } else {
-          q.where = "1=1";
-        }
+        q.geometry = !this.showAllFeatures ? this._map.extent : null;
+        q.where = (!this.showAllFeatures && this.filter) ? this.filter : "1=1";
         var qt = new QueryTask(url);
         qt.executeForIds(q).then(lang.hitch(this, function (results) {
           var updateNode;
@@ -339,12 +338,14 @@ define([
               html.addClass(en, "expandInActive");
             }
           } else {
-            if (node) {
-              html.removeClass(node, "recDefault");
-              html.removeClass(node, "inActive");
-            }
-            if (en) {
-              html.removeClass(en, "expandInActive");
+            if (this.visible) {
+              if (node) {
+                html.removeClass(node, "recDefault");
+                html.removeClass(node, "inActive");
+              }
+              if (en) {
+                html.removeClass(en, "expandInActive");
+              }
             }
           }
         }
@@ -356,7 +357,7 @@ define([
         this.initalCount(url);
         var q = new Query();
         q.where = "1=1";
-        if (this.filter) {
+        if (!this.showAllFeatures && this.filter) {
           q.where = this.filter;
         }
         q.returnGeometry = false;
@@ -372,24 +373,12 @@ define([
               var ids = this.queryIDs.slice(i, i + max);
 
               var _q = new Query();
-              _q.outFields = this._fieldNames;
+              _q.outFields = ['*'];
               _q.objectIds = ids;
               _q.returnGeometry = true;
               _q.outSpatialReference = this._map.spatialReference;
               var _qt = new QueryTask(url);
               queries.push(_qt.execute(_q));
-
-              //changed from this to query Task for issue #7743
-              //queries.push(esriRequest({
-              //  "url": url + "/query",
-              //  "content": {
-              //    "f": "json",
-              //    "outFields": this._fieldNames.join(),
-              //    "objectids": ids.join(),
-              //    "returnGeometry": "true",
-              //    "outSR": this._map.spatialReference.wkid
-              //  }
-              //}));
             }
 
             this._features = [];
@@ -425,6 +414,7 @@ define([
                       shouldUpdate = JSON.stringify(this._features) !== JSON.stringify(fs);
                     }
                     if (shouldUpdate) {
+                      this.requiresReload = true;
                       this._features = fs;
                       this.clusterFeatures();
 
@@ -499,6 +489,8 @@ define([
         }
 
         if (shouldUpdate) {
+          this.requiresReload = true;
+
           //if valid response then clear and load
           this._features = [];
           this._parentLayer.clear();
@@ -546,6 +538,13 @@ define([
         graphicOptions = {
           geometry: {
             paths: item.geometry.paths,
+            "spatialReference": { "wkid": sr.wkid }
+          }
+        };
+      } else if (typeof (item.geometry.points) !== 'undefined') {
+        graphicOptions = {
+          geometry: {
+            points: item.geometry.points,
             "spatialReference": { "wkid": sr.wkid }
           }
         };
@@ -664,7 +663,7 @@ define([
       var features = this._features;
       var total = 0;
       if (typeof (features) !== 'undefined') {
-        if (features.length > 0 && this.visible) {
+        if (features.length > 0 && (this.visible || this.requiresReload)) {
           var clusterSize = this.clusterSize;
           this.clusterGraphics = [];
           var sr = this._map.spatialReference;
@@ -805,7 +804,7 @@ define([
             }
           }
         }
-        this._updateNode(total);
+        this._updateNode(this.showAllFeatures ? features.length : total);
       }
     },
 
@@ -827,18 +826,14 @@ define([
       if (!this.hidePanel) {
         var updateNode;
         if (this.node) {
-          if (total) {
-            this.node.innerHTML = utils.localizeNumber(total);
-          } else {
-            this.node.innerHTML = 0;
-          }
+          this.node.innerHTML = utils.localizeNumber(total ? total : 0);
           updateNode = this.node.parentNode;
         } else {
           if (this.legendNode) {
             updateNode = this.legendNode.previousSibling;
           }
         }
-        this.updateExpand(updateNode, total && this.visible ? false : true);
+        this.updateExpand(updateNode, (total && total > 0) && this.visible ? false : true);
       }
     },
 
@@ -922,10 +917,14 @@ define([
         } else if (path && this.symbolData.iconType === "LayerIcon") {
           this.psym = jsonUtils.fromJson(this.symbolData.symbol);
         } else {
-          var ssssssss = SimpleLineSymbol(this.icon.outline.style,
-            this.icon.outline.color, this.icon.outline.width);
-          this.psym = new SimpleMarkerSymbol(this.icon.style, this.icon.size,
-            ssssssss, this.icon.color);
+          if (this.icon.type === 'esriPMS') {
+            this.psym = this.icon;
+          } else {
+            var sls = SimpleLineSymbol(this.icon.outline.style,
+              this.icon.outline.color, this.icon.outline.width);
+            this.psym = new SimpleMarkerSymbol(this.icon.style, this.icon.size,
+              sls, this.icon.color);
+          }
         }
 
         //options for cluster with 1
@@ -1010,8 +1009,10 @@ define([
       this._features = [];
     },
 
-    _updateEnd: function() {
-      this.loadData(this.url);
+    _updateEnd: function () {
+      if (this.url) {
+        this.loadData(this.url);
+      }
     }
 
   });

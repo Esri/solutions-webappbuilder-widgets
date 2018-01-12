@@ -100,6 +100,10 @@
                                 </div>
                             </div>
                         </div>
+                        <div data-dojo-attach-point="btnSelectAll" class="esriCTSelectAll" data-dojo-attach-event="onclick:_onSelectAll">
+                            
+                            ${nls.lblSelectAll}
+                        </div>
                         <div data-dojo-attach-point="btnSaveParentDiv">
                             <div data-dojo-attach-point="btnSaveDiv" class="esriCTSaveButton">
                                 <div class="jimu-btn" data-dojo-attach-point="btnSave" type="submit" data-dojo-attach-event="onclick:_onSaveClick">
@@ -124,8 +128,13 @@
                             </div>
                         </div>
                     </div>
+                    
                     <div class="esriCTbottomDiv">
                         <div data-dojo-attach-point="exportToCSVBottomDiv">
+                        </div>
+                        <div data-dojo-attach-point="btnSelectAllCSV" class="esriCTSelectAll" data-dojo-attach-event="onclick:_onSelectAllCSV">
+
+                            ${nls.lblSelectAll}
                         </div>
                         <div data-dojo-attach-point="exportToCSVButtonDiv">
                         </div>
