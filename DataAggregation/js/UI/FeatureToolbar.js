@@ -255,10 +255,8 @@ define(['dojo/_base/declare',
         } else {
           this._editToolbar.refresh();
           this._editToolbar.deactivate();
+          this._undoEdits();
           this._updateSaveAndCancel(true);
-          this._updateLocate(true);
-          this._updateSync(true);
-          //this._undoEdits();
           this.map.infoWindow.clearFeatures();
         }
       },
