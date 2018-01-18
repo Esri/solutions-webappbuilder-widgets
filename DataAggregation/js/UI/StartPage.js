@@ -296,7 +296,7 @@ define(['dojo/_base/declare',
 
         var fieldMappingResults = this._fieldMappingView._getResults();
         var locationResults = this._locationTypeView._getResults();
-        this._syncFields = this._checkFields(fieldMappingResults, locationResults);
+        this._syncFields = this._checkFields(fieldMappingResults.results, locationResults);
         this._locateFeatures(fieldMappingResults, locationResults);
       },
 
@@ -326,7 +326,7 @@ define(['dojo/_base/declare',
       _locateFeatures: function (fieldMappingResults, locationResults) {
 
         this.csvStore.useMultiFields = locationResults.type === 'multi' ? true : false;
-        this.csvStore.mappedArrayFields = fieldMappingResults;
+        this.csvStore.mappedArrayFields = fieldMappingResults.results;
 
         if (locationResults.type === 'single') {
           this.csvStore.addrFieldName = locationResults.fields[0].keyField;
@@ -346,16 +346,15 @@ define(['dojo/_base/declare',
         this.csvStore.processForm().then(lang.hitch(this, function (results) {
           //add the result view
           this._addResultView({
-            matchedFeatures: this._formatFeatures(results.matchedLayer),
+            matchedFeatures: this._formatFeatures(results.matchedLayer, fieldMappingResults.labelField),
             matchedLayer: results.matchedLayer,
-            unMatchedFeatures: this._formatFeatures(results.unMatchedLayer),
+            unMatchedFeatures: this._formatFeatures(results.unMatchedLayer, fieldMappingResults.labelField),
             unMatchedLayer: results.unMatchedLayer,
-            duplicateFeatures: this._formatDuplicateFeatures(results.duplicateLayer,
-              results.duplicateLookupList),
+            duplicateFeatures: this._formatFeatures(results.duplicateLayer,
+              fieldMappingResults.labelField, results.duplicateLookupList),
             duplicateLayer: results.duplicateLayer
           });
 
-          //TODO still thinking through this but it will be necessary I believe
           this.state = 'review';
 
           this._reviewView = this.pageContainer.getViewByTitle('Review');
@@ -372,87 +371,43 @@ define(['dojo/_base/declare',
         }));
       },
 
-      _formatFeatures: function (layer) {
+      _formatFeatures: function (layer, keyField, duplicateLookupList) {
         var features = [];
         if (layer) {
-          //var oidField = layer.objectIdField;
-          var keyField = '';
-          for (var i = 0; i < layer.fields.length; i++) {
-            var field = layer.fields[i];
-            keyField = field;
-            if (field.type !== 'esriFieldTypeOID') {
-              break;
-            }
-          }
-
+          var oidField = layer.objectIdField;
           this._currentFields = layer.fields;
           array.forEach(layer.graphics, lang.hitch(this, function (g) {
             var fieldInfo = [];
+            var duplicateFieldInfos;
+            if (duplicateLookupList) {
+              duplicateFieldInfos = duplicateLookupList[g.attributes[oidField]];
+            }
             array.forEach(Object.keys(g.attributes), lang.hitch(this, function (k) {
               var _field = this._currentFields.filter(function (f) {
                 return f.name === k;
               });
-              fieldInfo.push({
+              var fi = {
                 name: k,
                 label: (_field && _field.hasOwnProperty('length') && _field.length === 1 && _field[0].alias) ?
                   _field[0].alias : k,
                 value: g.attributes[k]
-              });
-            }));
-
-            features.push({
-              label: g.attributes[keyField.name],
-              fieldInfo: fieldInfo,
-              geometry: g.geometry,
-              address: 'this will need to pass through but will support locate function'
-            });
-          }));
-        }
-
-        return features;
-      },
-
-      _formatDuplicateFeatures: function (layer, duplicateLookupList) {
-        var features = [];
-        if (layer) {
-          var oidField = layer.objectIdField;
-          var keyField = '';
-          for (var i = 0; i < layer.fields.length; i++) {
-            var field = layer.fields[i];
-            keyField = field;
-            if (field.type !== 'esriFieldTypeOID') {
-              break;
-            }
-          }
-
-          this._currentFields = layer.fields;
-          array.forEach(layer.graphics, lang.hitch(this, function (g) {
-            var fieldInfo = [];
-            var duplicateFieldInfos = duplicateLookupList[g.attributes[oidField]];
-            array.forEach(Object.keys(g.attributes), lang.hitch(this, function (k) {
-              var _field = this._currentFields.filter(function (f) {
-                return f.name === k;
-              });
-              fieldInfo.push({
-                name: k,
-                label: (_field && _field.hasOwnProperty('length') && _field.length === 1 && _field[0].alias) ?
-                  _field[0].alias : k,
-                value: g.attributes[k],
-                duplicateFieldInfo: {
+              };
+              if (duplicateFieldInfos) {
+                fi.duplicateFieldInfo = {
                   value: duplicateFieldInfos[k]
-                }
-              });
+                };
+              }
+              fieldInfo.push(fi);
             }));
 
             features.push({
-              label: g.attributes[keyField.name],
+              label: g.attributes[keyField],
               fieldInfo: fieldInfo,
               geometry: g.geometry,
               address: 'this will need to pass through but will support locate function'
             });
           }));
         }
-
         return features;
       },
 

@@ -45,6 +45,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     // the address so when feature views potentially re-geocode they use the same one
 
     //TODO need to set this._currentAddressFields for XY fields
+    //TODO flag other field types and if things will fit like DATE
 
     file: null,
     map: null,

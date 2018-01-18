@@ -85,7 +85,8 @@ define({
       proceed: "Do you want to proceed?",
       itemMoveMatch: "Item was located and moved to the matched list",
       itemMoveUnMatched: "Unable to locate item. Moved to the un-matched list.",
-      itemWillBeLocated: "Item will be removed from the duplicate locations list."
+      itemWillBeLocated: "Item will be removed from the duplicate locations list.",
+      cannotLocate: "Unable to locate item. Please verify the location information."
     },
     featureToolbar: {
       edit: "Edit location information",

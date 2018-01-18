@@ -108,9 +108,16 @@ define(['dojo/_base/declare',
         //  This may need a better approach to evaluate when it is actually complete rather than just when they have clicked next
         //  Need to keep in mind that they could have the auto recognized fields established and never have to click a select control
         if (nextResult.currentView.label === this.label) {
-          this.parent._fieldMappingComplete = true;
           var results = this._getResults();
-          this.emit('field-mapping-update', true, results);
+          var hasResult = false;
+          var resultArray = Object.values(results.results);
+          array.forEach(resultArray, function (v) {
+            if (typeof (v) !== 'undefined' && v !== null && v !== '') {
+              hasResult = true;
+            }
+          });
+          this.parent._fieldMappingComplete = hasResult;
+          this.emit('field-mapping-update', hasResult, results.results);
         }
         return true;
       },
@@ -266,16 +273,23 @@ define(['dojo/_base/declare',
         var rows = this._fieldsTable.getRows();
         var results = {};
         var noValue = this.nls.warningsAndErrors.noValue;
+        var labelSet = false;
+        var label;
         array.forEach(rows, function (r) {
           var value = r.cells[2].fieldsSelect.getValue();
           if (value !== noValue) {
-            results[r.cells[0].targetField.name] = value;
+            var targetField = r.cells[0].targetField.name;
+            results[targetField] = value;
+            if (!labelSet) {
+              label = targetField;
+              labelSet = true;
+            }
           } else {
             results[r.cells[0].targetField.name] = undefined;
           }
         });
 
-        return results;
+        return { results: results, labelField: label };
       }
     });
   });

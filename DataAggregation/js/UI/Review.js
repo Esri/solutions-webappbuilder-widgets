@@ -253,15 +253,15 @@ define(['dojo/_base/declare',
         var name;
         if (this.matchedList.length > 0) {
           name = this.csvStore.matchedFeatureLayer.id.replace('.csv', '');
-          this._export(this.csvStore.matchedFeatureLayer, name + this.nls.review.matched);
+          this._export(this.csvStore.matchedFeatureLayer, name);
         }
         if (this.unMatchedList.length > 0) {
           name = this.csvStore.unMatchedFeatureLayer.id.replace('.csv', '');
-          this._export(this.csvStore.unMatchedFeatureLayer, name + this.nls.review.unMatched);
+          this._export(this.csvStore.unMatchedFeatureLayer, name);
         }
         if (this.duplicateList.length > 0) {
           name = this.csvStore.duplicateFeatureLayer.id.replace('.csv', '');
-          this._export(this.csvStore.duplicateFeatureLayer, name + this.nls.review.duplicate);
+          this._export(this.csvStore.duplicateFeatureLayer, name);
         }
       },
 

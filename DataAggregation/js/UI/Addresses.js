@@ -104,18 +104,21 @@ define(['dojo/_base/declare',
       },
 
       _nextView: function (nextResult) {
-        //The assumption is that if they click next the definition of mapping is complete
-        //  This may need a better approach to evaluate when it is actually complete rather than just when they have clicked next
         if (nextResult.currentView.label === this.label) {
-          this.parent._locationMappingComplete = true;
-          this.emit('location-mapping-update', true);
+          var results = this._getResults();
+          var hasResult = false;
+          array.forEach(results.fields, function (f) {
+            if (typeof (f.value) !== 'undefined' && f.value !== null && f.value !== '') {
+              hasResult = true;
+            }
+          });
+          this.parent._locationMappingComplete = hasResult;
+          this.emit('location-mapping-update', hasResult);
         }
         return true;
       },
 
       _backView: function (backResult) {
-        //The assumption is that if they click next the definition of mapping is complete
-        //  This may need a better approach to evaluate when it is actually complete rather than just when they have clicked next
         if (backResult.currentView.label === this.label) {
           this.parent._locationMappingComplete = false;
           this.emit('location-mapping-update', false);

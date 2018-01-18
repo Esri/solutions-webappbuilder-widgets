@@ -84,6 +84,8 @@ define(['dojo/_base/declare',
       //TODO should this support the option to reset values to defaults if they have made temp changes?
       //TODO need to test/handle situations where the address is not located sucessfully on locate calls
 
+      //TODO if you toggle edit off in duplicate after a save it should retain the file switch if one has occured
+
       constructor: function (options) {
         lang.mixin(this, options);
 
@@ -137,14 +139,15 @@ define(['dojo/_base/declare',
         //TODO need to have a backup if none of the locators support location to address
         var locator;
         for (var i = 0; i < this.csvStore._geocodeSources.length; i++) {
-          var locatorSource = this.csvStore._geocodeSources[0];
-          locator = locatorSource.locator;
+          this.locatorSource = this.csvStore._geocodeSources[0];
+          locator = this.locatorSource.locator;
           if (locator.locationToAddress) {
             break;
           }
         }
         if (locator) {
           locator.outSpatialReference = this.featureView.parent.editLayer.spatialReference;
+          locator.countryCode = this.locatorSource.countryCode;
         }
         return locator;
       },
@@ -203,11 +206,16 @@ define(['dojo/_base/declare',
       _reverseLocate: function (geometry) {
         var def = new Deferred();
         if (this._isAddressFeature) {
-          this.locator.locationToAddress(geometry).then(lang.hitch(this, function (result) {
+          this.locator.locationToAddress(geometry, 0, lang.hitch(this, function (result) {
             //TODO should this honor the configured match score limit...if
             this.featureView._updateAddressFields(result.address, false);
             def.resolve({ address: result.address });
-          }));
+          }), function (err) {
+            console.log(err);
+            new Message({
+              message: err.message
+            });
+          });
         } else {
           //TODO support the same for coiordinate feature...should return xy
           this.featureView._updateAddressFields(geometry, false);
@@ -242,7 +250,7 @@ define(['dojo/_base/declare',
               this._updateSaveAndCancel(!(this._hasAttributeEdit));
             }
           } else {
-            this._panToAndSelectFeature(this.featureView._feature);
+            this._flashFeatures([this.featureView._feature]);
             this._updateSaveAndCancel(!(this._hasAttributeEdit || this._hasGeometryEdit));
           }
           this._updateLocate(!this._hasAddressEdit);
@@ -262,11 +270,14 @@ define(['dojo/_base/declare',
       },
 
       _undoEdits: function () {
-        this.featureView.resetAttributeValues(this._originalValues);
-        this._hasAttributeEdit = false;
+        if (this._hasAttributeEdit) {
+          this.featureView.resetAttributeValues(this._originalValues);
+          this._hasAttributeEdit = false;
+        }
 
-        this.featureView.resetAddressValues(this._originalValues);
-        this._hasAddressEdit = false;
+        if (this._hasAddressEdit) {
+          this.featureView.resetAddressValues(this._originalValues);
+        }
 
         if (this._hasGeometryEdit){
           this.featureView.resetGeometry(this._originalValues.geometry, this._originalValues.duplicateGeometry);
@@ -324,20 +335,19 @@ define(['dojo/_base/declare',
       _save: function (forceSave) {
         //forceSave === true bypasses _saveDisabled check
         // allows a duplicate record to be saved in pretty much the same way as an unmatched record
-
+        var updateFeature = this.featureView._feature;
         if (!this._saveDisabled || forceSave === true) {
           if (forceSave !== true) {
             //update the feature instances based on changes in user controls
             this._setFieldValues(this.featureView);
             this._setAddressValues(this.featureView);
-            this.featureView.feature.geometry = this.featureView._feature.geometry;
-            this._originalValues.geometry = this.featureView._feature.geometry;
+            this.featureView.feature.geometry = updateFeature.geometry;
+            this._originalValues.geometry = updateFeature.geometry;
             if (this.featureView.isDuplicate) {
-              this._originalValues.duplicateGeometry = this.featureView._feature.geometry;
+              this._originalValues.duplicateGeometry = updateFeature.geometry;
             }
           }
 
-          var updateFeature = this.featureView._feature;
           if (this.featureView.label.indexOf('UnMatched') === -1 &&
             this.featureView.label.indexOf('DuplicateFeatures') === -1) {
             //matched features will remain in the matched layer on save
@@ -405,10 +415,22 @@ define(['dojo/_base/declare',
           console.log(updateRes);
           console.log(deleteRes);
           var result = { status: "success" };
+
+          if (this.featureView.isDuplicate) {
+            if (this._hasGeometryEdit && this.featureView._useGeomFromFile) {
+              this._fileGeometryModified = true;
+            }
+
+            if (this._hasAttributeEdit && this.featureView._useValuesFromFile) {
+              this._fileValuesModified = true;
+            }
+          }
+
           if (setFlags) {
             this._hasGeometryEdit = false;
             this._hasAttributeEdit = false;
           }
+
           if (addRes && addRes.hasOwnProperty('length') && addRes.length > 0 && addRes[0].hasOwnProperty('objectId')) {
             result.objectId = addRes[0].objectId;
           }
@@ -420,10 +442,10 @@ define(['dojo/_base/declare',
           }
           def.resolve(result);
         }), lang.hitch(this, function (err) {
-          def.resolve({ status: "error", error: err });
           new Message({
             message: this.nls.warningsAndErrors.saveError
           });
+          def.resolve({ status: "error", error: err });
         }));
         return def;
       },
@@ -501,13 +523,22 @@ define(['dojo/_base/declare',
         var def = new Deferred();
         var address = this.featureView._getAddressFieldsValues();
         if (this._isAddressFeature) {
-          this._addressToLocation(address).then(lang.hitch(this, function (locationItem) {
+          this._addressToLocation({
+            address: address,
+            countryCode: this.locatorSource.countryCode,
+            outFields: ["ResultID", "Score"]
+          }).then(lang.hitch(this, function (locationItem) {
             this._updateFeature(locationItem.location, locationItem.address, skipApplyEdits, true);
             def.resolve({
               feature: this.featureView.feature,
               address: locationItem.address
             });
-          }));
+          }), function (err) {
+            console.log("Error: " + err);
+            new Message({
+              message: err.message
+            });
+          });
         } else {
           var geometry = this.csvStore._getGeometry(address[this.xField], address[this.yField]);
           this._updateFeature(geometry, address, skipApplyEdits, true);
@@ -522,26 +553,35 @@ define(['dojo/_base/declare',
       _addressToLocation: function (address) {
         var def = new Deferred();
         address.maxLocations = 1;
-        this.locator.addressToLocations(address).then(lang.hitch(this, function (result) {
+        this.locator.addressToLocations(address, lang.hitch(this, function (result) {
+          var minScore = this.csvStore.minScore;
           var highestScoreItem;
           if (result && result.length > 0) {
             array.forEach(result, function (item) {
-              if (typeof (highestScoreItem) === 'undefined') {
+              if (typeof (highestScoreItem) === 'undefined' && item.score >= minScore) {
                 highestScoreItem = item;
               }
-              console.log(item.location);
               if (highestScoreItem && item.score > highestScoreItem.score) {
                 highestScoreItem = item;
               }
             });
-            def.resolve(highestScoreItem);
+            if (highestScoreItem) {
+              def.resolve(highestScoreItem);
+            } else {
+              def.reject({ message: this.nls.warningsAndErrors.cannotLocate });
+            }
+          } else {
+            def.reject({ message: this.nls.warningsAndErrors.cannotLocate});
           }
-        }));
+        }), function (err) {
+          def.reject(err);
+        });
         return def;
       },
 
       _flashFeatures: function (features) {
         var layer;
+        var _feature;
         array.forEach(features, lang.hitch(this, function (feature) {
           if (feature.geometry) {
             var color = Color.fromHex(this.styleColor);
@@ -568,24 +608,29 @@ define(['dojo/_base/declare',
                 }
               }).play();
             }
+            _feature = feature;
           }
         }));
-        setTimeout(function (layer) {
+        setTimeout(lang.hitch(this, function (layer) {
           if (layer && layer.clear) {
             layer.clear();
+            if (features) {
+              if ((features[0]._layer && features[0]._layer.infoTemplate) || features[0].infoTemplate) {
+                this.map.infoWindow.setFeatures(features);
+                this.map.infoWindow.select(0);
+              }
+            }
           }
-        }, 1200, layer);
+        }), 1200, layer);
       },
 
       _panToAndSelectFeature: function (feature) {
         if (feature && feature.geometry) {
           var maxZoom = this.map.getMaxZoom();
-          this.map.centerAndZoom(feature.geometry, Math.round(maxZoom / 2)).then(lang.hitch(this, function () {
+          var factor = Math.round(maxZoom * 0.25);
+          var zoom = (maxZoom - factor) > 0 ? (maxZoom - factor) : maxZoom;
+          this.map.centerAndZoom(feature.geometry, zoom).then(lang.hitch(this, function () {
             this._flashFeatures([feature]);
-            if ((feature._layer && feature._layer.infoTemplate) || feature.infoTemplate) {
-              this.map.infoWindow.setFeatures([feature]);
-              this.map.infoWindow.select(0);
-            }
           }));
         }
       },

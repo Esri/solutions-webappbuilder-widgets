@@ -86,6 +86,8 @@ define(['dojo/_base/declare',
       //TODO seems like for duplicate the validation txt boxes should be on seperate rows
       //TODO make sure reviewTableG is not shown for unmatched
 
+      //TODO handle dates, domains, and subtypes
+
       constructor: function (options) {
         lang.mixin(this, options);
       },
@@ -598,7 +600,8 @@ define(['dojo/_base/declare',
           array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
             var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : row.keyField;
             if (row.addressValueTextBox) {
-              row.addressValueTextBox.set('value', this._address[keyField]);
+              var addr = (this._address && this._address.hasOwnProperty(keyField)) ? this._address[keyField] : '';
+              row.addressValueTextBox.set('value', addr);
             }
           }));
         } else {
@@ -609,7 +612,8 @@ define(['dojo/_base/declare',
               for (var i = 0; i < this.featureControlTable.rows.length; i++) {
                 var featureRow = this.featureControlTable.rows[i];
                 if (featureRow.isEditRow && featureRow.fieldName === addrField.layerFieldName) {
-                  var val = this._address[this.csvStore.matchFieldPrefix + row.keyField];
+                  var k = this.csvStore.matchFieldPrefix + row.keyField;
+                  var val = (this._address && this._address.hasOwnProperty(k)) ? this._address[k] : '';
                   if (this.isDuplicate && this._useValuesFromLayer) {
                     featureRow.layerValueTextBox.set('value', val);
                   } else {
@@ -834,6 +838,7 @@ define(['dojo/_base/declare',
           isEditRow: false
         }, table);
         tr.radioButtons = [];
+        tr.useType = useString === this.nls.review.useGeometry ? "geom" : "values";
 
         var tdUseLabel = domConstruct.create('td', {}, tr);
         domConstruct.create('div', {
@@ -914,7 +919,7 @@ define(['dojo/_base/declare',
       _toggleLocationControls: function (disabled) {
         //address rows
         //when using geom from layer geocode and reverse geocode are disabled
-        //disabled = (this.isDuplicate && this._useGeomFromLayer) ? true : disabled;
+        disabled = (this.isDuplicate && this._useGeomFromLayer) ? true : disabled;
         if (this.locationControlTable) {
           array.forEach(this.locationControlTable.rows, function (row) {
             if (row.isAddressRow) {
@@ -1005,7 +1010,8 @@ define(['dojo/_base/declare',
           var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? 'Match_addr' : r.keyField;
           if (r.addressValueTextBox) {
             var addr = (this.isDuplicate && this._useGeomFromLayer && (duplicateType !== 'not-duplicate')) ?
-              values.editAddress[keyField] : r.addressValue;
+              (values.editAddress && values.editAddress.hasOwnProperty(keyField)) ?
+                values.editAddress[keyField] : undefined : r.addressValue;
             r.addressValueTextBox.set('value', typeof (addr) !== 'undefined' ? addr : '');
           }
         }));
@@ -1024,11 +1030,18 @@ define(['dojo/_base/declare',
 
       resetFromLayerRows: function () {
         if (this.isDuplicate) {
-          this._useGeomFromLayer = true;
-          this._useValuesFromLayer = true;
+          if (!this._featureToolbar._fileGeometryModified) {
+            this._useGeomFromLayer = true;
+          }
+          if (!this._featureToolbar._fileValuesModified) {
+            this._useValuesFromLayer = true;
+          }
           array.forEach(this.featureControlTable.rows, lang.hitch(this, function (r) {
             if (r.fromSelect) {
-              r.fromSelect.set('value', 'layer');
+              if ((r.useType === 'geom' && this._useGeomFromLayer) ||
+                (r.useType === 'values' && this._useValuesFromLayer)) {
+                r.fromSelect.set('value', 'layer');
+              }
             }
           }));
         }
