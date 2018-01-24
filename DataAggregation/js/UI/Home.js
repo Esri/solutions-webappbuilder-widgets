@@ -353,6 +353,11 @@ define(['dojo/_base/declare',
         if (this.csvStore) {
           this.csvStore.clear();
         }
+
+        if (this.map.infoWindow && this.map.infoWindow.clearFeatures) {
+          this.map.infoWindow.clearFeatures();
+        }
+
         this.fileForm.reset();
         this.parent._initPageContainer();
       }

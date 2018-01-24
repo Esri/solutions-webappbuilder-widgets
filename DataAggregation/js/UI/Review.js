@@ -386,10 +386,9 @@ define(['dojo/_base/declare',
       },
 
       _navigateHome: function () {
-        //TODO navigate HOME
         var homeView = this.pageContainer.getViewByTitle('Home');
-        var startView = this.pageContainer.getViewByTitle('StartPage');
-        startView._clearStore();
+        homeView._clearStore();
+        homeView._clearMapping();
         this.pageContainer.toggleController(true);
         this.pageContainer.selectView(homeView.index);
       },
