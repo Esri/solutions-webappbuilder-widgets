@@ -122,6 +122,7 @@ define(['dojo/_base/declare',
         });
         td.labelBox = labelBox;
         domConstruct.place(labelBox.domNode, td);
+        labelBox.focus();
       },
 
       _setTextValue: function (td, value) {

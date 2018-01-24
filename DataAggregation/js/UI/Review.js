@@ -19,10 +19,11 @@ define(['dojo/_base/declare',
   'dojo/_base/array',
   'dojo/dom-class',
   'dijit/_WidgetBase',
-  "dijit/_TemplatedMixin",
-  "dijit/_WidgetsInTemplateMixin",
-  "dojo/Evented",
-  "dojo/text!./templates/Review.html",
+  'dijit/_TemplatedMixin',
+  'dijit/_WidgetsInTemplateMixin',
+  'dojo/Evented',
+  'dojo/Deferred',
+  'dojo/text!./templates/Review.html',
   'dojo/query',
   'dojo/on',
   './FeatureList',
@@ -38,6 +39,7 @@ define(['dojo/_base/declare',
     _TemplatedMixin,
     _WidgetsInTemplateMixin,
     Evented,
+    Deferred,
     template,
     query,
     on,
@@ -104,6 +106,39 @@ define(['dojo/_base/declare',
             }
           }
         })));
+      },
+
+      validate: function (type, result) {
+        var def = new Deferred();
+        if (type === 'next-view') {
+          def.resolve(this._nextView());
+        } else if (type === 'back-view') {
+          def.resolve(this._backView());
+        } else {
+          def.resolve(this._homeView(result));
+        }
+        return def;
+      },
+
+      _nextView: function () {
+        var def = new Deferred();
+        def.resolve(true);
+        return def;
+      },
+
+      _backView: function () {
+        var def = new Deferred();
+        def.resolve(true);
+        return def;
+      },
+
+      _homeView: function (backResult) {
+        var def = new Deferred();
+        var homeView = this.pageContainer.getViewByTitle('Home');
+        homeView.verifyClearSettings(backResult).then(function (v) {
+          def.resolve(v);
+        });
+        return def;
       },
 
       _updateIndexesList: function () {
@@ -228,12 +263,16 @@ define(['dojo/_base/declare',
         var list = (type === 'unmatched' && this.unMatchedFeatureList) ? this.unMatchedFeatureList :
           (type === 'duplicate' && this.duplicateFeatureList) ? this.duplicateFeatureList : undefined;
         if (list) {
-          //If page container is updated to support next nave to review when no more features in given list then this test could go away
           if (list.features && list.features.length === 0) {
-            this.pageContainer._homeView();
-          } else {
-            this.pageContainer._nextView();
+            this.pageContainer.selectView(this.index);
           }
+
+          //If page container is updated to support next nave to review when no more features in given list then this test could go away
+          //if (list.features && list.features.length === 0) {
+          //  this.pageContainer._homeView();
+          //} else {
+          //  this.pageContainer._nextView();
+          //}
         }
       },
 

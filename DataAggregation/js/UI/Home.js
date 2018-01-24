@@ -24,11 +24,13 @@ define(['dojo/_base/declare',
   'dojo/Evented',
   'dojo/text!./templates/Home.html',
   'dojo/on',
+  'dojo/dom-construct',
   '../csvStore',
   './Addresses',
   './Coordinates',
   './FieldMapping',
-  'esri/lang'
+  'esri/lang',
+  'jimu/dijit/Popup'
 ],
   function (declare,
     lang,
@@ -40,11 +42,13 @@ define(['dojo/_base/declare',
     Evented,
     template,
     on,
+    domConstruct,
     CsvStore,
     Addresses,
     Coordinates,
     FieldMapping,
-    esriLang) {
+    esriLang,
+    Popup) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-home',
       declaredClass: 'CriticalFacilities.Home',
@@ -138,6 +142,10 @@ define(['dojo/_base/declare',
           this._backView(result).then(function (v) {
             def.resolve(v);
           });
+        } else {
+          this._homeView(result).then(function (v) {
+            def.resolve(v);
+          });
         }
         return def;
       },
@@ -159,9 +167,24 @@ define(['dojo/_base/declare',
         return def;
       },
 
+      _homeView: function (backResult) {
+        var def = new Deferred();
+        //if the results have been added to the map we need to ask if they are ok with clearing them
+
+
+        if (backResult.navView.label === this.label) {
+          //for validate
+          this.pageContainer.toggleController(true);
+          def.resolve(true);
+        }
+        return def;
+      },
+
       _clearMapping: function () {
         this.parent._locationMappingComplete = false;
         this.parent._fieldMappingComplete = false;
+        //alert('should _tempResultsAdded be cleared here??');
+        //this.parent._tempResultsAdded = false;
       },
 
       onDragEnter: function (event) {
@@ -261,6 +284,77 @@ define(['dojo/_base/declare',
 
         //go to the next page to start the user workflow
         this.pageContainer._nextView();
+      },
+
+      verifyClearSettings: function (backResult) {
+        var def = new Deferred();
+
+        if (backResult.navView.label === this.label) {
+          var msg;
+          if (this.parent._locationMappingComplete || this.parent._fieldMappingComplete ||
+            this.parent._tempResultsAdded) {
+            msg = this.nls.warningsAndErrors.settingsCleared;
+          }
+
+          if (msg) {
+            var content = domConstruct.create('div');
+
+            domConstruct.create('div', {
+              innerHTML: msg
+            }, content);
+
+            domConstruct.create('div', {
+              innerHTML: this.nls.warningsAndErrors.proceed,
+              style: 'padding-top:10px;'
+            }, content);
+
+            var warningMessage = new Popup({
+              titleLabel: this.nls.warningsAndErrors.mappingTitle,
+              width: 400,
+              autoHeight: true,
+              content: content,
+              buttons: [{
+                label: this.nls.yes,
+                onClick: lang.hitch(this, function () {
+                  this._clearMapping();
+                  this._clearStore();
+                  this.pageContainer.toggleController(true);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(true);
+                })
+              }, {
+                label: this.nls.no,
+                classNames: ['jimu-btn-vacation'],
+                onClick: lang.hitch(this, function () {
+                  this.pageContainer.selectView(backResult.currentView.index);
+                  warningMessage.close();
+                  warningMessage = null;
+                  def.resolve(false);
+                })
+              }],
+              onClose: function () {
+                warningMessage = null;
+              }
+            });
+          } else {
+            //for validate
+            this.pageContainer.toggleController(true);
+            this._clearStore();
+            def.resolve(true);
+          }
+        } else {
+          def.resolve(true);
+        }
+        return def;
+      },
+
+      _clearStore: function () {
+        if (this.csvStore) {
+          this.csvStore.clear();
+        }
+        this.fileForm.reset();
+        this.parent._initPageContainer();
       }
     });
   });

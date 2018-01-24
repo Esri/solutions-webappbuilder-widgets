@@ -390,6 +390,7 @@ define(['dojo/_base/declare',
                         //need to get review and then _matchedListView from it
                         var reviewView = this.parent._pageContainer.getViewByTitle('Review');
                         reviewView.matchedFeatureList.addFeature(this.featureView.feature);
+                        reviewView.matchedFeatureList.resetFeatureList();
                         reviewView._updateReviewRows((forceSave === true) ? 'duplicate' : 'unmatched');
                       }
                     }));

@@ -75,6 +75,7 @@ define(['dojo/_base/declare',
       },
 
       onShown: function () {
+        this.pageContainer.nextDisabled = false;
       },
 
       _updateAltIndexes: function () {
@@ -99,6 +100,8 @@ define(['dojo/_base/declare',
           def.resolve(this._nextView(result));
         } else if (type === 'back-view') {
           def.resolve(this._backView(result));
+        } else {
+          def.resolve(this._homeView(result));
         }
         return def;
       },
@@ -131,6 +134,15 @@ define(['dojo/_base/declare',
           this.emit('field-mapping-update', false);
         }
         return true;
+      },
+
+      _homeView: function (backResult) {
+        var def = new Deferred();
+        var homeView = this.pageContainer.getViewByTitle('Home');
+        homeView.verifyClearSettings(backResult).then(function (v) {
+          def.resolve(v);
+        });
+        return def;
       },
 
       _initFieldsTable: function () {

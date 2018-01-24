@@ -33,6 +33,7 @@ define([
 
       _locationMappingComplete: false,
       _fieldMappingComplete: false,
+      _tempResultsAdded: false,
 
       postCreate: function () {
         this.inherited(arguments);
@@ -155,14 +156,14 @@ define([
         if (this._pageContainer) {
           this._locationMappingComplete = false;
           this._fieldMappingComplete = false;
+          this._tempResultsAdded = false;
           this._pageContainer._clearViews();
           this._pageContainer.views = [];
           this._pageContainer._currentIndex = -1;
           this._pageContainer._homeIndex = 0;
           this._pageContainer._rootIndex = 0;
-          this._pageContainer.altHomeIndex = 0;
           this._pageContainer.nextDisabled = false;
-          this._pageContainer.altHomeIndex = 1;
+          this._pageContainer.backDisabled = true;
           this._pageContainer.selected = '';
           this._pageContainer.displayControllerOnStart = false;
           this._pageContainer.toggleController(true);
@@ -173,7 +174,6 @@ define([
           this._pageContainer = new PageContainer({
             views: [homeView, startPageView, locationTypeView],
             nls: this.nls,
-            altHomeIndex: 1,
             appConfig: this.appConfig,
             displayControllerOnStart: false,
             parent: this,
@@ -229,10 +229,10 @@ define([
 
       _clearResults: function () {
         if (this._pageContainer) {
-          var startView = this._pageContainer.getViewByTitle('StartPage');
-          if (startView) {
-            startView._clearStore();
-            startView._clearMapping();
+          var homeView = this._pageContainer.getViewByTitle('Home');
+          if (homeView) {
+            homeView._clearStore();
+            homeView._clearMapping();
           }
         }
       }

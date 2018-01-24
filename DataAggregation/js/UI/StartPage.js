@@ -24,11 +24,9 @@ define(['dojo/_base/declare',
   "dijit/_WidgetsInTemplateMixin",
   "dojo/Evented",
   "dojo/text!./templates/StartPage.html",
-  'dojo/dom-construct',
   'dojo/dom-class',
   'dojo/query',
-  './Review',
-  'jimu/dijit/Popup'
+  './Review'
 ],
   function (declare,
     lang,
@@ -40,11 +38,9 @@ define(['dojo/_base/declare',
     _WidgetsInTemplateMixin,
     Evented,
     template,
-    domConstruct,
     domClass,
     query,
-    Review,
-    Popup) {
+    Review) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-startpage',
       declaredClass: 'CriticalFacilities.StartPage',
@@ -71,16 +67,18 @@ define(['dojo/_base/declare',
         this.inherited(arguments);
         this._darkThemes = ['DartTheme', 'DashboardTheme'];
         this.updateImageNodes();
+        //this.pageContainer.backDisabled = true;
       },
 
       startup: function () {
         this._started = true;
-        this._homeView = this.pageContainer.getViewByTitle('Home');
+        this.pageContainer.backDisabled = true;
       },
 
       onShown: function () {
         this._initDependencies();
         this._validateStatus();
+        this.pageContainer.backDisabled = true;
       },
 
       setStyleColor: function (styleColor) {
@@ -109,7 +107,11 @@ define(['dojo/_base/declare',
         if (type === 'next-view') {
           def.resolve(this._nextView(result));
         } else if (type === 'back-view') {
-          this._backView(result).then(function (v) {
+          this._backView().then(function (v) {
+            def.resolve(v);
+          });
+        } else if (type === 'home-view') {
+          this._homeView(result).then(function (v) {
             def.resolve(v);
           });
         }
@@ -123,98 +125,33 @@ define(['dojo/_base/declare',
         if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
           return false;
         }
+        this.pageContainer.backDisabled = false;
         return true;
       },
 
-      _backView: function (backResult) {
+      _backView: function () {
         var def = new Deferred();
-
-        if (backResult.navView.label === this.pageContainer.views[0].label) {
-          var msg;
-          if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
-            msg = this.nls.warningsAndErrors.settingsCleared;
-          } else {
-            if (this.parent._locationMappingComplete) {
-              msg = this.nls.warningsAndErrors.settingsCleared;
-            } else if (this.parent._fieldMappingComplete) {
-              msg = this.nls.warningsAndErrors.settingsCleared;
-            }
-          }
-
-          if (msg) {
-            var content = domConstruct.create('div');
-
-            domConstruct.create('div', {
-              innerHTML: msg
-            }, content);
-
-            domConstruct.create('div', {
-              innerHTML: this.nls.warningsAndErrors.proceed,
-              style: 'padding-top:10px;'
-            }, content);
-
-            var warningMessage = new Popup({
-              titleLabel: this.nls.warningsAndErrors.mappingTitle,
-              width: 400,
-              autoHeight: true,
-              content: content,
-              buttons: [{
-                label: this.nls.yes,
-                onClick: lang.hitch(this, function () {
-                  this._clearMapping();
-                  this._clearStore();
-                  this.pageContainer.toggleController(true);
-                  warningMessage.close();
-                  warningMessage = null;
-                  def.resolve(true);
-                })
-              }, {
-                label: this.nls.no,
-                classNames: ['jimu-btn-vacation'],
-                onClick: lang.hitch(this, function () {
-                  this.pageContainer.selectView(backResult.currentView.index);
-                  warningMessage.close();
-                  warningMessage = null;
-                  def.resolve(false);
-                })
-              }],
-              onClose: function () {
-                warningMessage = null;
-              }
-            });
-          } else {
-            //for validate
-            this.pageContainer.toggleController(true);
-            this._clearStore();
-            def.resolve(true);
-          }
-        }
+        def.resolve(false);
         return def;
       },
 
-      _clearStore: function () {
-        if (this.csvStore) {
-          this.csvStore.clear();
-        }
-        if (this._homeView) {
-          this._homeView.fileForm.reset();
-        }
-        this.parent._initPageContainer();
-      },
-
-      _clearMapping: function () {
-        this.parent._locationMappingComplete = false;
-        this.parent._fieldMappingComplete = false;
+      _homeView: function (backResult) {
+        var def = new Deferred();
+        var homeView = this.pageContainer.getViewByTitle('Home');
+        homeView.verifyClearSettings(backResult).then(function (v) {
+          def.resolve(v);
+        });
+        return def;
       },
 
       _locationMappingClick: function () {
-        this.parent._locationMappingComplete = false;
+        //this.parent._locationMappingComplete = false;
         this._validateStatus();
         this._setViewByTitle('LocationType');
       },
 
       _schemaMappingClick: function () {
-        this.parent._fieldMappingComplete = false;
+        //this.parent._fieldMappingComplete = false;
         this._validateStatus();
         this._setViewByTitle('FieldMapping');
       },
@@ -259,7 +196,7 @@ define(['dojo/_base/declare',
         //show/check mark to indicate complete status
         this._updateNode(this.locationMappingComplete, this.parent._locationMappingComplete);
         this._updateNode(this.fieldMappingComplete, this.parent._fieldMappingComplete);
-
+        this.pageContainer.backDisabled = false;
         //When both are complete enable add to map...otherwise set the altNextIndex so we can navigate to the
         // appropriate next page
         var enableOk = false;
@@ -360,6 +297,9 @@ define(['dojo/_base/declare',
           this._reviewView = this.pageContainer.getViewByTitle('Review');
 
           this.pageContainer.nextDisabled = false;
+          this.pageContainer.backDisabled = true;
+          //TODO may revive this at some level for a quick link but will be based on some
+          // other element on the page other than the home button..still thinking through it
           this.pageContainer.altHomeIndex = this._reviewView.index;
 
           this._updateNode(this.progressNode, false);

@@ -26,6 +26,7 @@ define(['dojo/_base/declare',
   "dojo/text!./templates/FeatureList.html",
   'dojo/query',
   'dojo/Deferred',
+  'dojo/on',
   './Feature'
 ],
   function (declare,
@@ -40,12 +41,12 @@ define(['dojo/_base/declare',
     template,
     query,
     Deferred,
+    on,
     Feature) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-feature-list',
       declaredClass: 'CriticalFacilities.FeatureList',
       templateString: template,
-      _started: null,
       label: 'FeatureList',
       parent: null,
       nls: null,
@@ -63,6 +64,7 @@ define(['dojo/_base/declare',
       layer: null,
       _editToolbar: null,
       _syncFields: {},
+      _started: false,
 
       //TODO may need a loading shelter here to avoid see feature views while adding
 
@@ -76,11 +78,62 @@ define(['dojo/_base/declare',
         this._darkThemes = ['DartTheme', 'DashboardTheme'];
       },
 
+      onShown: function () {
+        this.pageContainer.nextDisabled = false;
+        this.pageContainer.backDisabled = false;
+      },
+
       startup: function () {
         this._started = true;
         this._updateAltIndexes();
         this._initFeatureList(this.features);
         this.updateImageNodes();
+
+        this.own(on(this, 'feature-list-updated', lang.hitch(this, this._updateAltNextIndexes)));
+        this.own(on(this.pageContainer, 'view-index-change', lang.hitch(this, this.test)));
+      },
+
+      test: function (v) {
+        var rows = this.featureListTable.rows;
+        if (rows && rows.length) {
+          this._updateAltNextIndexes(this.featureListTable.rows.length);
+        }
+        if (v.oldIndex === this.altNextIndex) {
+          this.altNextIndex = v.newIndex;
+        }
+      },
+
+      validate: function (type, result) {
+        var def = new Deferred();
+        if (type === 'next-view') {
+          def.resolve(this._nextView());
+        } else if (type === 'back-view') {
+          def.resolve(this._backView());
+        } else {
+          def.resolve(this._homeView(result));
+        }
+        return def;
+      },
+
+      _nextView: function () {
+        var def = new Deferred();
+        def.resolve(true);
+        return def;
+      },
+
+      _backView: function () {
+        var def = new Deferred();
+        def.resolve(true);
+        return def;
+      },
+
+      _homeView: function (backResult) {
+        var def = new Deferred();
+        var homeView = this.pageContainer.getViewByTitle('Home');
+        homeView.verifyClearSettings(backResult).then(function (v) {
+          def.resolve(v);
+        });
+        return def;
       },
 
       _updateAltIndexes: function () {
@@ -94,17 +147,27 @@ define(['dojo/_base/declare',
         }
       },
 
+      _updateAltNextIndexes: function (length) {
+        if (length > 0) {
+          var rows = this.featureListTable.rows;
+          this.altNextIndex = rows[0].featureView.index;
+          rows[rows.length - 1].featureView.altNextIndex = this.altNextIndex;
+          this.finalFeatureIndex = rows[rows.length - 1].featureView.index;
+          rows[rows.length - 1].featureView.altNextIndex = this._reviewView.index;
+        }
+      },
+
       _initFeatureList: function (features) {
         var x = 0;
         if (this.featureListTable.rows.length !== this.features.length) {
           array.forEach(features, lang.hitch(this, function (f) {
             //construct the individual feature rows
-            this._initRow(f, x);
+            this._initRow(f, x, false);
             x += 1;
           }));
         }
 
-        this.pageContainer.selectView(this.index);
+        this.pageContainer.selectView(this.index); //test
       },
 
       updateImageNodes: function () {
@@ -128,7 +191,7 @@ define(['dojo/_base/declare',
       },
 
       //TODO need to ensure label is unique
-      _initFeatureView: function (feature, label) {
+      _initFeatureView: function (feature, label, byIndex) {
         var feat = new Feature({
           nls: this.nls,
           map: this.map,
@@ -146,8 +209,15 @@ define(['dojo/_base/declare',
           csvStore: this.csvStore,
           _parentFeatureList: this
         });
+        if (byIndex) {
+          for (var i = 0; i < this.features.length; i++) {
 
-        this.pageContainer.addView(feat);
+          }
+
+          this.pageContainer.addViewAtIndex(feat, this.finalFeatureIndex);
+        } else {
+          this.pageContainer.addView(feat);
+        }
 
         if (typeof (this.altNextIndex) === 'undefined') {
           this.altNextIndex = feat.index;
@@ -156,16 +226,16 @@ define(['dojo/_base/declare',
         return this.pageContainer.getViewByTitle(label);
       },
 
-      _initRow: function (f, x) {
+      _initRow: function (f, x, byIndex) {
         var tr = domConstruct.create('tr', {
           className: "bottom-border feature-list-row",
           onclick: lang.hitch(this, function (evt) {
             console.log(evt.currentTarget.featureView);
-            this.pageContainer.selectView(evt.currentTarget.featureView.index);
+            this.pageContainer.selectView(evt.currentTarget.featureView.index); //test
           })
         }, this.featureListTable);
 
-        tr.featureView = this._initFeatureView(f, this.label + "_" + x);
+        tr.featureView = this._initFeatureView(f, this.label + "_" + x, byIndex);
         tr.fieldInfo = f.fieldInfo;
 
         for (var i = 0; i < f.fieldInfo.length; i++) {
@@ -206,6 +276,9 @@ define(['dojo/_base/declare',
               this.features.splice(featureIndex, 1);
             }
             this.emit('feature-list-updated', this.features.length);
+            if (i === this.features.length) {
+              this.pageContainer.selectView(this.altBackIndex);
+            }
             break;
           }
         }
@@ -213,15 +286,22 @@ define(['dojo/_base/declare',
         return def;
       },
 
+      resetFeatureList: function () {
+        if (this.featureListTable.rows.length > 0) {
+          for (var i = this.featureListTable.rows.length; i > 0; i--) {
+            this.pageContainer.removeView(this.featureListTable.rows[i - 1].featureView);
+            this.featureListTable.deleteRow(i - 1);
+
+          }
+          this.altNextIndex = undefined;
+          this._updateAltIndexes();
+          this._initFeatureList(this.features);
+          this.updateImageNodes();
+        }
+      },
+
       addFeature: function (feature) {
         this.features.push(feature);
-        //if the table has already been init then add new row
-        if (this.featureListTable.rows.length !== this.features.length) {
-          if (this._started) {
-            this._initRow(feature, this.features.length);
-          }
-        }
-        this.emit('feature-list-updated', this.features.length);
       }
     });
   });

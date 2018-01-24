@@ -157,10 +157,45 @@ define(['dojo/_base/declare',
         this._featureToolbar._panToAndSelectFeature((this.isDuplicate && this._useGeomFromLayer) ?
           this._editFeature : this._feature);
         this.isShowing = true;
+        this.pageContainer.nextDisabled = false;
+        this.pageContainer.backDisabled = false;
       },
 
       onHidden: function () {
         this.isShowing = false;
+      },
+
+      validate: function (type, result) {
+        var def = new Deferred();
+        if (type === 'next-view') {
+          def.resolve(this._nextView());
+        } else if (type === 'back-view') {
+          def.resolve(this._backView());
+        } else {
+          def.resolve(this._homeView(result));
+        }
+        return def;
+      },
+
+      _nextView: function () {
+        var def = new Deferred();
+        def.resolve(true);
+        return def;
+      },
+
+      _backView: function () {
+        var def = new Deferred();
+        def.resolve(true);
+        return def;
+      },
+
+      _homeView: function (backResult) {
+        var def = new Deferred();
+        var homeView = this.pageContainer.getViewByTitle('Home');
+        homeView.verifyClearSettings(backResult).then(function (v) {
+          def.resolve(v);
+        });
+        return def;
       },
 
       _showDuplicateReview: function (v) {

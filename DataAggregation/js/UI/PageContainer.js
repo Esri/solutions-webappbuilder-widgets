@@ -62,7 +62,6 @@ define(['dojo/_base/declare',
       altHomeIndex: 0,
       nextDisabled: false,
 
-
       //requires an instance of the appConfig
       //using altHomeIndex allows the user to set an alternate home view depending upon where we are in a workflow
 
@@ -158,7 +157,6 @@ define(['dojo/_base/declare',
 
       _onBuilderStyleChanged: function (styleChange) {
         this.setStyleColor(styleChange.styleColor);
-
       },
 
       _onAppConfigChanged: function (appConfig, reason, changedData) {
@@ -215,18 +213,18 @@ define(['dojo/_base/declare',
       },
 
       _prevView: function () {
-        this._navView(false);
+        this._navView('back-view');
       },
 
       _homeView: function () {
-        this.selectView(this.altHomeIndex !== this._homeIndex ? this.altHomeIndex : this._homeIndex);
+        this._navView('home-view');
       },
 
       _nextView: function () {
-        this._navView(true);
+        this._navView('next-view');
       },
 
-      _navView: function (isNext) {
+      _navView: function (navKey) {
         //this function will first check the current page for an altBackIndex
         // if found it will navigate to that index otherwise it will decrement the index by one and navigate
         //altBackIndex allows the controller to navigate to the appropriate page when the appropriate "back" page
@@ -234,51 +232,59 @@ define(['dojo/_base/declare',
         var title = this.getSelectedTitle();
         var currentView = this.getViewByTitle(title);
 
-        var emitText = isNext ? 'next-view' : 'back-view';
-        var navIndex = isNext ? currentView.altNextIndex : currentView.altBackIndex;
+        //var homeIndex = (this.altHomeIndex !== this._homeIndex) ? this.altHomeIndex : this._homeIndex;
+        var homeIndex = this._homeIndex;
+
+        //check for defined alt indexes
+        var navIndex = navKey === 'next-view' ? currentView.altNextIndex :
+          navKey === 'back-view' ? currentView.altBackIndex : undefined;
 
         var view;
-        //if altNextIndex or altBackIndex is defined default to those
-        // otherwise move in a forward or backward direction from the current index
-        if (typeof (navIndex) !== 'undefined') {
+        //if altIndex is defined default to it as long as it's not the home index
+        // otherwise move in a forward or backward direction from the current index if it's not the home index'
+        // home index should always pass through the validate function in case it needs to clear settings
+        if (typeof (navIndex) !== 'undefined' && navKey !== 'home-view') {
           view = this.getViewByIndex(navIndex);
         } else {
-          if (isNext) {
+          if (navKey === 'next-view') {
             if (this._currentIndex < this.viewCount - 1) {
-              this._currentIndex += 1;
-              view = this.getViewByIndex(this._currentIndex);
+              view = this.getViewByIndex(this._currentIndex + 1);
             }
-          } else {
+          } else if (navKey === 'back-view') {
             if ((this._currentIndex - 1) <= this._homeIndex) {
               view = this.getViewByIndex(this._homeIndex);
             } else {
-              this._currentIndex -= 1;
-              view = this.getViewByIndex(this._currentIndex);
+              view = this.getViewByIndex(this._currentIndex - 1);
             }
+          } else {
+            view = this.getViewByIndex(homeIndex);
           }
         }
+
         if (view) {
           var viewResults = { currentView: currentView, navView: view };
-          this.emit(emitText, viewResults);
+          this.emit(navKey, viewResults);
 
-          //TODO think through this logic some more...goal is to have a spot to respond to back and next up front rather than
-          // after the event has been fired
-          //The validate function would return true or false if the navigation is supported or if we need to do something like
+          //The optional validate function should return true or false if the navigation is supported or if we need to do something like
           // ask a question...use case that is driving this is needing to ask if they want to clear the settings that have defined
           // to this point when they navigate back to the start page...when we respond to the event emitted it is too late as we already see the next page before they
           // provide the response...yes or no
           if (currentView.validate) {
-            currentView.validate(emitText, viewResults).then(lang.hitch(this, function (v) {
+            currentView.validate(navKey, viewResults).then(lang.hitch(this, function (v) {
               if (v) {
-                this.selectView(view.index);
+                this._navigate(view.index);
               }
             }));
-          }else {
-            this.selectView(view.index);
+          } else {
+            this._navigate(view.index);
           }
-          this.emit('nav-view', view.index);
         }
+      },
 
+      _navigate: function (idx) {
+        this._currentIndex = idx;
+        this.selectView(idx);
+        this.emit('nav-view', idx);
       },
 
       getSelectedIndex: function () {
@@ -319,8 +325,15 @@ define(['dojo/_base/declare',
         for (var i = 0; i < this.views.length; i++) {
           var view = this.views[i];
           view.setStyleColor(this.styleColor);
+          if (typeof(view.index) !== 'undefined' && view.index !== i) {
+            this.emit('view-index-change', {
+              oldIndex: view.index,
+              newIndex: i
+            });
+          }
           view.index = i;
         }
+        this.emit('views-updated', this);
       },
 
       addView: function (view) {
@@ -329,17 +342,24 @@ define(['dojo/_base/declare',
         if (!this._containsView(view.label)) {
           this.views.push(view);
         }
-        this.viewStack.addView(view);
+
+        var viewStackView = this.viewStack.getViewByLabel(view.label);
+        if (!viewStackView) {
+          this.viewStack.addView(view);
+        }
+
         this._updateViews();
-        this.selectView(this._currentIndex);
+        this.selectView(this._currentIndex); //TODO not so sure about calling this every time..??>
         this.emit('view-added', view);
       },
 
-      addViewAtIndex: function (view) {
+      addViewAtIndex: function (view, idx) {
         ////adds a new view to the viewstack at the user defined index
-        //this.viewStack.addView(view);
-        this.emit('view-added', view);
+        view.pageContainer = this;
+        this.views.splice(idx, 0, view);
+        this.viewStack.addView(view);
         this._updateViews();
+        this.emit('view-added', view);
       },
 
       removeViewByTitle: function (title) {
@@ -401,9 +421,9 @@ define(['dojo/_base/declare',
       },
 
       _updateDomNodes: function (index) {
-        var homeIndex = this._homeIndex !== this.altHomeIndex ? this.altHomeIndex : this._homeIndex;
-
-        var backDisabled = index === this._homeIndex ? true : index + 1 === this.views.length ? false : false;
+        //This type of approch needs to occur to support the ability to return to a parent list
+        var homeIndex = this._homeIndex;
+        var backDisabled = this.backDisabled ? this.backDisabled : index === this._homeIndex ? true : false;
         this._updateControl(this.backTd, backDisabled);
         this._updateControl(this.backImage, backDisabled);
 
