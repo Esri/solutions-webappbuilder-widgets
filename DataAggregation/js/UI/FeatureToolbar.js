@@ -367,9 +367,6 @@ define(['dojo/_base/declare',
               if (r && r.status === 'success') {
                 var list = this.featureView._parentFeatureList;
                 list.removeFeature(this.featureView.feature, oid).then(lang.hitch(this, function () {
-                  //remove current view from page container
-                  this.parent._pageContainer.removeViewByTitle(this.featureView.label);
-
                   array.forEach(this.featureView._skipFields, lang.hitch(this, function (sf) {
                     delete updateFeature.attributes[sf];
                   }));
@@ -668,8 +665,10 @@ define(['dojo/_base/declare',
 
       _updateSync: function (disabled) {
         this._syncDisabled = disabled;
-        this._updateImageNode('bg-sync', 'bg-sync-white', 'bg-sync-disabled',
-          this._syncDisabled, this.featureView.syncFields.domNode);
+        if (this.featureView.syncFields) {
+          this._updateImageNode('bg-sync', 'bg-sync-white', 'bg-sync-disabled',
+            this._syncDisabled, this.featureView.syncFields.domNode);
+        }
       },
 
       updateImageNodes: function () {

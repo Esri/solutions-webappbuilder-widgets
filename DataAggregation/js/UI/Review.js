@@ -87,25 +87,32 @@ define(['dojo/_base/declare',
 
       startup: function () {
         this._started = true;
-        this._updateAltIndexes();
         this._initNavPages();
 
         this._updateIndexesList();
+
+        //for review the altNextIndex changes as we navigate through the various lists it may have
         this.altNextIndex = this.altNextIndexes[this._currentIndex];
         this._currentIndex = (this._currentIndex + 1 < this.altNextIndexes.length) ? this._currentIndex + 1 : 0;
 
-        this.own(on(this.pageContainer, 'nav-view', lang.hitch(this, function (idx) {
-          if (idx === this.index) {
-            this._updateIndexesList();
-            if (this._currentIndex < this.altNextIndexes.length) {
-              this.altNextIndex = this.altNextIndexes[this._currentIndex];
-              this._currentIndex = (this._currentIndex + 1 < this.altNextIndexes.length) ? this._currentIndex + 1 : 0;
-            } else {
-              this._currentIndex = 0;
-              this.altNextIndex = this.altNextIndexes[this._currentIndex];
-            }
+        this.own(on(this.pageContainer, 'nav-view', lang.hitch(this, this._navView)));
+      },
+
+      onShown: function () {
+        this.pageContainer.backDisabled = this.pageContainer._backLabels.length > 0 ? false : true;
+      },
+
+      _navView: function (idx) {
+        if (idx === this.index) {
+          this._updateIndexesList();
+          if (this._currentIndex < this.altNextIndexes.length) {
+            this.altNextIndex = this.altNextIndexes[this._currentIndex];
+            this._currentIndex = (this._currentIndex + 1 < this.altNextIndexes.length) ? this._currentIndex + 1 : 0;
+          } else {
+            this._currentIndex = 0;
+            this.altNextIndex = this.altNextIndexes[this._currentIndex];
           }
-        })));
+        }
       },
 
       validate: function (type, result) {
@@ -113,23 +120,21 @@ define(['dojo/_base/declare',
         if (type === 'next-view') {
           def.resolve(this._nextView());
         } else if (type === 'back-view') {
-          def.resolve(this._backView());
+          def.resolve(this._backView(result));
         } else {
-          def.resolve(this._homeView(result));
+          this._homeView(result).then(function (v) {
+            def.resolve(v);
+          });
         }
         return def;
       },
 
       _nextView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+        return true;
       },
 
-      _backView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+      _backView: function (backResult) {
+        return this.pageContainer._backLabels.length > 0 ? true : backResult.navView > this.index;
       },
 
       _homeView: function (backResult) {
@@ -157,46 +162,57 @@ define(['dojo/_base/declare',
       _initNavPages: function () {
         if (this.pageContainer) {
           //This will always be created but only shown when it has more than 0
-          this.matchedFeatureList = this._initFeatureList(this.matchedList, this.matchedLayer,
-            'MatchedFeatures', this.nls.review.reviewMatchedPageHint, false);
-          this.pageContainer.addView(this.matchedFeatureList);
-          this._updateNode(this.submitButton, this.matchedList.length > 0);
-          this._matchedListView = this.pageContainer.getViewByTitle(this.matchedFeatureList.label);
-          this.own(on(this.matchedFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
-            this.matchedCount.innerHTML = v;
-            this._initReviewRow(this.matchedList, [this.matchedHintRow, this.matchedControlRow], this.matchedCount);
-            this._updateNode(this.submitButton, this.matchedList.length > 0);
-          })));
+          this._addMatchedFeaturesList();
 
           if (this.unMatchedList.length > 0) {
-            this.unMatchedFeatureList = this._initFeatureList(this.unMatchedList, this.unMatchedLayer,
-              'UnMatchedFeatures', this.nls.review.reviewUnMatchedPageHint, false);
-            this.pageContainer.addView(this.unMatchedFeatureList);
-            this._unMatchedListView = this.pageContainer.getViewByTitle(this.unMatchedFeatureList.label);
-            this.own(on(this.unMatchedFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
-              this.unMatchedCount.innerHTML = v;
-              if (v === 0) {
-                //If all rows have been removed it should no longer be shown
-                this.pageContainer.removeView(this._unMatchedListView);
-              }
-            })));
+            this._addUnmatchedFeatureList();
           }
 
           if (this.duplicateList.length > 0) {
-            this.duplicateFeatureList = this._initFeatureList(this.duplicateList, this.duplicateLayer,
-              'DuplicateFeatures', this.nls.review.reviewDuplicatePageHint, true);
-            this.pageContainer.addView(this.duplicateFeatureList);
-            this._duplicateListView = this.pageContainer.getViewByTitle(this.duplicateFeatureList.label);
-            this.own(on(this.duplicateFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
-              this.duplicateCount.innerHTML = v;
-              if (v === 0) {
-                this.pageContainer.removeView(this._duplicateListView);
-              }
-            })));
+            this._addDuplicateFeatureList();
           }
         }
 
-        this.pageContainer.selectView(this.index);
+        this.pageContainer.selectView(this.index, true);
+      },
+
+      _addMatchedFeaturesList: function () {
+        this.matchedFeatureList = this._initFeatureList(this.matchedList, this.matchedLayer,
+          'MatchedFeatures', this.nls.review.reviewMatchedPageHint, false);
+        this.pageContainer.addView(this.matchedFeatureList);
+        this._updateNode(this.submitButton, this.matchedList.length > 0);
+        this._matchedListView = this.pageContainer.getViewByTitle(this.matchedFeatureList.label);
+        this.own(on(this.matchedFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
+          this.matchedCount.innerHTML = v;
+          this._initReviewRow(this.matchedList, [this.matchedHintRow, this.matchedControlRow], this.matchedCount);
+          this._updateNode(this.submitButton, this.matchedList.length > 0);
+        })));
+      },
+
+      _addUnmatchedFeatureList: function () {
+        this.unMatchedFeatureList = this._initFeatureList(this.unMatchedList, this.unMatchedLayer,
+          'UnMatchedFeatures', this.nls.review.reviewUnMatchedPageHint, false);
+        this.pageContainer.addView(this.unMatchedFeatureList);
+        this._unMatchedListView = this.pageContainer.getViewByTitle(this.unMatchedFeatureList.label);
+        this.own(on(this.unMatchedFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
+          this.unMatchedCount.innerHTML = v;
+          if (v === 0) {
+            this.pageContainer.removeView(this._unMatchedListView);
+          }
+        })));
+      },
+
+      _addDuplicateFeatureList: function () {
+        this.duplicateFeatureList = this._initFeatureList(this.duplicateList, this.duplicateLayer,
+          'DuplicateFeatures', this.nls.review.reviewDuplicatePageHint, true);
+        this.pageContainer.addView(this.duplicateFeatureList);
+        this._duplicateListView = this.pageContainer.getViewByTitle(this.duplicateFeatureList.label);
+        this.own(on(this.duplicateFeatureList, 'feature-list-updated', lang.hitch(this, function (v) {
+          this.duplicateCount.innerHTML = v;
+          if (v === 0) {
+            this.pageContainer.removeView(this._duplicateListView);
+          }
+        })));
       },
 
       _initFeatureList: function (features, layer, label, hint, isDuplicate) {
@@ -217,18 +233,6 @@ define(['dojo/_base/declare',
           csvStore: this.csvStore,
           _syncFields: this._syncFields
         });
-      },
-
-      _updateAltIndexes: function () {
-        if (this.pageContainer && !this._startPageView) {
-          this._startPageView = this.pageContainer.getViewByTitle('StartPage');
-          if (this._startPageView) {
-            //TODO this will need a custom validate function
-            // Will need a message also that is specific to clearing the results...or if
-            // we could support modification of the set...if they only change attribute values
-            this.altBackIndex = this._startPageView.index;
-          }
-        }
       },
 
       _initReviewRows: function () {
@@ -264,15 +268,8 @@ define(['dojo/_base/declare',
           (type === 'duplicate' && this.duplicateFeatureList) ? this.duplicateFeatureList : undefined;
         if (list) {
           if (list.features && list.features.length === 0) {
-            this.pageContainer.selectView(this.index);
+            this.pageContainer.selectView(this.index, true);
           }
-
-          //If page container is updated to support next nave to review when no more features in given list then this test could go away
-          //if (list.features && list.features.length === 0) {
-          //  this.pageContainer._homeView();
-          //} else {
-          //  this.pageContainer._nextView();
-          //}
         }
       },
 
@@ -345,6 +342,8 @@ define(['dojo/_base/declare',
       },
 
       _getFeatures: function (featureLayer) {
+        //TODO the field names hard coded below should be derived from the csvStore
+        // if they change in the csvStore they will need to change here
         var features = [];
         var oidField = this.csvStore.objectIdField;
         if (featureLayer && featureLayer.graphics) {

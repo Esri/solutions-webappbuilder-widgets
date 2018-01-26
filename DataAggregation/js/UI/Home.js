@@ -169,9 +169,6 @@ define(['dojo/_base/declare',
 
       _homeView: function (backResult) {
         var def = new Deferred();
-        //if the results have been added to the map we need to ask if they are ok with clearing them
-
-
         if (backResult.navView.label === this.label) {
           //for validate
           this.pageContainer.toggleController(true);
@@ -298,19 +295,24 @@ define(['dojo/_base/declare',
 
           if (msg) {
             var content = domConstruct.create('div');
-
             domConstruct.create('div', {
-              innerHTML: msg
+              "className": "cf-warning-icon",
+              style: 'float: ' + (window.isRTL ? 'right; margin-left' : 'left; margin-right') + ': 10px;'
+            }, content);
+
+            var msgPadding = 'padding-' + (window.isRTL ? 'right' : 'left') + ': 50px;';
+            domConstruct.create('div', {
+              innerHTML: msg,
+              style: msgPadding
             }, content);
 
             domConstruct.create('div', {
               innerHTML: this.nls.warningsAndErrors.proceed,
-              style: 'padding-top:10px;'
+              style: 'padding-top:10px; ' + msgPadding
             }, content);
 
             var warningMessage = new Popup({
-              titleLabel: this.nls.warningsAndErrors.mappingTitle,
-              width: 400,
+              width: 325,
               autoHeight: true,
               content: content,
               buttons: [{

@@ -82,9 +82,6 @@ define(['dojo/_base/declare',
         //No gaurentee that page container will exist prior to when the view is created
         // However, it must exist for the page to be shown
         if (this.pageContainer && !this._startPageView) {
-          //this.own(on(this.pageContainer, 'next-view', lang.hitch(this, this._nextView)));
-          //this.own(on(this.pageContainer, 'back-view', lang.hitch(this, this._backView)));
-
           this._startPageView = this.pageContainer.getViewByTitle('StartPage');
 
           if (this._startPageView) {
@@ -101,7 +98,9 @@ define(['dojo/_base/declare',
         } else if (type === 'back-view') {
           def.resolve(this._backView(result));
         } else {
-          def.resolve(this._homeView(result));
+          this._homeView(result).then(function (v) {
+            def.resolve(v);
+          });
         }
         return def;
       },

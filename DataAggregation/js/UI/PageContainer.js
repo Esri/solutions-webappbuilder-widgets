@@ -61,6 +61,7 @@ define(['dojo/_base/declare',
       styleColor: '',
       altHomeIndex: 0,
       nextDisabled: false,
+      _backLabels: [],
 
       //requires an instance of the appConfig
       //using altHomeIndex allows the user to set an alternate home view depending upon where we are in a workflow
@@ -76,7 +77,6 @@ define(['dojo/_base/declare',
       //getViewByIndex
       //getViewByTitle
       //addView
-      //addViewAtIndex
       //removeViewByTitle
       //removeView
       //removeViewByIndex
@@ -182,7 +182,22 @@ define(['dojo/_base/declare',
         }
       },
 
-      selectView: function (index) {
+      selectView: function (index, fromNavCall) {
+        //update _backLabels when selectView did not originate from navView where this is handled
+        // slightly differently to account for back vs next calls
+        if (!fromNavCall && index > 0) {
+          //var bl = this.getViewByIndex(index);
+          //if (this._backLabels.length > 0 && bl && (this._backLabels[this._backLabels.length - 1] !== bl.label)) {
+          //  this._backLabels.push(this.views[index].label);
+          //}
+
+          var title = this.getSelectedTitle();
+          var currentView = this.getViewByTitle(title);
+          if (currentView && this._backLabels[this._backLabels.length - 1] !== currentView.label) {
+            this._backLabels.push(currentView.label);
+          }
+        }
+
         this.viewStack.switchView(index);
         this._updateDomNodes(index);
         this._currentIndex = index;
@@ -225,19 +240,48 @@ define(['dojo/_base/declare',
       },
 
       _navView: function (navKey) {
-        //this function will first check the current page for an altBackIndex
+        //when navigating backwards this function will first check for a stored label to navigate to
+        //if a previous label is not stored this function will check the current view for an altBackIndex
         // if found it will navigate to that index otherwise it will decrement the index by one and navigate
-        //altBackIndex allows the controller to navigate to the appropriate page when the appropriate "back" page
+        //altBackIndex allows the controller to navigate to the appropriate view when the appropriate "back" view
         // is not based simply on the previous view in the list but rather some setting the user has defined
         var title = this.getSelectedTitle();
         var currentView = this.getViewByTitle(title);
 
-        //var homeIndex = (this.altHomeIndex !== this._homeIndex) ? this.altHomeIndex : this._homeIndex;
         var homeIndex = this._homeIndex;
 
+        //check index stacks
+        var navIndex;
+        var deleteBackIndex = false;
+
+        if (navKey === 'back-view') {
+          if (this._backLabels.length > 0) {
+            var backView;
+            for (var _i = this._backLabels.length - 1; _i >= 0; _i--) {
+              backView = this.getViewByTitle(this._backLabels[_i]);
+              if (backView && this._backLabels[_i] !== title) {
+                break;
+              } else {
+                this._backLabels.splice(_i, 1);
+              }
+            }
+            navIndex = backView.index;
+            deleteBackIndex = true;
+          }
+        }
+
+        if (navKey === 'next-view' && typeof (currentView) === 'undefined') {
+          if (this._backLabels.length > 0) {
+            var _backTitle = this._backLabels[this._backLabels.length - 1];
+            currentView = this.getViewByTitle(_backTitle);
+          }
+        }
+
         //check for defined alt indexes
-        var navIndex = navKey === 'next-view' ? currentView.altNextIndex :
-          navKey === 'back-view' ? currentView.altBackIndex : undefined;
+        if (typeof (navIndex) === 'undefined') {
+          navIndex = navKey === 'next-view' ? currentView.altNextIndex :
+            navKey === 'back-view' ? currentView.altBackIndex : undefined;
+        }
 
         var view;
         //if altIndex is defined default to it as long as it's not the home index
@@ -265,25 +309,41 @@ define(['dojo/_base/declare',
           var viewResults = { currentView: currentView, navView: view };
           this.emit(navKey, viewResults);
 
-          //The optional validate function should return true or false if the navigation is supported or if we need to do something like
-          // ask a question...use case that is driving this is needing to ask if they want to clear the settings that have defined
-          // to this point when they navigate back to the start page...when we respond to the event emitted it is too late as we already see the next page before they
-          // provide the response...yes or no
+          //The optional validate function should return true or false if the navigation is supported
+          // for example if navigating backwards will clear some state of a previous viewor set of views
           if (currentView.validate) {
             currentView.validate(navKey, viewResults).then(lang.hitch(this, function (v) {
               if (v) {
-                this._navigate(view.index);
+                this._navigate(view.index, deleteBackIndex, currentView.index, navKey, view.label);
               }
             }));
           } else {
-            this._navigate(view.index);
+            this._navigate(view.index, deleteBackIndex, currentView.index, navKey, view.label);
           }
         }
       },
 
-      _navigate: function (idx) {
+      _navigate: function (idx, deleteBackIndex, currentViewIndex, navKey, viewLabel) {
+        if (currentViewIndex > 0) {
+          if (navKey === 'next-view') {
+            if (this._backLabels[this._backLabels.length - 1] !== this.views[currentViewIndex].label) {
+              this._backLabels.push(this.views[currentViewIndex].label);
+            }
+          }
+        }
+
+        if (deleteBackIndex) {
+          for (var i = this._backLabels.length - 1; i >= 0; i--) {
+            var bl = this._backLabels[i];
+            if (bl === viewLabel) {
+              this._backLabels.splice(i, 1);
+              break;
+            }
+          }
+        }
+
         this._currentIndex = idx;
-        this.selectView(idx);
+        this.selectView(idx, true);
         this.emit('nav-view', idx);
       },
 
@@ -349,16 +409,7 @@ define(['dojo/_base/declare',
         }
 
         this._updateViews();
-        this.selectView(this._currentIndex); //TODO not so sure about calling this every time..??>
-        this.emit('view-added', view);
-      },
-
-      addViewAtIndex: function (view, idx) {
-        ////adds a new view to the viewstack at the user defined index
-        view.pageContainer = this;
-        this.views.splice(idx, 0, view);
-        this.viewStack.addView(view);
-        this._updateViews();
+        this.selectView(this._currentIndex, true);
         this.emit('view-added', view);
       },
 
@@ -373,17 +424,22 @@ define(['dojo/_base/declare',
 
       removeViewByIndex: function (idx) {
         var view = this.getViewByIndex(idx);
+        var vL = view.label;
         this.viewStack.removeView(view);
         this.views.splice(idx, 1);
         this._updateViews();
+
+        this._backLabels = this._backLabels.filter(function (bl) {
+          return bl !== vL;
+        });
+
         if (idx < this.views.length) {
-          this.selectView(idx);
-        } else if(typeof(this.altHomeIndex) !== 'undefined'){
+          this.selectView(idx, true);
+        } else if (typeof (this.altHomeIndex) !== 'undefined') {
+          //this._navView('next-view');
           this.selectView(this.altHomeIndex);
         } else {
-          //TODO think through this more...
-          // if a view is removed and we don't have a next view where should it go?
-          this.selectView(this.homeIndex);
+          this._navView('next-view');
         }
         this.emit('view-removed', view);
       },
@@ -393,6 +449,7 @@ define(['dojo/_base/declare',
           this.viewStack.removeView(v);
         }));
         this.views = [];
+        this._backLabels = [];
       },
 
       _containsView: function (title) {
@@ -421,7 +478,10 @@ define(['dojo/_base/declare',
       },
 
       _updateDomNodes: function (index) {
-        //This type of approch needs to occur to support the ability to return to a parent list
+        //get the current view
+        var currentView = this.views[index];
+
+        ////This type of approch needs to occur to support the ability to return to a parent list
         var homeIndex = this._homeIndex;
         var backDisabled = this.backDisabled ? this.backDisabled : index === this._homeIndex ? true : false;
         this._updateControl(this.backTd, backDisabled);
@@ -433,11 +493,9 @@ define(['dojo/_base/declare',
 
         //nextDisabled is so a view can flag it to prevent navigation until the user does something or force it
         // to be enabled if view supports an altNextIndex that would allow it to not just go to next view in the stack
-        var finalViewHasAltIndex = typeof(this.views[this.views.length - 1].altNextIndex) !== 'undefined';
+        var hasAltNextIndex = currentView && typeof (currentView.altNextIndex) !== 'undefined';
         var nextDisabled = this.nextDisabled ? this.nextDisabled : (index === homeIndex) && !this.nextDisabled ?
-          false : ((index + 1 === this.views.length) && !finalViewHasAltIndex) ? true : this.nextDisabled;
-
-        //var nextDisabled = (index === homeIndex) ? false : index + 1 === this.views.length ? true : false;
+          false : hasAltNextIndex ? false : this.nextDisabled;
         this._updateControl(this.nextTd, nextDisabled);
         this._updateControl(this.nextImage, nextDisabled);
       },
@@ -471,6 +529,18 @@ define(['dojo/_base/declare',
             }
           }
         }
+      },
+
+      reset: function () {
+        this._clearViews();
+        this._currentIndex = -1;
+        this._homeIndex = 0;
+        this.nextDisabled = false;
+        this.backDisabled = true;
+        this.selected = '';
+        this.displayControllerOnStart = false;
+        this.toggleController(true);
+        this.updateImageNodes();
       }
     });
   });

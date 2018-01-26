@@ -596,7 +596,7 @@
 }
 /*end nav dijit*/
 
-/*home page*/
+/******************************************home page********************************/
 .jimu-widget-critical-facilities-ui .cf-home .upload-tab-node {
   margin-top: 20px;
 }
@@ -713,9 +713,21 @@
   padding-bottom: 10px;
 }
 
+.jimu-popup .cf-warning-icon {
+  width: 30px;
+  height: 30px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  margin-top: 10px;
+  background-image: url('../images/warning.png');
+}
+  
+/***************************end home page*************************************/
+  
 
 /*----------------------- Styles for search -------------------------*/
-
+  
 .jimu-widget-critical-facilities-ui .cf-home .address-search {
   display: inline-block;
 }

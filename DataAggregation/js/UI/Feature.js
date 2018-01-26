@@ -84,8 +84,6 @@ define(['dojo/_base/declare',
       //TODO Should matched support the idea of being able to flag a feature as duplicate?? this would allow for possibility
       //TODO validation logic for each control should be defined based on field type from layer
       //TODO seems like for duplicate the validation txt boxes should be on seperate rows
-      //TODO make sure reviewTableG is not shown for unmatched
-
       //TODO handle dates, domains, and subtypes
 
       constructor: function (options) {
@@ -111,6 +109,7 @@ define(['dojo/_base/declare',
       _initSkipFields: function (fields) {
         //these fields are needed for interactions with the feature but should not be shown in the UI
         // nor should they be persisted with the layer or shown in the popup
+        //TODO derive these from the csvStore so they don't go out of sync if csvStore is updated
         this._skipFields = ["DestinationOID", "matchScore", "hasDuplicateUpdates",
           "duplicateState", this.layer.objectIdField];
         array.forEach(fields, lang.hitch(this, function (f) {
@@ -122,7 +121,6 @@ define(['dojo/_base/declare',
 
       startup: function () {
         this._started = true;
-        this._updateAltIndexes();
 
         this._getFeature().then(lang.hitch(this, function (f) {
           this._feature = f;
@@ -172,21 +170,19 @@ define(['dojo/_base/declare',
         } else if (type === 'back-view') {
           def.resolve(this._backView());
         } else {
-          def.resolve(this._homeView(result));
+          this._homeView(result).then(function (v) {
+            def.resolve(v);
+          });
         }
         return def;
       },
 
       _nextView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+        return true;
       },
 
       _backView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+        return true;
       },
 
       _homeView: function (backResult) {
@@ -205,12 +201,6 @@ define(['dojo/_base/declare',
           }
         } else {
           domClass.add(this.reviewTableG, 'display-none');
-        }
-      },
-
-      _updateAltIndexes: function () {
-        if (this._parentFeatureList.finalFeatureIndex === this.index) {
-          this.altNextIndex = this.parent._pageContainer.altHomeIndex;
         }
       },
 

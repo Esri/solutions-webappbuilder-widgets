@@ -85,46 +85,38 @@ define(['dojo/_base/declare',
 
       startup: function () {
         this._started = true;
-        this._updateAltIndexes();
         this._initFeatureList(this.features);
+        this._updateAltIndexes();
         this.updateImageNodes();
 
-        this.own(on(this, 'feature-list-updated', lang.hitch(this, this._updateAltNextIndexes)));
-        this.own(on(this.pageContainer, 'view-index-change', lang.hitch(this, this.test)));
-      },
-
-      test: function (v) {
-        var rows = this.featureListTable.rows;
-        if (rows && rows.length) {
-          this._updateAltNextIndexes(this.featureListTable.rows.length);
-        }
-        if (v.oldIndex === this.altNextIndex) {
-          this.altNextIndex = v.newIndex;
-        }
+        this.own(on(this, 'feature-list-updated', lang.hitch(this, this._updateAltIndexes)));
+        this.own(on(this.pageContainer, 'view-index-change', lang.hitch(this, this._indexChanged)));
       },
 
       validate: function (type, result) {
+        //This is called by the pageContainer and allows any view say yes or no to supporting
+        // navigation between views.
+        //Useful when you may need to ask the user if they would like to do something that would change
+        // the current state of something based on the view change.
         var def = new Deferred();
         if (type === 'next-view') {
           def.resolve(this._nextView());
         } else if (type === 'back-view') {
           def.resolve(this._backView());
         } else {
-          def.resolve(this._homeView(result));
+          this._homeView(result).then(function (v) {
+            def.resolve(v);
+          });
         }
         return def;
       },
 
       _nextView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+        return true;
       },
 
       _backView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+        return true;
       },
 
       _homeView: function (backResult) {
@@ -136,24 +128,44 @@ define(['dojo/_base/declare',
         return def;
       },
 
-      _updateAltIndexes: function () {
-        //No gaurentee that page container will exist prior to when the view is created
-        // However, it must exist for the page to be shown
-        if (this.pageContainer && !this._reviewView) {
-          this._reviewView = this.pageContainer.getViewByTitle('Review');
-          if (this._reviewView) {
-            this.altBackIndex = this._reviewView.index;
-          }
+      _indexChanged: function (v) {
+        //fires when a view index changes as a result of being moved from one list to another
+        // returns {oldIndex: <int>, newIndex: <int>}
+
+        this._updateAltIndexes();
+
+        if (v.oldIndex === this.altNextIndex) {
+          this.altNextIndex = v.newIndex;
+        }
+        if (v.oldIndex === this.index) {
+          //featureList index changes
+          //this would need to update the first features altBackIndex at least
         }
       },
 
-      _updateAltNextIndexes: function (length) {
-        if (length > 0) {
-          var rows = this.featureListTable.rows;
-          this.altNextIndex = rows[0].featureView.index;
-          rows[rows.length - 1].featureView.altNextIndex = this.altNextIndex;
-          this.finalFeatureIndex = rows[rows.length - 1].featureView.index;
-          rows[rows.length - 1].featureView.altNextIndex = this._reviewView.index;
+      _updateAltIndexes: function () {
+        if (this.pageContainer && !this._reviewView) {
+          this._reviewView = this.pageContainer.getViewByTitle('Review');
+          if (this._reviewView) {
+            //When navigating back from a featureList it should always return to the Review page
+            this.altBackIndex = this._reviewView.index;
+          }
+        }
+
+        if (this.featureListTable && this.featureListTable.rows) {
+          var rows = Array.from(this.featureListTable.rows);
+          if (rows.hasOwnProperty('length') && rows.length > 0) {
+            var firstRowView = rows[0].featureView;
+            var lastRowView = rows[rows.length - 1].featureView;
+            //The featureList altNextIndex should always point to the first feature in it's list
+            this.altNextIndex = firstRowView.index;
+            //The featureList finalFeatureIndex should always point to the last feature in it's list
+            this.finalFeatureIndex = lastRowView.index;
+            //The last feature in a list altNextIndex should always point to the review view
+            lastRowView.altNextIndex = this._reviewView.index;
+            //The first feature in a list altBackIndex should always point to the featureList view
+            firstRowView.altBackIndex = this.index;
+          }
         }
       },
 
@@ -162,12 +174,12 @@ define(['dojo/_base/declare',
         if (this.featureListTable.rows.length !== this.features.length) {
           array.forEach(features, lang.hitch(this, function (f) {
             //construct the individual feature rows
-            this._initRow(f, x, false);
+            this._initRow(f, x);
             x += 1;
           }));
         }
 
-        this.pageContainer.selectView(this.index); //test
+        //this.pageContainer.selectView(this.index);
       },
 
       updateImageNodes: function () {
@@ -190,8 +202,7 @@ define(['dojo/_base/declare',
         this.theme = theme;
       },
 
-      //TODO need to ensure label is unique
-      _initFeatureView: function (feature, label, byIndex) {
+      _initFeatureView: function (feature, label) {
         var feat = new Feature({
           nls: this.nls,
           map: this.map,
@@ -209,24 +220,12 @@ define(['dojo/_base/declare',
           csvStore: this.csvStore,
           _parentFeatureList: this
         });
-        if (byIndex) {
-          for (var i = 0; i < this.features.length; i++) {
+        this.pageContainer.addView(feat);
 
-          }
-
-          this.pageContainer.addViewAtIndex(feat, this.finalFeatureIndex);
-        } else {
-          this.pageContainer.addView(feat);
-        }
-
-        if (typeof (this.altNextIndex) === 'undefined') {
-          this.altNextIndex = feat.index;
-        }
-        this.finalFeatureIndex = feat.index;
         return this.pageContainer.getViewByTitle(label);
       },
 
-      _initRow: function (f, x, byIndex) {
+      _initRow: function (f, x) {
         var tr = domConstruct.create('tr', {
           className: "bottom-border feature-list-row",
           onclick: lang.hitch(this, function (evt) {
@@ -235,7 +234,7 @@ define(['dojo/_base/declare',
           })
         }, this.featureListTable);
 
-        tr.featureView = this._initFeatureView(f, this.label + "_" + x, byIndex);
+        tr.featureView = this._initFeatureView(f, this.label + "_" + x);
         tr.fieldInfo = f.fieldInfo;
 
         for (var i = 0; i < f.fieldInfo.length; i++) {
@@ -270,12 +269,15 @@ define(['dojo/_base/declare',
           var tr = rows[i];
 
           if (tr._featureOID === oid) {
+            this.pageContainer._backLabelClone = lang.clone(this.pageContainer._backLabels);
+            this.pageContainer.removeView(tr.featureView);
             this.featureListTable.deleteRow(i);
             var featureIndex = this.features.indexOf(feature);
             if (featureIndex > -1) {
               this.features.splice(featureIndex, 1);
             }
             this.emit('feature-list-updated', this.features.length);
+
             if (i === this.features.length) {
               this.pageContainer.selectView(this.altBackIndex);
             }
@@ -291,11 +293,11 @@ define(['dojo/_base/declare',
           for (var i = this.featureListTable.rows.length; i > 0; i--) {
             this.pageContainer.removeView(this.featureListTable.rows[i - 1].featureView);
             this.featureListTable.deleteRow(i - 1);
-
           }
           this.altNextIndex = undefined;
-          this._updateAltIndexes();
           this._initFeatureList(this.features);
+          this._updateAltIndexes();
+          this.pageContainer._backLabels = this.pageContainer._backLabelClone;
           this.updateImageNodes();
         }
       },

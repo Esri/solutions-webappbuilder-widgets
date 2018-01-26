@@ -184,6 +184,35 @@ define([
         }
       },
 
+      //_initPageContainer: function () {
+      //  this._locationMappingComplete = false;
+      //  this._fieldMappingComplete = false;
+      //  this._tempResultsAdded = false;
+
+      //  //get base views that are not dependant on the user data
+      //  var homeView = this._initHomeView();
+      //  var startPageView = this._initStartPageView();
+      //  var locationTypeView = this._initLocationTypeView();
+
+      //  var options = {
+      //    views: [homeView, startPageView, locationTypeView],
+      //    nls: this.nls,
+      //    appConfig: this.appConfig,
+      //    displayControllerOnStart: false,
+      //    parent: this,
+      //    styleColor: this.styleColor,
+      //    backDisabled: true
+      //  };
+
+      //  if (this._pageContainer) {
+      //    this._pageContainer.reset();
+      //  } else {
+      //    this._pageContainer = new PageContainer(options, this.pageNavigation);
+      //  }
+      //  this._pageContainer.startup();
+      //},
+
+
       _initHomeView: function () {
         return new Home({
           nls: this.nls,

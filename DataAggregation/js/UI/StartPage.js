@@ -67,18 +67,17 @@ define(['dojo/_base/declare',
         this.inherited(arguments);
         this._darkThemes = ['DartTheme', 'DashboardTheme'];
         this.updateImageNodes();
-        //this.pageContainer.backDisabled = true;
       },
 
       startup: function () {
         this._started = true;
-        this.pageContainer.backDisabled = true;
+        this.pageContainer.backDisabled = this.pageContainer._backLabels.length > 0 ? false : true;
       },
 
       onShown: function () {
         this._initDependencies();
         this._validateStatus();
-        this.pageContainer.backDisabled = true;
+        this.pageContainer.backDisabled = this.pageContainer._backLabels.length > 0 ? false : true;
       },
 
       setStyleColor: function (styleColor) {
@@ -107,9 +106,7 @@ define(['dojo/_base/declare',
         if (type === 'next-view') {
           def.resolve(this._nextView(result));
         } else if (type === 'back-view') {
-          this._backView().then(function (v) {
-            def.resolve(v);
-          });
+          def.resolve(this._backView());
         } else if (type === 'home-view') {
           this._homeView(result).then(function (v) {
             def.resolve(v);
@@ -123,6 +120,7 @@ define(['dojo/_base/declare',
           this.pageContainer.toggleController(false);
         }
         if (this.parent._locationMappingComplete && this.parent._fieldMappingComplete) {
+          this.nextDisabled = true;
           return false;
         }
         this.pageContainer.backDisabled = false;
@@ -130,9 +128,7 @@ define(['dojo/_base/declare',
       },
 
       _backView: function () {
-        var def = new Deferred();
-        def.resolve(false);
-        return def;
+        return this.pageContainer._backLabels.length > 0;
       },
 
       _homeView: function (backResult) {
@@ -298,12 +294,14 @@ define(['dojo/_base/declare',
 
           this.pageContainer.nextDisabled = false;
           this.pageContainer.backDisabled = true;
+          this.pageContainer._backLabels = [];
           //TODO may revive this at some level for a quick link but will be based on some
           // other element on the page other than the home button..still thinking through it
           this.pageContainer.altHomeIndex = this._reviewView.index;
 
           this._updateNode(this.progressNode, false);
-          this.pageContainer.selectView(this._reviewView.index);
+          this.pageContainer.selectView(this._reviewView.index, true);
+          this.pageContainer._backLabels = [];
 
         }), lang.hitch(this, function (err) {
           console.log(err);

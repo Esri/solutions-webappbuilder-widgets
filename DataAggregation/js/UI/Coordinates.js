@@ -79,7 +79,9 @@ define(['dojo/_base/declare',
         } else if (type === 'back-view') {
           def.resolve(this._backView(result));
         } else {
-          def.resolve(this._homeView(result));
+          this._homeView(result).then(function (v) {
+            def.resolve(v);
+          });
         }
         return def;
       },

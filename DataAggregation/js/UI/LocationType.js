@@ -77,21 +77,19 @@ define(['dojo/_base/declare',
         } else if (type === 'back-view') {
           def.resolve(this._backView());
         } else {
-          def.resolve(this._homeView(result));
+          this._homeView(result).then(function (v) {
+            def.resolve(v);
+          });
         }
         return def;
       },
 
       _nextView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+        return true;
       },
 
       _backView: function () {
-        var def = new Deferred();
-        def.resolve(true);
-        return def;
+        return true;
       },
 
       _homeView: function (backResult) {
