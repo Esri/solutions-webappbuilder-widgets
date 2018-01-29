@@ -1,17 +1,17 @@
 ﻿<div class="pad-left-10">
   <table class="page-table" cellpading="0" >
     <tbody>
-      <tr class="bottom-border task-instruction-row">
+      <tr class="bottom-border task-instruction-row" data-dojo-attach-point="mainInstructionRow">
         <td colspan="2">
           <div class="instruction pad-bottom-10">${nls.address.addressPageHint}</div>
         </td>
       </tr>
-      <tr class="task-row task-instruction-row">
-        <td colspan="2" class="field-control-td">
+      <tr class="task-row task-instruction-row" data-dojo-attach-point="singleAddressRow">
+        <td colspan="2" class="field-control-td" data-dojo-attach-point="singleFieldHintTd">
           <!--table for single field-->
           <table class="page-table" cellpading="0">
             <tbody>
-              <tr class="task-row task-instruction-row" data-dojo-attach-event="onClick:_rdoSingleAddressClick">
+              <tr class="task-row task-instruction-row" data-dojo-attach-event="onClick:_rdoSingleAddressClick" data-dojo-attach-point="singleRadioRow">
                 <td colspan="2">
                   <input name="addr" data-dojo-type="dijit/form/RadioButton"
                          data-dojo-attach-point="rdoSingleAddress"
@@ -21,12 +21,12 @@
                 </td>
               </tr>
               <tr class="sub-task-hint">
-                <td colspan="2" class="field-control-td float-left">
+                <td colspan="2" class="field-control-td float-left" data-dojo-attach-point="singleSubTaskHintTd">
                   <span class="instruction">${nls.address.singleFieldHint}</span>
                 </td>
               </tr>
               <tr class="bottom-border">
-                <td class="pad-left-20" >
+                <td class="pad-left-20" data-dojo-attach-point="singleFieldTableRow">
                   <table class="page-table" cellpading="0">
                     <colgroup>
                       <col width="40%" />
@@ -41,12 +41,12 @@
           </table>
         </td>
       </tr>
-      <tr>
-        <td colspan="2" class="field-control-td">
+      <tr data-dojo-attach-point="multiAddressRow">
+        <td colspan="2" class="field-control-td" data-dojo-attach-point="multiFieldHintTd">
           <!--table for multi field-->
           <table class="page-table" cellpading="0">
             <tbody>
-              <tr class="task-row task-instruction-row" data-dojo-attach-event="onClick:_rdoMultiAddressClick">
+              <tr class="task-row task-instruction-row" data-dojo-attach-event="onClick:_rdoMultiAddressClick" data-dojo-attach-point="multiRadioRow">
                 <td colspan="2">
                   <input name="addr" data-dojo-type="dijit/form/RadioButton"
                          data-dojo-attach-point="rdoMultiAddress"
@@ -56,12 +56,12 @@
                 </td>
               </tr>
               <tr class="sub-task-hint">
-                <td colspan="2" class="field-control-td float-left">
+                <td colspan="2" class="field-control-td float-left" data-dojo-attach-point="multiSubTaskHintTd">
                   <span class="instruction">${nls.address.multiFieldHint}</span>
                 </td>
               </tr>
               <tr>
-                <td class="pad-left-20">
+                <td class="pad-left-20" data-dojo-attach-point="multiFieldTableRow">
                   <table class="page-table" cellpading="0">
                     <colgroup>
                       <col width="40%" />

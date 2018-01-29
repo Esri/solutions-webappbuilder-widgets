@@ -40,6 +40,23 @@ define([
         this.nls = lang.mixin(this.nls, window.jimuNls.common);
         this._setThemeAndColors();
         this._initConfigInfo();
+        this._initBaseArgs();
+      },
+
+      _initBaseArgs: function () {
+        this._baseArgs = {
+          nls: this.nls,
+          map: this.map,
+          parent: this,
+          config: this.config,
+          appConfig: this.appConfig,
+          theme: this.theme,
+          isDarkTheme: this.isDarkTheme,
+          styleColor: this.styleColor,
+          singleEnabled: this.singleEnabled,
+          multiEnabled: this.multiEnabled,
+          xyEnabled: this.xyEnabled
+        };
       },
 
       /*jshint unused:false*/
@@ -93,6 +110,17 @@ define([
           this._url = this._configLayerInfo.featureLayer.url;
           this._geocodeSources = this.config.sources;
           this._symbol = this.config.layerSettings.symbol;
+          this.xyEnabled = this.config.xyEnabled;
+          this.multiEnabled = false;
+          this.singleEnabled = false;
+          array.forEach(this._geocodeSources, lang.hitch(this, function (s) {
+            if (!this.singleEnabled) {
+              this.singleEnabled = s.singleEnabled;
+            }
+            if (!this.multiEnabled) {
+              this.multiEnabled = s.multiEnabled;
+            }
+          }));
 
           this._fsFields = [];
           if (this._configLayerInfo) {
@@ -151,109 +179,51 @@ define([
         //get base views that are not dependant on the user data
         var homeView = this._initHomeView();
         var startPageView = this._initStartPageView();
-        var locationTypeView = this._initLocationTypeView();
+        var views = [homeView, startPageView];
+
+        //when both coordinate and address input are supported create a view
+        // that will allow the user to choose the type they will use
+        if (this.xyEnabled && (this.multiEnabled || this.singleEnabled)) {
+          var locationTypeView = this._initLocationTypeView();
+          views.push(locationTypeView);
+        }
 
         if (this._pageContainer) {
           this._locationMappingComplete = false;
           this._fieldMappingComplete = false;
           this._tempResultsAdded = false;
-          this._pageContainer._clearViews();
-          this._pageContainer.views = [];
-          this._pageContainer._currentIndex = -1;
-          this._pageContainer._homeIndex = 0;
-          this._pageContainer._rootIndex = 0;
-          this._pageContainer.nextDisabled = false;
-          this._pageContainer.backDisabled = true;
-          this._pageContainer.selected = '';
+          this._pageContainer.reset();
           this._pageContainer.displayControllerOnStart = false;
           this._pageContainer.toggleController(true);
-          this._pageContainer.updateImageNodes();
-          this._pageContainer.views = [homeView, startPageView, locationTypeView];
-          this._pageContainer.startup();
+          this._pageContainer.views = views;
         } else {
           this._pageContainer = new PageContainer({
-            views: [homeView, startPageView, locationTypeView],
+            views: views,
             nls: this.nls,
             appConfig: this.appConfig,
             displayControllerOnStart: false,
             parent: this,
             styleColor: this.styleColor
           }, this.pageNavigation);
-
-          this._pageContainer.startup();
         }
+        this._pageContainer.startup();
       },
 
-      //_initPageContainer: function () {
-      //  this._locationMappingComplete = false;
-      //  this._fieldMappingComplete = false;
-      //  this._tempResultsAdded = false;
-
-      //  //get base views that are not dependant on the user data
-      //  var homeView = this._initHomeView();
-      //  var startPageView = this._initStartPageView();
-      //  var locationTypeView = this._initLocationTypeView();
-
-      //  var options = {
-      //    views: [homeView, startPageView, locationTypeView],
-      //    nls: this.nls,
-      //    appConfig: this.appConfig,
-      //    displayControllerOnStart: false,
-      //    parent: this,
-      //    styleColor: this.styleColor,
-      //    backDisabled: true
-      //  };
-
-      //  if (this._pageContainer) {
-      //    this._pageContainer.reset();
-      //  } else {
-      //    this._pageContainer = new PageContainer(options, this.pageNavigation);
-      //  }
-      //  this._pageContainer.startup();
-      //},
-
-
       _initHomeView: function () {
-        return new Home({
-          nls: this.nls,
-          map: this.map,
-          parent: this,
-          config: this.config,
-          appConfig: this.appConfig,
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme,
+        return new Home(lang.mixin({
           _geocodeSources: this._geocodeSources,
           _fsFields: this._fsFields,
           _singleFields: this._singleFields,
-          _multiFields: this._multiFields,
-          styleColor: this.styleColor
-        });
+          _multiFields: this._multiFields
+        }, this._baseArgs));
       },
 
       _initStartPageView: function () {
-        return new StartPage({
-          nls: this.nls,
-          map: this.map,
-          parent: this,
-          config: this.config,
-          appConfig: this.appConfig,
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme,
-          styleColor: this.styleColor
-        });
+        return new StartPage(this._baseArgs);
       },
 
       _initLocationTypeView: function () {
-        return new LocationType({
-          nls: this.nls,
-          map: this.map,
-          parent: this,
-          config: this.config,
-          appConfig: this.appConfig,
-          theme: this.theme,
-          isDarkTheme: this.isDarkTheme,
-          styleColor: this.styleColor
-        });
+        return new LocationType(this._baseArgs);
       },
 
       _clearResults: function () {

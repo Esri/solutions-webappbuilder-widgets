@@ -29,6 +29,7 @@ define([
   'jimu/dijit/SimpleTable',
   'jimu/LayerInfos/LayerInfos',
   'jimu/dijit/Message',
+  'jimu/dijit/CheckBox',
   'jimu/dijit/LayerChooserFromMapWithDropbox',
   'esri/symbols/jsonUtils',
   '../locatorUtils',
@@ -52,6 +53,7 @@ define([
     SimpleTable,
     LayerInfos,
     Message,
+    CheckBox,
     LayerChooserFromMapSelect,
     jsonUtils,
     _utils,
@@ -126,6 +128,9 @@ define([
           onlyShowVisible: false,
           createMapResponse: this.map.webMapResponse
         });
+        if (layerChooserFromMap.errorTipSection && layerChooserFromMap.errorTipSection.style) {
+          domStyle.set(layerChooserFromMap.errorTipSection, 'display', 'none');
+        }
         layerChooserFromMap.startup();
 
         this.layerChooserSelect = new LayerChooserFromMapSelect({
@@ -165,13 +170,31 @@ define([
           }]
         }, this.sourceList);
         html.setStyle(this.sourceList.domNode, 'height', '100%');
+        this._validLocator = false;
         this.sourceList.startup();
         this.own(on(this.sourceList, 'row-select', lang.hitch(this, this._onSourceItemSelected)));
         this.own(on(this.sourceList, 'row-delete', lang.hitch(this, this._onSourceItemRemoved)));
 
-        this.xyEnabled = true;
+        this.xyEnabled = false;
+        this.enableXYField = this._initCheckBox(this.enableXYField, this.nls.enableXYField, this.editXYFields);
+
         this.own(on(this.editXYFields, 'click', lang.hitch(this, this._onXYEditFieldsClick)));
         this.own(on(this.editLayerFields, 'click', lang.hitch(this, this._onLayerEditFieldsClick)));
+      },
+
+      _initCheckBox: function (domNode, nlsValue, editNode) {
+        domNode = new CheckBox({
+          checked: false,
+          label: nlsValue
+        }, domNode);
+        this._toggleNode(editNode, false, 'edit-fields-disabled', 'edit-fields');
+        this.own(on(domNode, 'change', lang.hitch(this, function () {
+          var enabled = domNode.getValue();
+          this.xyEnabled = enabled;
+          this.validateAddressOptions();
+          this._toggleNode(editNode, enabled, 'edit-fields-disabled', 'edit-fields');
+        })));
+        return domNode;
       },
 
       _initMaxRecords: function () {
@@ -210,6 +233,7 @@ define([
         this._validLayer = true;
         this._updateOk();
         this._toggleNode(this.editLayerFields, true, 'edit-fields-disabled', 'edit-fields');
+        this._validateLayerFields();
       },
 
       addSelect: function (node, values) {
@@ -234,8 +258,20 @@ define([
             _layerInfo: this.layerInfo,
             type: 'fieldInfos'
           });
+          this.own(on(editFields, 'edit-fields-popup-ok', lang.hitch(this, function () {
+            this._validateLayerFields();
+          })));
           editFields.popupEditPage();
         }
+      },
+
+      _validateLayerFields: function () {
+        var visibleFields = this.layerInfo.fieldInfos.filter(function (field) {
+          return field.visible;
+        });
+        this._validFields = visibleFields.length > 0;
+        this._toggleNode(this.noLayerFields, this._validFields, 'display-block', 'display-none');
+        this._updateOk();
       },
 
       setConfig: function (config) {
@@ -268,12 +304,10 @@ define([
         //if we have a config layer set it otherwise just expand the chooser
         if (layerInfo) {
           layerInfo.getLayerObject().then(lang.hitch(this, function (layer) {
-            this.layerChooserSelect.setSelectedLayer(layer).then(lang.hitch(this, function (success) {
+            this.layerChooserSelect.setSelectedLayer(layer).then(lang.hitch(this, function () {
               this._validLayer = true;
               this._updateOk();
               this._toggleNode(this.editLayerFields, true, 'edit-fields-disabled', 'edit-fields');
-              //TODO If we need to delay the event binding could be done here rather than on load
-              console.log(success);
             }));
           }));
         } else {
@@ -294,11 +328,35 @@ define([
           this._setDefaultXYFields();
         }
 
-        if (typeof (this.config.xyEnabled) !== 'undefined') {
-          this.xyEnabled = this.config.xyEnabled;
-        }
+        this.xyEnabled = typeof (this.config.xyEnabled) !== 'undefined' ? this.config.xyEnabled : false;
+        this.enableXYField.setValue(this.config.xyEnabled);
 
         this._setXYFields(this.defaultXYFields, this.config);
+
+        this.validateAddressOptions();
+      },
+
+      validateAddressOptions: function () {
+        //disable ok if no address options are enabled or if no fields are defined within them
+        var locatorOptionsEnabled = false;
+        var trs = this.sourceList.getRows();
+        array.forEach(trs, lang.hitch(this, function (tr) {
+          if (!locatorOptionsEnabled) {
+            var single = tr.singleEnabled;
+            var visibleFields = [];
+            if (tr.multiEnabled && tr.addressFields && tr.addressFields.filter) {
+              visibleFields = tr.addressFields.filter(function (f) {
+                return f.visible;
+              });
+            }
+
+            var multi = tr.multiEnabled && visibleFields.length > 0;
+            locatorOptionsEnabled = tr.multiEnabled && single ? multi && single : tr.multiEnabled ? multi : single;
+            this._toggleNode(tr.noFieldsNode, tr.multiEnabled ? multi : true, 'display-block', 'display-none');
+          }
+        }));
+        this._validAddressOptions = this.xyEnabled || locatorOptionsEnabled;
+        this._updateOk();
       },
 
       _getLayerInfoFromConfiguration: function (layer) {
@@ -307,7 +365,6 @@ define([
         if (layerSettings && layerSettings.layerInfo && layerSettings.layerInfo.featureLayer) {
           if (layerSettings.layerInfo.featureLayer.id === layer.id) {
             layerInfo = layerSettings.layerInfo;
-            //TODO??
             layerInfo.fieldInfos = this._getFieldInfos(layer, layerInfo);
           }
         }
@@ -341,7 +398,7 @@ define([
               fieldName: layerObject.fields[i].name,
               label: layerObject.fields[i].alias || layerObject.fields[i].name,
               isEditable: layerObject.fields[i].editable,
-              visible: true,
+              visible: false,
               isRecognizedValues: isRecognizedValues,
               type: layerObject.fields[i].type
             });
@@ -497,7 +554,6 @@ define([
       },
 
       _onXYEditFieldsClick: function () {
-        //TODO remove the enabled check if it will always be enabled
         if (this.xyEnabled) {
           var editFields = new EditFields({
             nls: this.nls,
@@ -531,7 +587,8 @@ define([
         var locatorSetting = new LocatorSourceSetting({
           nls: this.nls,
           map: this.map,
-          defaultXYFields: this.config.defaultXYFields
+          defaultXYFields: this.config.defaultXYFields,
+          parent: this
         });
         locatorSetting.setDefinition(definition);
         locatorSetting.setConfig({
@@ -598,7 +655,8 @@ define([
         this._currentSourceSetting = new LocatorSourceSetting({
           nls: this.nls,
           map: this.map,
-          defaultXYFields: this.config.defaultXYFields
+          defaultXYFields: this.config.defaultXYFields,
+          parent: this
         });
         this._currentSourceSetting.setDefinition(definition);
         this._currentSourceSetting.setConfig({
@@ -616,7 +674,8 @@ define([
         });
         this._currentSourceSetting.setRelatedTr(relatedTr);
         this._currentSourceSetting.placeAt(this.sourceSettingNode);
-
+        this._validLocator = true;
+        this._updateOk();
         this._currentSourceSetting.own(
           on(this._currentSourceSetting,
             'reselect-locator-url-ok',
@@ -698,7 +757,8 @@ define([
       _updateOk: function () {
         var disable = !((typeof (this._validLayer) !== 'undefined') ? this._validLayer : true) ||
           !((typeof (this._validLocator) !== 'undefined') ? this._validLocator : true) ||
-          !((typeof (this._validFields) !== 'undefined') ? this._validFields : true);
+          !((typeof (this._validFields) !== 'undefined') ? this._validFields : true) ||
+          !((typeof (this._validAddressOptions) !== 'undefined') ? this._validAddressOptions : true);
         var s = query(".button-container")[0];
         var s2 = s.children[2];
         var s3 = s.children[3];

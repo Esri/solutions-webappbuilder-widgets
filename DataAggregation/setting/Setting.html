@@ -2,7 +2,7 @@
   <div class="main-section">
 
     <!--=Layer Options-->
-      <div data-dojo-attach-point="layerTabNode" style="margin-bottom:30px;">
+      <div data-dojo-attach-point="layerTabNode" class="layer-node">
         <table class="layer-table">
           <colgroup>
             <col width="40%"></col>
@@ -19,17 +19,12 @@
               <td data-dojo-attach-point="layerTd" class="control-padding padding-left-10"></td>
               <td>
                 <div data-dojo-attach-point="editLayerFields" class="edit-fields"></div>
+                <div data-dojo-attach-point="noLayerFields" class="display-none no-fields-alert" title="${nls.noFields}"></div>
               </td>
               <td data-dojo-attach-point="tempSymbol">
                 <div data-dojo-attach-point="symbolPicker" data-dojo-type="jimu/dijit/SymbolPicker" class="jimu-r-row symPick control-padding"></div>
               </td>
             </tr>
-            <!--Move this with location setting dijit-->
-            <!--<tr class="row-padding">
-              <td>${nls.maxRecords}</td>
-              <td><input data-dojo-attach-point="maxRecords" class="control-padding" title="${nls.maxRecordsHint}" data-dojo-type="dijit/form/NumberTextBox" data-dojo-props="constraints:{min:0,max:99999999999}, invalidMessage:'${nls.requiresInteger}'" placeHolder="${nls.eg} 1000" /></td>
-              <td class="instruction hintText">${nls.maxRecordsHint}</td>
-            </tr>-->
           </tbody>
         </table>
       </div>
@@ -40,7 +35,7 @@
         ${nls.geocodeTabLabel}
       </legend>
       <div data-dojo-attach-point="geocodeTabNode">
-        <div style="margin: 0px 10px 0px 10px;">
+        <div class="geocode-node">
           <div data-dojo-attach-point="locatorOptions" style="display:block;">
             <div class="add-button" role="button">
               <div class="button" data-dojo-attach-event="click:_onAddClick">
@@ -57,9 +52,7 @@
                   <tr>
                     <td colspan="1" style="padding-top:22px;">
                       <div>
-                        <div class="field-option-label" data-dojo-attach-point="enableXYField">
-                          ${nls.enableXYField}
-                        </div>
+                        <div class="field-option-label" data-dojo-attach-point="enableXYField" title="${nls.configureXYFields}"></div>
                         <div data-dojo-attach-point="editXYFields" class="edit-fields"></div>
                       </div>
                     </td>

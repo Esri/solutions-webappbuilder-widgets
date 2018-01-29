@@ -29,6 +29,7 @@ define(
     'jimu/dijit/_GeocodeServiceChooserContent',
     'jimu/dijit/Popup',
     'jimu/dijit/LoadingShelter',
+    'jimu/dijit/CheckBox',
     'esri/request',
     'esri/lang',
     './EditFields',
@@ -53,6 +54,7 @@ define(
     _GeocodeServiceChooserContent,
     Popup,
     LoadingShelter,
+    CheckBox,
     esriRequest,
     esriLang,
     EditFields,
@@ -68,6 +70,7 @@ define(
       config: null,
       singleLineFieldName: null,
       templateString: template,
+      parent: null,
 
       _locatorDefinition: null,
       _esriLocatorRegExp: /http(s)?:\/\/geocode(.){0,3}\.arcgis.com\/arcgis\/rest\/services\/World\/GeocodeServer/g,
@@ -82,8 +85,13 @@ define(
         this.exampleHint = this.nls.locatorExample +
           ": http://&lt;myServerName&gt;/arcgis/rest/services/World/GeocodeServer";
 
-        this.singleEnabled = true;
-        this.multiEnabled = true;
+        this.singleEnabled = false;
+        this.multiEnabled = false;
+
+        this.enableSingleField = this._initCheckBox(this.enableSingleField,
+          this.nls.enableSingleField, this.editSingleFields);
+        this.enableMultiField = this._initCheckBox(this.enableMultiField,
+          this.nls.enableMultiField, this.editMultiFields);
 
         this.own(on(this.editSingleFields, 'click', lang.hitch(this, this._editFields, 'single')));
         this.own(on(this.editMultiFields, 'click', lang.hitch(this, this._editFields, 'multi')));
@@ -94,8 +102,45 @@ define(
         this.setConfig(this.config);
       },
 
+      _initCheckBox: function (domNode, nlsValue, editNode) {
+        domNode = new CheckBox({
+          checked: false,
+          label: nlsValue
+        }, domNode);
+        this._toggleNode(editNode, false);
+        this.own(on(domNode, 'change', lang.hitch(this, function () {
+          var enabled = domNode.getValue();
+          switch (domNode.label) {
+            case this.nls.enableSingleField:
+              this.singleEnabled = enabled;
+              if (this.tr) {
+                this.tr.singleEnabled = enabled;
+              }
+              break;
+            case this.nls.enableMultiField:
+              this.multiEnabled = enabled;
+              if (this.tr) {
+                this.tr.multiEnabled = enabled;
+              }
+              break;
+          }
+          this._toggleNode(editNode, enabled);
+          this.parent.validateAddressOptions();
+        })));
+        return domNode;
+      },
+
       setRelatedTr: function(tr) {
         this.tr = tr;
+        this._setDefaultRowOptions();
+      },
+
+      _setDefaultRowOptions: function () {
+        this.tr.singleEnabled = this.singleEnabled;
+        this.tr.multiEnabled = this.multiEnabled;
+        this.tr.addressFields = this.addressFields;
+        this.tr.noFieldsNode = this.noFields;
+        this.parent.validateAddressOptions();
       },
 
       getRelatedTr: function() {
@@ -124,9 +169,12 @@ define(
         if (typeof (this.config.singleEnabled) !== 'undefined') {
           this.singleEnabled = this.config.singleEnabled;
         }
+        this.enableSingleField.setValue(this.singleEnabled);
+
         if (typeof (this.config.multiEnabled) !== 'undefined') {
           this.multiEnabled = this.config.multiEnabled;
         }
+        this.enableMultiField.setValue(this.multiEnabled);
 
         //this.shelter.show();
         if (this._locatorDefinition.url !== url) {
@@ -211,6 +259,8 @@ define(
           });
           this.own(on(editFields, 'edit-fields-popup-ok', lang.hitch(this, function () {
             this.singleAddressFields = editFields.fieldInfos;
+            this.tr.singleAddressFields = editFields.fieldInfos;
+            this.parent.validateAddressOptions();
           })));
           editFields.popupEditPage();
         }
@@ -227,6 +277,8 @@ define(
         });
         this.own(on(editFields, 'edit-fields-popup-ok', lang.hitch(this, function () {
           this.addressFields = editFields.fieldInfos;
+          this.tr.addressFields = editFields.fieldInfos;
+          this.parent.validateAddressOptions();
         })));
         editFields.popupEditPage();
       },
@@ -247,12 +299,16 @@ define(
         this.locatorName.set('disabled', true);
         this.countryCode.set('disabled', true);
         this.minCandidateScore.set('disabled', true);
+        this.enableSingleField.set('disabled', true);
+        this.enableMultiField.set('disabled', true);
       },
 
       _enableSourceItems: function() {
         this.locatorName.set('disabled', false);
         this.countryCode.set('disabled', false);
         this.minCandidateScore.set('disabled', false);
+        this.enableSingleField.set('disabled', false);
+        this.enableMultiField.set('disabled', false);
       },
 
       _setSourceItems: function() {

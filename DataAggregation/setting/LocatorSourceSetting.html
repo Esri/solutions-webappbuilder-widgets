@@ -69,19 +69,16 @@
 
           <td colspan="1">
             <div>
-              <div class="field-option-label" data-dojo-attach-point="enableSingleField">
-                ${nls.enableSingleField}
-              </div>
-              <div data-dojo-attach-point="editSingleFields" class="edit-fields"></div>
+              <div class="field-option-label" data-dojo-attach-point="enableSingleField"></div>
+              <div data-dojo-attach-point="editSingleFields" class="edit-fields" title="${nls.configureSingleFields}"></div>
             </div>
           </td>
 
           <td colspan="1">
             <div>
-              <div class="source-edit-fields field-option-label" data-dojo-attach-point="enableMultiField">
-                ${nls.enableMultiField}
-              </div>
+              <div class="source-edit-fields field-option-label" data-dojo-attach-point="enableMultiField" title="${nls.configureMultiFields}"></div>
               <div data-dojo-attach-point="editMultiFields" class="edit-fields"></div>
+              <div data-dojo-attach-point="noFields" class="display-none no-fields-alert" title="${nls.noFields}"></div>
             </div>
           </td>
 
@@ -99,5 +96,4 @@
     </table>
   </div>
 
-  <!--<div data-dojo-attach-point="shelter" data-dojo-type="jimu/dijit/LoadingShelter" data-dojo-props="hidden:true"></div>-->
 </div>

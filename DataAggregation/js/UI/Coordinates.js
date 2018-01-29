@@ -94,6 +94,9 @@ define(['dojo/_base/declare',
           if (this._startPageView && this._locationTypeView) {
             this.altNextIndex = this._startPageView.index;
             this.altBackIndex = this._locationTypeView.index;
+          } else if (this._startPageView) {
+            this.altNextIndex = this._startPageView.index;
+            this.altBackIndex = this._startPageView.index;
           }
         }
       },

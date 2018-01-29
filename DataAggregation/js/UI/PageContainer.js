@@ -55,7 +55,6 @@ define(['dojo/_base/declare',
       views: [],
       _currentIndex: -1,
       _homeIndex: 0,
-      _rootIndex: 0,
       theme: '',
       isDarkTheme: '',
       styleColor: '',
@@ -153,6 +152,7 @@ define(['dojo/_base/declare',
         } else if (this.views.length > 0) {
           this.selectView(this._homeIndex);
         }
+        this._backLabels = [];
       },
 
       _onBuilderStyleChanged: function (styleChange) {
@@ -533,13 +533,12 @@ define(['dojo/_base/declare',
 
       reset: function () {
         this._clearViews();
+        this.views = [];
         this._currentIndex = -1;
         this._homeIndex = 0;
         this.nextDisabled = false;
         this.backDisabled = true;
         this.selected = '';
-        this.displayControllerOnStart = false;
-        this.toggleController(true);
         this.updateImageNodes();
       }
     });

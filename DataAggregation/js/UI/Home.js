@@ -68,6 +68,9 @@ define(['dojo/_base/declare',
       _singleFields: [],
       _multiFields: [],
       _childViews: [],
+      singleEnabled: false,
+      multiEnabled: false,
+      xyEnabled: false,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -110,16 +113,6 @@ define(['dojo/_base/declare',
         if (!showInfoWindow) {
           this.map.infoWindow.hide();
         }
-      },
-
-      clearSearchText: function () {
-        if (this._searchInstance && this._searchInstance.search) {
-          this._searchInstance.search.clear();
-        }
-      },
-
-      resetPlaceNameWidgetValues: function () {
-        this.clearSearchText();
       },
 
       setStyleColor: function (styleColor) {
@@ -237,7 +230,9 @@ define(['dojo/_base/declare',
         return new Addresses(lang.mixin({
           singleFields: this._singleFields,
           multiFields: this._multiFields,
-          fields: this._getFields(obj, false)
+          fields: this._getFields(obj, false),
+          multiEnabled: this.multiEnabled,
+          singleEnabled: this.singleEnabled
         }, this._baseArgs));
       },
 
@@ -270,11 +265,15 @@ define(['dojo/_base/declare',
         var startPage = this.pageContainer.getViewByTitle('StartPage');
         startPage.csvStore = this.csvStore;
 
-        var coordinatesView = this._initCoordinatesView(obj);
-        this.pageContainer.addView(coordinatesView);
+        if (this.xyEnabled) {
+          var coordinatesView = this._initCoordinatesView(obj);
+          this.pageContainer.addView(coordinatesView);
+        }
 
-        var addressView = this._initAddressView(obj);
-        this.pageContainer.addView(addressView);
+        if (this.singleEnabled || this.multiEnabled) {
+          var addressView = this._initAddressView(obj);
+          this.pageContainer.addView(addressView);
+        }
 
         var fieldMappingView = this._initFieldMappingView(obj);
         this.pageContainer.addView(fieldMappingView);

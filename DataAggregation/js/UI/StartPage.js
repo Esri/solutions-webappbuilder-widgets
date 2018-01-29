@@ -58,6 +58,9 @@ define(['dojo/_base/declare',
       state: 'mapping', //mapping or review...helps control what happens for various apsects of view navigation
       csvStore: null,
       _syncFields: {},
+      singleEnabled: false,
+      multiEnabled: false,
+      xyEnabled: false,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -141,13 +144,17 @@ define(['dojo/_base/declare',
       },
 
       _locationMappingClick: function () {
-        //this.parent._locationMappingComplete = false;
         this._validateStatus();
-        this._setViewByTitle('LocationType');
+        var title;
+        if (this.xyEnabled && (this.multiEnabled || this.singleEnabled)) {
+          title = 'LocationType';
+        } else {
+          title = this.xyEnabled ? 'Coordinates' : 'Addresses';
+        }
+        this._setViewByTitle(title);
       },
 
       _schemaMappingClick: function () {
-        //this.parent._fieldMappingComplete = false;
         this._validateStatus();
         this._setViewByTitle('FieldMapping');
       },
@@ -163,17 +170,21 @@ define(['dojo/_base/declare',
         //Coordinates, Addresses, and FieldMapping views can alter the state of these properties and will
         // emit an event when they do so this just needs to respond
         if (this.pageContainer && !this._coordinatesView && !this._addressView && !this._fieldMappingView) {
-          this._coordinatesView = this.pageContainer.getViewByTitle('Coordinates');
-          this.own(on(this._coordinatesView, 'location-mapping-update', lang.hitch(this, function (v) {
-            this.parent._locationMappingComplete = v;
-            this._validateStatus();
-          })));
+          if (this.xyEnabled) {
+            this._coordinatesView = this.pageContainer.getViewByTitle('Coordinates');
+            this.own(on(this._coordinatesView, 'location-mapping-update', lang.hitch(this, function (v) {
+              this.parent._locationMappingComplete = v;
+              this._validateStatus();
+            })));
+          }
 
-          this._addressView = this.pageContainer.getViewByTitle('Addresses');
-          this.own(on(this._addressView, 'location-mapping-update', lang.hitch(this, function (v) {
-            this.parent._locationMappingComplete = v;
-            this._validateStatus();
-          })));
+          if (this.singleEnabled || this.multiEnabled) {
+            this._addressView = this.pageContainer.getViewByTitle('Addresses');
+            this.own(on(this._addressView, 'location-mapping-update', lang.hitch(this, function (v) {
+              this.parent._locationMappingComplete = v;
+              this._validateStatus();
+            })));
+          }
 
           this._fieldMappingView = this.pageContainer.getViewByTitle('FieldMapping');
           this.own(on(this._fieldMappingView, 'field-mapping-update', lang.hitch(this, function (v) {
@@ -181,7 +192,13 @@ define(['dojo/_base/declare',
             this._validateStatus();
           })));
 
-          this._locationTypeView = this.pageContainer.getViewByTitle('LocationType');
+          if (this.xyEnabled && (this.singleEnabled || this.multiEnabled)) {
+            this._locationTypeView = this.pageContainer.getViewByTitle('LocationType');
+          } else if (this.xyEnabled) {
+            this._locationTypeView = this._coordinatesView;
+          } else {
+            this._locationTypeView = this._addressView;
+          }
           if (this._locationTypeView && !this.parent._locationMappingComplete) {
             this.altNextIndex = this._locationTypeView.index;
           }

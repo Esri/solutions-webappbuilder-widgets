@@ -59,9 +59,8 @@ define(['dojo/_base/declare',
       theme: '',
       isDarkTheme: '',
       styleColor: '',
-
-      //TODO need to discuss with team what to do when the locator only supports one of the options
-      //...single or multi...should it be grayed out or not visible at all?
+      singleEnabled: false,
+      multiEnabled: false,
 
       constructor: function (options) {
         lang.mixin(this, options);
@@ -103,6 +102,9 @@ define(['dojo/_base/declare',
           if (this._startPageView && this._locationTypeView) {
             this.altNextIndex = this._startPageView.index;
             this.altBackIndex = this._locationTypeView.index;
+          } else if (this._startPageView) {
+            this.altNextIndex = this._startPageView.index;
+            this.altBackIndex = this._startPageView.index;
           }
         }
       },
@@ -172,12 +174,10 @@ define(['dojo/_base/declare',
       _initControls: function () {
         //If only single or only multi is supported by the locator only add the appropriate one
         // If they are both supported add both
-        var singleSupport = this.singleFields.length > 0 ? true : false;
-        var multiSupport = this.multiFields.length > 0 ? true : false;
+        var singleSupport = this.singleEnabled;
+        var multiSupport = this.multiEnabled;
 
         if (singleSupport && multiSupport) {
-          //will need to construct these also
-
           this.rdoSingleAddress.set('checked', this.useSingle);
           this._toggleVisibility(this.singleFieldTable, this.useSingle);
 
@@ -188,12 +188,32 @@ define(['dojo/_base/declare',
           this._setFields(this.multiFields, this.fields, this.multiFieldTable);
 
         } else if (singleSupport) {
-          //no need to construct radio button
+          this.useSingle = true;
+          this.useMulti = false;
           this._setFields(this.singleFields, this.fields, this.singleFieldTable);
+          this._initTableDisplay([this.multiAddressRow, this.mainInstructionRow, this.singleRadioRow],
+            [this.singleFieldHintTd, this.singleFieldTableRow], [this.singleSubTaskHintTd]);
         } else if (multiSupport) {
-          //no need to construct radio button
+          this.useMulti = true;
+          this.useSingle = false;
           this._setFields(this.multiFields, this.fields, this.multiFieldTable);
+          this._initTableDisplay([this.singleAddressRow, this.mainInstructionRow, this.multiRadioRow],
+            [this.multiFieldHintTd, this.multiFieldTableRow], [this.multiSubTaskHintTd]);
         }
+      },
+
+      _initTableDisplay: function (hideElements, noPadElements, padBottomElements) {
+        array.forEach(hideElements, lang.hitch(this, function (hideElement) {
+          this._toggleVisibility(hideElement, false);
+        }));
+
+        array.forEach(noPadElements, lang.hitch(this, function (noPadElement) {
+          domClass.add(noPadElement, 'no-padding');
+        }));
+
+        array.forEach(padBottomElements, lang.hitch(this, function (padBottomElement) {
+          domClass.add(padBottomElement, 'pad-bottom-10');
+        }));
       },
 
       _setFields: function (controlFields, fields, table) {

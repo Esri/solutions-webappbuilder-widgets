@@ -26,6 +26,7 @@ define({
     configureSingleFields: "Configure a Single Address Field",
     configureMultiFields: "Configure Multiple Address Fields",
     configureXYFields: "Configure X/Y Fields",
+    noFields: "Use the edit action to define one or more fields to display",
     display: "Display",
     duplicate: "Find Duplicate",
     duplicateTip: "Search this field for identical values between the input file and destination layer./n When an identical match is found the record from the file will not be geocoded and will be flagged as a duplicate.",

@@ -145,10 +145,12 @@
   cursor: default;
 }
 
+.jimu-widget-setting-critical-facilities .layer-node {
+  margin-bottom: 30px;
+}
 
 /*End Layer Section*/
 /*------------------------------------------------------------------------------------------------------------*/
-
 /*Start Geocode Section*/
 .jimu-widget-setting-critical-facilities .add-button {
   margin: 8px 0;
@@ -319,9 +321,6 @@
 }
 
 .jimu-widget-setting-critical-facilities .xy-table {
-  /*position: relative;*/
-  /*width: 270px;*/ /*associated with source-list*/
-  /*padding-top: 10px;*/
   width: 650px;
   position: relative;
   float: right;
@@ -329,16 +328,12 @@
 }
 
 .jimu-rtl .jimu-widget-setting-critical-facilities .xy-table {
-  /*position: relative;*/
-  /*width: 270px;*/ /*associated with source-list*/
-  /*padding-top: 10px;*/
   width: 650px;
   position: relative;
   float: left;
   margin-bottom: 10px;
 }
 
-/*TODO remove the bo-locator business??*/
 .jimu-rtl .jimu-widget-setting-critical-facilities .xy-table-no-locator {
   position: relative;
   padding-right: 34px;
@@ -376,6 +371,7 @@
   background-image: url(images/edit_disabled.png);
   cursor: default;
   margin-left: 15px;
+  float: left;
 }
 
 .jimu-rtl .jimu-widget-setting-critical-facilities .xy-table > tbody > tr > td .edit-fields-disabled {
@@ -385,6 +381,7 @@
   background-image: url(images/edit_disabled.png);
   cursor: default;
   margin-right: 15px;
+  float: right;
 }
 
 .jimu-widget-setting-critical-facilities .field-option-label {
@@ -403,6 +400,32 @@
   font-size: 12px;
   color: #999;
   width: 100%;
+}
+
+.jimu-widget-setting-critical-facilities .geocode-node {
+  margin: 0px 10px 0px 10px;
+}
+
+.jimu-widget-setting-critical-facilities .no-fields-alert {
+  width: 16px;
+  height: 16px;
+  background-image: url(../../images/warning.png);
+  cursor: default;
+  margin-left: 15px;
+  background-repeat: no-repeat;
+  float: left;
+  background-size: contain;
+}
+
+.jimu-rtl .jimu-widget-setting-critical-facilities .no-fields-alert {
+  width: 16px;
+  height: 16px;
+  background-image: url(../../images/warning.png);
+  cursor: default;
+  margin-right: 15px;
+  background-repeat: no-repeat;
+  float: right;
+  background-size: contain;
 }
 
 /*End Geocode Section*/
@@ -479,6 +502,7 @@
   background-image: url(images/edit_disabled.png);
   cursor: default;
   margin-left: 15px;
+  float: left;
 }
 
 .jimu-rtl .jimu-widget-setting-critical-facilities .fields-table > tbody > tr > td .edit-fields-disabled {
@@ -488,6 +512,7 @@
   background-image: url(images/edit_disabled.png);
   cursor: default;
   margin-right: 15px;
+  float: right;
 }
 
 .jimu-widget-setting-critical-facilities .edit-fields-disabled {

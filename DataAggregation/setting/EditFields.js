@@ -217,7 +217,7 @@ define(['dojo/_base/declare',
             this._fieldsTable.addRow({
               fieldName: locNames ? field.localizedNames[l] : field.name,
               label: locNames ? field.localizedNames[l] : field.alias,
-              visible: field.hasOwnProperty('visible') ? field.visible : true,
+              visible: field.hasOwnProperty('visible') ? field.visible : false,
               type: "STRING",
               duplicate: field.hasOwnProperty('duplicate') ? field.duplicate : true,
               isRecognizedValues: this._getIsRecognizedValues(field)

@@ -589,6 +589,13 @@
   display: table-row-group;
 }
 
+.jimu-widget-critical-facilities-ui .no-padding {
+  padding: 0px;
+}
+
+.jimu-widget-critical-facilities-ui .pad-bottom-10 {
+  padding: 0px 0px 10px 0px;
+}
 /*nav dijit*/
 .jimu-widget-critical-facilities-ui .cf-page-container {
   position: relative;
