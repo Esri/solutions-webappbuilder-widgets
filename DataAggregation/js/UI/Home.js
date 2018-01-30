@@ -98,6 +98,14 @@ define(['dojo/_base/declare',
 
       startup: function () {
         this._started = true;
+        this.inDrop = false;
+        if (this.parent.domNode) {
+          //in the normal working scenerio this causes 2 drop events to be fired
+          // using inDrop flag to check if a drop event occurs before the current drop event completes
+          this.own(on(this.parent.domNode, "dragenter", this.onDragEnter));
+          this.own(on(this.parent.domNode, "dragover", this.onDragOver));
+          this.own(on(this.parent.domNode, "drop", lang.hitch(this, this.onDrop)));
+        }
 
         this.own(on(this.map.container, "dragenter", this.onDragEnter));
         this.own(on(this.map.container, "dragover", this.onDragOver));
@@ -112,6 +120,7 @@ define(['dojo/_base/declare',
       _clearResults: function (showInfoWindow) {
         if (!showInfoWindow) {
           this.map.infoWindow.hide();
+          this.inDrop = false;
         }
       },
 
@@ -173,8 +182,6 @@ define(['dojo/_base/declare',
       _clearMapping: function () {
         this.parent._locationMappingComplete = false;
         this.parent._fieldMappingComplete = false;
-        //alert('should _tempResultsAdded be cleared here??');
-        //this.parent._tempResultsAdded = false;
       },
 
       onDragEnter: function (event) {
@@ -186,34 +193,42 @@ define(['dojo/_base/declare',
       },
 
       onDrop: function (event) {
-        if (this.csvStore) {
-          this.csvStore.clear();
-        }
+        if (!this.inDrop) {
+          this.inDrop = true;
+          if (this.csvStore) {
+            this.csvStore.clear();
+          }
 
-        var files;
-        if (event.dataTransfer) {
-          event.preventDefault();
-          files = event.dataTransfer.files;
-        } else if (event.currentTarget){
-          files = event.currentTarget.files;
-        }
+          var files;
+          if (event.dataTransfer) {
+            event.preventDefault();
+            files = event.dataTransfer.files;
+          } else if (event.currentTarget) {
+            files = event.currentTarget.files;
+          }
 
-        if (files && files.length > 0) {
-          var file = files[0];//single file for the moment
-          if (file.name.indexOf(".csv") !== -1) {
-            this.csvStore = new CsvStore({
-              file: file,
-              fsFields: this._fsFields,
-              map: this.map,
-              geocodeSources: this._geocodeSources,
-              nls: this.nls,
-              appConfig: this.appConfig,
-              editLayer: this.parent.editLayer,
-              symbol: this.parent._symbol
-            });
-            this.csvStore.handleCsv().then(lang.hitch(this, function (obj) {
-              this._updatePageContainer(obj);
-            }));
+          if (files && files.length > 0) {
+            var file = files[0];//single file for the moment
+            if (file.name.indexOf(".csv") !== -1) {
+              this.csvStore = new CsvStore({
+                file: file,
+                fsFields: this._fsFields,
+                map: this.map,
+                geocodeSources: this._geocodeSources,
+                nls: this.nls,
+                appConfig: this.appConfig,
+                editLayer: this.parent.editLayer,
+                symbol: this.parent._symbol
+              });
+              this.csvStore.handleCsv().then(lang.hitch(this, function (obj) {
+                this._updatePageContainer(obj);
+                this.inDrop = false;
+              }));
+            } else {
+              this.inDrop = false;
+            }
+          } else {
+            this.inDrop = false;
           }
         }
       },
@@ -361,6 +376,7 @@ define(['dojo/_base/declare',
 
         this.fileForm.reset();
         this.parent._initPageContainer();
+        this.inDrop = false;
       }
     });
   });
