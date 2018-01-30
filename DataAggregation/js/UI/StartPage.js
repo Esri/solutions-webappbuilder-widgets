@@ -277,6 +277,7 @@ define(['dojo/_base/declare',
 
         this.csvStore.useMultiFields = locationResults.type === 'multi' ? true : false;
         this.csvStore.mappedArrayFields = fieldMappingResults.results;
+        this.csvStore.labelField = fieldMappingResults.labelField;
 
         if (locationResults.type === 'single') {
           this.csvStore.addrFieldName = locationResults.fields[0].keyField;

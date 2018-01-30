@@ -178,8 +178,6 @@ define(['dojo/_base/declare',
             x += 1;
           }));
         }
-
-        //this.pageContainer.selectView(this.index);
       },
 
       updateImageNodes: function () {

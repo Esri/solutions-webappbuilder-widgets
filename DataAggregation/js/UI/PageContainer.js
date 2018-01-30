@@ -186,15 +186,11 @@ define(['dojo/_base/declare',
         //update _backLabels when selectView did not originate from navView where this is handled
         // slightly differently to account for back vs next calls
         if (!fromNavCall && index > 0) {
-          //var bl = this.getViewByIndex(index);
-          //if (this._backLabels.length > 0 && bl && (this._backLabels[this._backLabels.length - 1] !== bl.label)) {
-          //  this._backLabels.push(this.views[index].label);
-          //}
-
           var title = this.getSelectedTitle();
           var currentView = this.getViewByTitle(title);
           if (currentView && this._backLabels[this._backLabels.length - 1] !== currentView.label) {
             this._backLabels.push(currentView.label);
+            this.backDisabled = false;
           }
         }
 
@@ -328,6 +324,7 @@ define(['dojo/_base/declare',
           if (navKey === 'next-view') {
             if (this._backLabels[this._backLabels.length - 1] !== this.views[currentViewIndex].label) {
               this._backLabels.push(this.views[currentViewIndex].label);
+              this.backDisabled = false;
             }
           }
         }
@@ -339,6 +336,9 @@ define(['dojo/_base/declare',
               this._backLabels.splice(i, 1);
               break;
             }
+          }
+          if (this._backLabels.length === 0) {
+            this.backDisabled = true;
           }
         }
 
@@ -409,7 +409,6 @@ define(['dojo/_base/declare',
         }
 
         this._updateViews();
-        this.selectView(this._currentIndex, true);
         this.emit('view-added', view);
       },
 
@@ -432,15 +431,10 @@ define(['dojo/_base/declare',
         this._backLabels = this._backLabels.filter(function (bl) {
           return bl !== vL;
         });
-
-        if (idx < this.views.length) {
-          this.selectView(idx, true);
-        } else if (typeof (this.altHomeIndex) !== 'undefined') {
-          //this._navView('next-view');
-          this.selectView(this.altHomeIndex);
-        } else {
-          this._navView('next-view');
+        if (this._backLabels.length === 0) {
+          this.backDisabled = true;
         }
+        this._navView('next-view');
         this.emit('view-removed', view);
       },
 

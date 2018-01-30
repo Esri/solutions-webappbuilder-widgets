@@ -28,7 +28,6 @@ define(['dojo/_base/declare',
   'dojo/text!./templates/Feature.html',
   'dojo/Deferred',
   './FeatureToolbar',
-  'esri/dijit/PopupTemplate',
   'esri/tasks/query',
   'jimu/dijit/Popup'
 ],
@@ -46,7 +45,6 @@ define(['dojo/_base/declare',
     template,
     Deferred,
     FeatureToolbar,
-    PopupTemplate,
     Query,
     Popup) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
@@ -83,7 +81,6 @@ define(['dojo/_base/declare',
 
       //TODO Should matched support the idea of being able to flag a feature as duplicate?? this would allow for possibility
       //TODO validation logic for each control should be defined based on field type from layer
-      //TODO seems like for duplicate the validation txt boxes should be on seperate rows
       //TODO handle dates, domains, and subtypes
 
       constructor: function (options) {
@@ -96,7 +93,6 @@ define(['dojo/_base/declare',
 
         var fields = this._getFields(this.feature);
         this._initSkipFields(fields);
-        this._initPopup(fields);
         this._initRows(fields, this.featureControlTable);
         if (this.isDuplicate) {
           this._initDuplicateReview(fields);
@@ -136,11 +132,7 @@ define(['dojo/_base/declare',
             }));
           }
         }));
-
-        this._featureToolbar._disableEdit();
-
-        this._showDuplicateReview(this.isDuplicate);
-        this.isShowing = true;
+        this.onShown();
       },
 
       onShown: function () {
@@ -149,8 +141,9 @@ define(['dojo/_base/declare',
         this._isReviewed = true;
         this._featureToolbar._disableEdit();
         this._showDuplicateReview(this.isDuplicate);
-        if (domClass.contains(this.reviewTableG, 'display-none') && this.isDuplicate) {
-          domClass.remove(this.reviewTableG, 'display-none');
+
+        if (!this.isDuplicate) {
+          this._showStandardReview();
         }
         this._featureToolbar._panToAndSelectFeature((this.isDuplicate && this._useGeomFromLayer) ?
           this._editFeature : this._feature);
@@ -242,6 +235,9 @@ define(['dojo/_base/declare',
       _initStandardReview: function () {
         this._useValuesFromFile = true;
         this._useValuesFromLayer = false;
+      },
+
+      _showStandardReview: function () {
         domClass.remove(this.featureTable, 'display-none');
         domClass.remove(this.locationSyncTable, 'display-none');
         domClass.remove(this.locationControlTable, 'display-none');
@@ -452,19 +448,6 @@ define(['dojo/_base/declare',
         }));
       },
 
-      _initPopup: function (fields) {
-        var content = { title: this.feature.label };
-
-        var fieldInfos = [];
-        array.forEach(fields, lang.hitch(this, function (f) {
-          if (f.name !== this.layer.objectIdField) {
-            fieldInfos.push({ fieldName: f.name, visible: true });
-          }
-        }));
-        content.fieldInfos = fieldInfos;
-        this.layer.infoTemplate = new PopupTemplate(content);
-      },
-
       _initToolbar: function (domNode) {
         this._featureToolbar = new FeatureToolbar({
           nls: this.nls,
@@ -641,10 +624,11 @@ define(['dojo/_base/declare',
                   var val = (this._address && this._address.hasOwnProperty(k)) ? this._address[k] : '';
                   if (this.isDuplicate && this._useValuesFromLayer) {
                     featureRow.layerValueTextBox.set('value', val);
+                    featureRow.layerValueTextBox.emit('keyUp');
                   } else {
                     featureRow.fileValueTextBox.set('value', val);
+                    featureRow.fileValueTextBox.emit('keyUp');
                   }
-                  featureRow.fileValueTextBox.emit('keyUp');
                   break;
                 }
               }
@@ -765,7 +749,8 @@ define(['dojo/_base/declare',
         valueTextBox.on("keyUp", function (v) {
           var valueChanged;
           var changeIndex;
-          var newValue = this.parent._getValue(v.srcElement.value);
+          var newValue = typeof (v.srcElement.value) !== 'undefined' ?
+            this.parent._getValue(v.srcElement.value) : this.value;
           if (this.isAddress) {
             valueChanged = newValue !== this.parent._getValue(this.row.addressValue);
             changeIndex = this.parent._changedAddressRows.indexOf(this.row.rowIndex);
@@ -820,19 +805,7 @@ define(['dojo/_base/declare',
             }
           }
         }));
-
-        //check the address rows
-        //this._changedAddressRows = [];
-        //array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
-        //  if (row.isAddressRow) {
-        //    if (row.addressValueTextBox.value !== row.addressValue && (this.isDuplicate &&
-        //      this._featureToolbar._originalValues.editAddress.Match_addr !== row.addressValueTextBox.value)) {
-        //      this._changedAddressRows.push(row.rowIndex);
-        //    }
-        //  }
-        //}));
         var rows = this._useValuesFromFile ? this._changedFileAttributeRows : this._changedLayerAttributeRows;
-        //this.emit('attribute-change', rows.length > 0 || this._changedAddressRows.length > 0);
         this.emit('attribute-change', rows.length > 0);
       },
 

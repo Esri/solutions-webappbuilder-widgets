@@ -29,10 +29,11 @@ define(['dojo/_base/declare',
     'esri/tasks/locator',
     'esri/tasks/query',
     'esri/SpatialReference',
+    'esri/dijit/PopupTemplate',
     'jimu/utils'
 ],
 function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Observable, Memory,
-  graphicsUtils, webMercatorUtils, Point, FeatureLayer, Locator, Query, SpatialReference,
+  graphicsUtils, webMercatorUtils, Point, FeatureLayer, Locator, Query, SpatialReference, PopupTemplate,
   jimuUtils) {
   return declare([Evented], {
 
@@ -68,6 +69,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     yFieldName: "",
     symbol: null,
     matchFieldPrefix: "MatchField_",
+    _internalFields: [],
 
     constructor: function (options) {
       lang.mixin(this, options);
@@ -123,6 +125,9 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
 
     /*jshint loopfunc:true */
     processForm: function () {
+      //fields that we add that need to not show up in the popup
+      this._internalFields = ['DestinationOID', 'matchScore', 'hasDuplicateUpdates', 'duplicateState'];
+      this._matchFields = [];
       var def = new Deferred();
       this._locateData(this.useAddr).then(lang.hitch(this, function (data) {
         //var results = {};
@@ -149,11 +154,13 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
 
           //These need to be persisted to support additional locate operations but need to be avoided when going into theactual layer
           array.forEach(this._currentAddressFields, lang.hitch(this, function (f) {
+            var matchField = this.matchFieldPrefix + f.keyField;
             if (typeof (f.value) !== 'undefined') {
-              attributes[this.matchFieldPrefix + f.keyField] = this.csvStore.getValue(si, f.value);
+              attributes[matchField] = this.csvStore.getValue(si, f.value);
             } else {
-              attributes[this.matchFieldPrefix + f.keyField] = undefined;
+              attributes[matchField] = undefined;
             }
+            this._matchFields.push(matchField);
           }));
 
           if (di && di.score > this.minScore) {
@@ -165,6 +172,7 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
             });
           } else if (di.isDuplicate) {
             attributes.ObjectID = duplicateI;
+            //If additional fields are auto added this._internalFields needs to be updated
             attributes.DestinationOID = di.featureAttributes[this.editLayer.objectIdField];
             attributes.matchScore = 100;
             attributes.hasDuplicateUpdates = false;
@@ -189,18 +197,16 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         }
 
         //This layer will always be created to support save of unmatched or duplicate even when none are matched up front
-        this.matchedFeatureLayer = this._initLayer(matchedFeatures, this.file.name);
-        if (matchedFeatures.length > 0) {
-          //feature list should support zoom to its children
-          this._zoomToData(this.matchedFeatureLayer.graphics);
-        }
+        this.matchedFeatureLayer = this._initLayer(matchedFeatures, this.file.name.replace('.csv', ''));
 
         if (duplicateFeatures.length > 0) {
-          this.duplicateFeatureLayer = this._initLayer(duplicateFeatures, this.file.name + "_Duplicate");
+          this.duplicateFeatureLayer = this._initLayer(duplicateFeatures,
+            this.file.name.replace('.csv', '') + "_Duplicate");
         }
 
         if (unmatchedFeatures.length > 0) {
-          this.unMatchedFeatureLayer = this._initLayer(unmatchedFeatures, this.file.name += "_UnMatched");
+          this.unMatchedFeatureLayer = this._initLayer(unmatchedFeatures,
+            this.file.name.replace('.csv', '') + "_UnMatched");
         }
 
         def.resolve({
@@ -221,8 +227,22 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         editable: true,
         outFields: ["*"]
       });
+      this._initPopup(lyr);
       this.map.addLayers([lyr]);
       return lyr;
+    },
+
+    _initPopup: function (layer) {
+      var content = { title: layer.id + ": {" + this.labelField + "}" };
+      var fieldInfos = [];
+      array.forEach(layer.fields, lang.hitch(this, function (f) {
+        if (f.name !== this.objectIdField && this._internalFields.indexOf(f.name) === -1 &&
+          this._matchFields.indexOf(f.name) === -1) {
+          fieldInfos.push({ fieldName: f.name, visible: true });
+        }
+      }));
+      content.fieldInfos = fieldInfos;
+      layer.infoTemplate = new PopupTemplate(content);
     },
 
     _findDuplicates: function () {
