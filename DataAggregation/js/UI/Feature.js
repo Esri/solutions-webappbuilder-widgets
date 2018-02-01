@@ -126,10 +126,10 @@ define(['dojo/_base/declare',
         this._getEditFeature().then(lang.hitch(this, function (f) {
           this._editFeature = f;
           if (this.isDuplicate && this._editFeature && this._editFeature.geometry) {
-            this._featureToolbar._reverseLocate(this._editFeature.geometry).then(lang.hitch(this, function (result) {
-              this._featureToolbar._originalValues.editAddress = result.address;
-              this._toggleLocationControls(true);
-            }));
+            //this._featureToolbar._reverseLocate(this._editFeature.geometry).then(lang.hitch(this, function (result) {
+            //this._featureToolbar._originalValues.editAddress = result.address;
+            this._toggleLocationControls(true);
+            //}));
           }
         }));
         this.onShown();
