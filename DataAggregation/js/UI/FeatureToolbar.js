@@ -34,7 +34,8 @@ define(['dojo/_base/declare',
   'esri/symbols/SimpleLineSymbol',
   'esri/Color',
   'esri/graphic',
-  'jimu/dijit/ToggleButton'
+  'jimu/dijit/ToggleButton',
+  'esri/geometry/webMercatorUtils'
 ],
   function (declare,
     lang,
@@ -56,7 +57,8 @@ define(['dojo/_base/declare',
     SimpleLineSymbol,
     Color,
     Graphic,
-    ToggleButton) {
+    ToggleButton,
+    webMercatorUtils) {
     return declare([_WidgetBase, _TemplatedMixin, Evented], {
       templateString: template,
 
@@ -193,12 +195,18 @@ define(['dojo/_base/declare',
           //I fire graphicMoveStop when locating...in that case it's based off of the address the user entered
           //no need to reverse geocode again
           if (result) {
-            this._reverseLocate(result.graphic.geometry);
-            //when the user moves the graphic no need for locate to stay enabled
-            this._updateLocate(true);
-          }
-          if (this.featureView._validateAddressDifference()) {
-            this._updateSync(false);
+            this._reverseLocate(result.graphic.geometry).then(lang.hitch(this, function () {
+              this._hasAddressEdit = true;
+              //when the user moves the graphic no need for locate to stay enabled
+              this._updateLocate(true);
+              if (this.featureView._validateAddressDifference()) {
+                this._updateSync(false);
+              }
+            }));
+          } else {
+            if (this.featureView._validateAddressDifference()) {
+              this._updateSync(false);
+            }
           }
         }
       },
@@ -217,8 +225,11 @@ define(['dojo/_base/declare',
             });
           });
         } else {
-          //TODO support the same for coiordinate feature...should return xy
-          this.featureView._updateAddressFields(geometry, false);
+          var geoGeom;
+          if (geometry.spatialReference.isWebMercator && geometry.spatialReference.isWebMercator()) {
+            geoGeom = webMercatorUtils.webMercatorToGeographic(geometry);
+          }
+          this.featureView._updateAddressFields(geoGeom || geometry, false);
           def.resolve({ geometry: geometry });
         }
         return def;
@@ -265,6 +276,7 @@ define(['dojo/_base/declare',
           this._editToolbar.deactivate();
           this._undoEdits();
           this._updateSaveAndCancel(true);
+          this._updateSync(true);
           this.map.infoWindow.clearFeatures();
         }
       },
@@ -277,6 +289,7 @@ define(['dojo/_base/declare',
 
         if (this._hasAddressEdit) {
           this.featureView.resetAddressValues(this._originalValues);
+          this._hasAddressEdit = false;
         }
 
         if (this._hasGeometryEdit){

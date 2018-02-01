@@ -255,15 +255,20 @@ define(['dojo/_base/declare',
         var matchingFields = {};
         if (locationResults && locationResults.fields) {
           array.forEach(locationResults.fields, function (field) {
-            if (!matchingFields.hasOwnProperty(field.value)) {
-              if (fieldMappingResults) {
-                var fieldMappingKeys = Object.keys(fieldMappingResults);
-                for (var i = 0; i < fieldMappingKeys.length; i++) {
-                  if (fieldMappingResults[fieldMappingKeys[i]] === field.value) {
-                    matchingFields[field.keyField] = {
-                      layerFieldName: fieldMappingKeys[i]
-                    };
-                    break;
+            //may just update coordinates to use the same words
+            var fieldValue = field.value ? field.value : field.sourceField;
+            var keyField = field.keyField ? field.keyField : field.sourceField;
+            if (typeof (fieldValue) !== 'undefined' && typeof (keyField) !== 'undefined') {
+              if (!matchingFields.hasOwnProperty(fieldValue)) {
+                if (fieldMappingResults) {
+                  var fieldMappingKeys = Object.keys(fieldMappingResults);
+                  for (var i = 0; i < fieldMappingKeys.length; i++) {
+                    if (fieldMappingResults[fieldMappingKeys[i]] === fieldValue) {
+                      matchingFields[keyField] = {
+                        layerFieldName: fieldMappingKeys[i]
+                      };
+                      break;
+                    }
                   }
                 }
               }
