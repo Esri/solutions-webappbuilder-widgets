@@ -71,7 +71,9 @@ define({
       removeFeature: "Remove Feature",
       featureLocated: "Location Found",
       valuesDoNotMatch: "Does not match existing value",
-      sync: "Sync address information with field information"
+      sync: "Sync address information with field information",
+      noFeaturesSaved: "No features saved successfully",
+      someFeaturesSaved: "${num} feature(s) saved successfully" 
     },
     warningsAndErrors: {
       loadWarning: "This widget requires a Feature Service datasource. Please configure the widget to define a datasource.",

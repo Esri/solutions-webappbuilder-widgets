@@ -30,11 +30,12 @@ define(['dojo/_base/declare',
     'esri/tasks/query',
     'esri/SpatialReference',
     'esri/dijit/PopupTemplate',
-    'jimu/utils'
+  'jimu/utils',
+  'moment/moment'
 ],
 function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Observable, Memory,
   graphicsUtils, webMercatorUtils, Point, FeatureLayer, Locator, Query, SpatialReference, PopupTemplate,
-  jimuUtils) {
+  jimuUtils, moment) {
   return declare([Evented], {
 
     //may just move away from the this.useMultiFields alltogether since each source should know what it supports
@@ -251,66 +252,63 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         this.keys = Object.keys(this.mappedArrayFields);
         this.oidField = this.editLayer.objectIdField;
 
-        //recursive function for testing for duplicate attribute values
-        var _testFieldValues = lang.hitch(this, function (testFeatures, index) {
-          var def = new Deferred();
-          var matchValues = [];
-          if (this.keys && index < this.keys.length) {
-            var layerFieldName = this.keys[index];
-            if (layerFieldName === this.oidField || this.duplicateTestFields.indexOf(layerFieldName) === -1) {
-              index += 1;
-              _testFieldValues(testFeatures, index).then(lang.hitch(this, function (results) {
-                def.resolve(results);
-              }));
-            } else {
-              var fileFieldName = this.mappedArrayFields[layerFieldName];
-              if (fileFieldName) {
-                for (var ii = 0; ii < this.storeItems.length; ii++) {
-                  var item = this.storeItems[ii];
-                  var fileValue = this.csvStore.getValue(item, fileFieldName);
-                  var fileId = item._csvId;
-                  array.forEach(testFeatures, function (feature) {
-                    //first time trough features will be from layer query...additional times through they will
-                    // be from our result object
-                    var _feature = feature.attributes ? feature : feature.feature;
-                    var featureValue = _feature.attributes[layerFieldName];
-                    if (fileValue === featureValue) {
-                      matchValues.push({
-                        feature: _feature,
-                        featureId: _feature.attributes[this.oidField],
-                        fileId: fileId
-                      });
-                    }
-                  });
+        var compareItems = [];
+        var compareFields = [];
+        var dupFields = this.duplicateTestFields;
+        if (dupFields && dupFields.hasOwnProperty('length') && dupFields.length > 0) {
+          array.forEach(this.storeItems, lang.hitch(this, function (si) {
+            var compareItem = {
+              compareValues: {},
+              fileId: si._csvId,
+              featureId: -1
+            };
+            array.forEach(dupFields, lang.hitch(this, function (dupField) {
+              var fileFieldName = this.mappedArrayFields[dupField];
+              if (typeof(fileFieldName) !== 'undefined') {
+                compareItem.compareValues[dupField] = this.csvStore.getValue(si, fileFieldName);
+                if (compareFields.indexOf(dupField) === -1) {
+                  compareFields.push(dupField);
                 }
               }
-
-              if (matchValues.length > 0) {
-                index += 1;
-                _testFieldValues(matchValues, index).then(lang.hitch(this, function (results) {
-                  def.resolve(results);
-                }));
-              } else {
-                def.resolve(matchValues);
-                return def.promise;
-              }
+            }));
+            if (Object.keys(compareItem.compareValues).length > 0) {
+              compareItems.push(compareItem);
             }
-          } else {
-            def.resolve(testFeatures);
-          }
-
-          return def;
-        });
-
-        //make the inital call to test fields if the layer has features
-        if (layerFeatures.length > 0) {
-          _testFieldValues(layerFeatures, 0).then(lang.hitch(this, function (results) {
-            //pass the results so the locate function will know what ones to skip
-            def.resolve(results);
           }));
-        } else {
-          def.resolve([]);
         }
+
+        var results = [];
+        if (compareItems.length > 0) {
+          //if multiple compare items match to a single feature what would be the expectation
+          array.forEach(compareItems, lang.hitch(this, function (item) {
+            array.forEach(layerFeatures, lang.hitch(this, function (feature) {
+              var featureItem = {};
+              array.forEach(compareFields, lang.hitch(this, function (f) {
+                featureItem[f] = feature.attributes[f];
+              }));
+
+
+              if (JSON.stringify(item.compareValues) === JSON.stringify(featureItem)) {
+                var featureId = feature.attributes[this.oidField];
+                if (item.featureId !== -1) {
+                  //not really sure how we would want to handle this situation but setting a flag and keeping track
+                  // of the other ids for now
+                  item.hasMultiDuplicates = true;
+                  if (typeof (item.featureIds) === 'undefined') {
+                    item.featureIds = [featureId];
+                  } else {
+                    item.featureIds.push(featureId);
+                  }
+                } else {
+                  item.featureId = featureId;
+                  item.feature = feature;
+                  results.push(item);
+                }
+              }
+            }));
+          }));
+        }
+        def.resolve(results);
       }));
 
       return def;
@@ -714,9 +712,24 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
     //check the values in the fields to evaluate if they are potential candidates for an integer of float field
     // allows us to filter the list of fields exposed for those field types from the destination layer
     _fetchFieldsAndUpdateForm: function (storeItems, csvStore, fsFields) {
+      //the checking of unique vals is for domain support
+      //TODO need to expand to support more than codedValues
+      //var maxUniqueDomainVals = 0;
+      //array.forEach(fsFields, function (f) {
+      //  if (typeof (f.domain) !== 'undefined') {
+      //    //if the number of unique values in the data exceeds the potential unique values
+      //    // in the domain they cannot match
+      //    if (f.domain.codedValues && f.domain.codedValues.hasOwnProperty('length')) {
+      //      if (maxUniqueDomainVals < f.domain.codedValues.length) {
+      //        maxUniqueDomainVals = f.domain.codedValues.length;
+      //      }
+      //    }
+      //  }
+      //});
+
       var def = new Deferred();
       var csvFieldNames = csvStore._attributes;
-      var fieldTypes = {};
+      var fieldTypes = { };
       var len = function (v) {
         return v.toString().length;
       };
@@ -724,22 +737,70 @@ function (declare, array, lang, Deferred, DeferredList, Evented, CsvStore, Obser
         //var type = null;
         array.forEach(storeItems, function (si) {
           var checkVal = true;
+          var checkDomain = false;
+          var checkLen = false;
           var fTypeInt = true;
           var fTypeFloat = true;
+          var fTypeDate = true;
+          //var currentUniqueVals;
+          //var currentLen;
           if (fieldTypes.hasOwnProperty(attr)) {
             fTypeInt = fieldTypes[attr].supportsInt;
             fTypeFloat = fieldTypes[attr].supportsFloat;
-            if (!(fTypeInt) && !(fTypeFloat)) {
+            fTypeDate = fieldTypes[attr].supportsDate;
+            //currentUniqueVals = fieldTypes[attr].uniqueVals;
+            //if (!currentUniqueVals) {
+            //  currentUniqueVals = [];
+            //  console.log('s');
+            //}
+            //currentLen = fieldTypes[attr].maxLength;
+            if (!(fTypeInt) && !(fTypeFloat) && !(fTypeDate)) {
               checkVal = false;
             }
+            //if (currentUniqueVals.length > maxUniqueDomainVals) {
+            //  checkDomain = false;
+            //}
           }
-          if (checkVal) {
+          if (checkVal || checkDomain || checkLen) {
             var v = csvStore.getValue(si, attr);
             if (v) {
-              fieldTypes[attr] = {
-                supportsInt: ((!isNaN(parseInt(v, 10))) && len(parseInt(v, 10)) === len(v)) && fTypeInt,
-                supportsFloat: ((!isNaN(parseFloat(v))) && len(parseFloat(v)) === len(v)) && fTypeFloat
-              };
+              var lenV = len(v);
+              var date = moment(v);
+              if (checkVal) {
+                fieldTypes[attr] = {
+                  supportsDate: date.isValid() && fTypeDate,
+                  supportsInt: ((!isNaN(parseInt(v, 10))) && len(parseInt(v, 10)) === lenV) && fTypeInt,
+                  supportsFloat: ((!isNaN(parseFloat(v))) && len(parseFloat(v)) === lenV) && fTypeFloat
+                };
+              }
+              //var ft = fieldTypes[attr];
+              //if (checkDomain) {
+              //  ft.uniqueVals = currentUniqueVals;
+              //  if (typeof (ft.uniqueVals) === 'undefined') {
+              //    ft.uniqueVals = [v];
+              //  } else if (ft.uniqueVals.indexOf(v) === -1) {
+              //    ft.uniqueVals.push(v);
+              //  }
+              //} else {
+              //  ft.uniqueVals = currentUniqueVals;
+              //  ft.supportsDomain = false;
+              //}
+
+              //if (checkLen) {
+              //  ft.maxLength = currentLen;
+              //  if (typeof (ft.maxLength) === 'undefined') {
+              //    ft.maxLength = lenV;
+              //    ft.maxDateLength = len(date.unix())
+              //  } else if (ft.maxLength < lenV) {
+              //    ft.maxLength = lenV;
+              //  }
+              //  var lenMaxDate = len(date.unix());
+              //  if (typeof (ft.maxDateLength) === 'undefined' && date.isValid()) {
+              //    ft.maxDateLength = lenMaxDate;
+              //  } else if (ft.maxDateLength < lenMaxDate) {
+              //    ft.maxDateLength = lenMaxDate;
+              //  }
+              //}
             }
           }
         });

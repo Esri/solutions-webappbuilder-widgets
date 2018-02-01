@@ -124,16 +124,12 @@ define([
 
           this._fsFields = [];
           if (this._configLayerInfo) {
-            var ints = ["esriFieldTypeSmallInteger", "esriFieldTypeInteger", "esriFieldTypeSingle"];
-            var dbls = ["esriFieldTypeDouble"];
-
             array.forEach(this._configLayerInfo.fieldInfos, lang.hitch(this, function (field) {
               if (field && field.visible) {
                 this._fsFields.push({
                   name: field.fieldName,
                   label: field.label,
                   value: field.type,
-                  type: ints.indexOf(field.type) > -1 ? "int" : dbls.indexOf(field.type) > -1 ? "float" : "other",
                   isRecognizedValues: field.isRecognizedValues,
                   duplicate: field.duplicate
                 });
@@ -170,9 +166,51 @@ define([
             this.editLayerNode = this.layerStructure.getNodeById(this._configLayerInfo.featureLayer.id);
             this.editLayerNode.getLayerObject().then(lang.hitch(this, function (layer) {
               this.editLayer = layer;
+              this._updateFsFields(this.editLayer);
             }));
           }
         }
+      },
+
+      _updateFsFields: function (lyr) {
+        var typeIdField = lyr.typeIdField;
+        var ints = ["esriFieldTypeSmallInteger", "esriFieldTypeInteger", "esriFieldTypeSingle"];
+        var dbls = ["esriFieldTypeDouble"];
+        var date = "esriFieldTypeDate";
+        var len = function (v) {
+          return v.toString().length;
+        };
+        array.forEach(this._fsFields, function (fsField) {
+          field_loop:
+          for (var i = 0; i < lyr.fields.length; i++) {
+            var lyrField = lyr.fields[i];
+            if (lyrField.name === fsField.name) {
+              fsField.domain = lyrField.domain;
+              fsField.length = lyrField.length;
+              fsField.isTypeIdField = fsField.name === typeIdField;
+              fsField.subtypes = lyr.subtypes;
+
+              //set the type
+              var supportsInt = true;
+              var domain = fsField.domain;
+              if (fsField.domain && fsField.domain.codedValues) {
+                coded_value_loop:
+                for (var ii = 0; ii < fsField.domain.codedValues.length; ii++) {
+                  var v = fsField.domain.codedValues[ii];
+                  supportsInt = ((!isNaN(parseInt(v, 10))) && len(parseInt(v, 10)) === len(v));
+                  if (!supportsInt) {
+                    break coded_value_loop;
+                  }
+                }
+              }
+              var type = lyrField.type;
+              fsField.type = ints.indexOf(type) > -1 ? "int" : dbls.indexOf(type) > -1 ? "float" :
+                date === type ? "date" : domain && supportsInt ? "domainInt" : domain ? "domain" : "other";
+
+              break field_loop;
+            }
+          }
+        });
       },
 
       _initPageContainer: function () {

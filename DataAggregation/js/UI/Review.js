@@ -29,7 +29,8 @@ define(['dojo/_base/declare',
   './FeatureList',
   'jimu/dijit/Message',
   'jimu/CSVUtils',
-  'esri/toolbars/edit'
+  'esri/toolbars/edit',
+  'esri/lang'
 ],
   function (declare,
     lang,
@@ -46,7 +47,8 @@ define(['dojo/_base/declare',
     FeatureList,
     Message,
     CSVUtils,
-    Edit) {
+    Edit,
+    esriLang) {
     return declare([_WidgetBase, _TemplatedMixin, _WidgetsInTemplateMixin, Evented], {
       baseClass: 'cf-review',
       declaredClass: 'CriticalFacilities.Review',
@@ -329,16 +331,49 @@ define(['dojo/_base/declare',
 
         var addFeatures = this._getFeatures(this.csvStore.matchedFeatureLayer);
         var updateFeatures = this._getFeatures(this.csvStore.duplicateFeatureLayer);
-        this.editLayer.applyEdits(addFeatures, updateFeatures, null, lang.hitch(this, function () {
+        this.editLayer.applyEdits(addFeatures, updateFeatures, null, lang.hitch(this, function (a, b) {
+          this._validateResults(a);
+          this._validateResults(b);
           this._updateNode(this.progressNode, false);
           this._navigateHome();
           this.csvStore._zoomToData(this.editLayer.graphics, true);
         }), lang.hitch(this, function (err) {
           console.log(err);
           new Message({
+            type: "Error",
             message: this.nls.warningsAndErrors.saveError
           });
         }));
+      },
+
+      _validateResults: function (results) {
+        var success = [];
+        var errors = [];
+        if (results && results.hasOwnProperty('length') && results.length > 0) {
+          array.forEach(results, function (result) {
+            if (typeof (result.success) !== 'undefined') {
+              if (result.success) {
+                success.push(result);
+              } else {
+                console.log((result.error && result.error.message) ? result.error.message : result);
+                errors.push(result);
+              }
+            }
+          });
+          var msg;
+          if (errors.length > 0) {
+            if (success.length === 0) {
+              msg = this.nls.review.noFeaturesSaved;
+            } else {
+              msg = esriLang.substitute({
+                num: success.length
+              }, this.nls.review.someFeaturesSaved);
+            }
+            new Message({
+              message: msg
+            });
+          }
+        }
       },
 
       _getFeatures: function (featureLayer) {

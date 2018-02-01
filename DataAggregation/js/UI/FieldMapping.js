@@ -245,7 +245,14 @@ define(['dojo/_base/declare',
           if (f.type) {
             var _int = f.type.supportsInt;
             var flt = f.type.supportsFloat;
-            return type === 'other' ? true : type === 'int' ? _int : type === 'float' ? flt : false;
+            var date = f.type.supportsDate;
+            return (type === 'other' || type === 'domain') ? true : (type === 'int' || type === 'domainInt') ?
+              _int : type === 'float' ? flt : type === 'date' ? date : false;
+            //var domain = f.type.supportsDomain;
+            //var maxLength = f.type.maxLength;
+            //var lenMaxDate = f.type.maxDateLength;
+            //return (type === 'date' && (lenMaxDate > length || !date)) ? false : maxLength > length ? false : type === 'other' ? true : type === 'int' ?
+            //  _int : type === 'float' ? flt : type === 'date' ? date : (type === 'domain' || type === 'domainInt') ? domain : false;
           } else {
             return false;
           }
