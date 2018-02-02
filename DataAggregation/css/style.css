@@ -95,7 +95,7 @@
 }
 
 .jimu-widget-critical-facilities-ui .bg-home-img-white {
-  background-image: url('../images/home.png');
+  background-image: url('../images/home_white.png');
 }
 
 .jimu-widget-critical-facilities-ui .page-item-td-center:hover .bg-home-img-white {
@@ -139,15 +139,15 @@
 }
 
 .jimu-widget-critical-facilities-ui .bg-locate:hover {
-  background-image: url('../images/locate_hover_blue.png');
+  background-image: url('../images/locate_hover.png');
 }
 
 .jimu-widget-critical-facilities-ui .bg-locate-white {
-  background-image: url('../images/locate.png');
+  background-image: url('../images/locate_white.png');
 }
 
 .jimu-widget-critical-facilities-ui .bg-locate-white:hover {
-  background-image: url('../images/locate_hover_blue.png');
+  background-image: url('../images/locate_hover.png');
 }
 
 .jimu-widget-critical-facilities-ui .bg-locate-disabled {
@@ -166,7 +166,7 @@
 }
 
 .jimu-widget-critical-facilities-ui .bg-save-white {
-  background-image: url('../images/save.png');
+  background-image: url('../images/save_white.png');
 }
 
 .jimu-widget-critical-facilities-ui .bg-save-white:hover {
@@ -266,11 +266,11 @@
 }
 
 .jimu-widget-critical-facilities-ui .bg-back-img-white {
-  background-image: url('../images/nav_left.png');
+  background-image: url('../images/nav_left_white.png');
 }
 
 .jimu-rtl .jimu-widget-critical-facilities-ui .bg-back-img-white {
-  background-image: url('../images/nav_right.png');
+  background-image: url('../images/nav_right_white.png');
 }
 
 .jimu-widget-critical-facilities-ui .page-item-td-left:hover .bg-back-img {
@@ -314,11 +314,11 @@
 }
 
 .jimu-widget-critical-facilities-ui .bg-next-img-white {
-  background-image: url('../images/nav_right.png');
+  background-image: url('../images/nav_right_white.png');
 }
 
 .jimu-rtl .jimu-widget-critical-facilities-ui .bg-next-img-white {
-  background-image: url('../images/nav_left.png');
+  background-image: url('../images/nav_left_white.png');
 }
 
 .jimu-widget-critical-facilities-ui .page-item-td-right:hover .bg-next-img {
@@ -527,11 +527,11 @@
 }
 
 .jimu-widget-critical-facilities-ui .next-arrow-img-white {
-  background-image: url('../images/nav_right.png');
+  background-image: url('../images/nav_right_white.png');
 }
 
 .jimu-rtl .jimu-widget-critical-facilities-ui .next-arrow-img-white {
-  background-image: url('../images/nav_left.png');
+  background-image: url('../images/nav_left_white.png');
 }
 
 .jimu-widget-critical-facilities-ui .task-row:hover .next-arrow-img {
