@@ -67,6 +67,8 @@ define(['dojo/_base/declare',
       _useGeomFromLayer: true,
       _useValuesFromFile: false,
       _useValuesFromLayer: true,
+      _featureExpanded: true,
+      _locationExpanded: false,
       theme: '',
       isDarkTheme: '',
       styleColor: 'black',
@@ -90,16 +92,6 @@ define(['dojo/_base/declare',
       postCreate: function () {
         this.inherited(arguments);
         this._initToolbar(this.featureToolbar);
-
-        var fields = this._getFields(this.feature);
-        this._initSkipFields(fields);
-        this._initRows(fields, this.featureControlTable);
-        if (this.isDuplicate) {
-          this._initDuplicateReview(fields);
-        } else {
-          this._initStandardReview();
-        }
-        this.isShowing = false;
       },
 
       _initSkipFields: function (fields) {
@@ -116,7 +108,14 @@ define(['dojo/_base/declare',
       },
 
       startup: function () {
-        this._started = true;
+        var fields = this.feature.fieldInfo;
+        this._initSkipFields(fields);
+        this._initRows(fields, this.featureControlTable);
+        if (this.isDuplicate) {
+          this._initDuplicateReview(fields);
+        } else {
+          this._initStandardReview();
+        }
 
         this._getFeature().then(lang.hitch(this, function (f) {
           this._feature = f;
@@ -140,11 +139,7 @@ define(['dojo/_base/declare',
         // on the list page by the item to indicate that they have at least seen it
         this._isReviewed = true;
         this._featureToolbar._disableEdit();
-        this._showDuplicateReview(this.isDuplicate);
-
-        if (!this.isDuplicate) {
-          this._showStandardReview();
-        }
+        this._showView();
         this._featureToolbar._panToAndSelectFeature((this.isDuplicate && this._useGeomFromLayer) ?
           this._editFeature : this._feature);
         this.isShowing = true;
@@ -187,14 +182,17 @@ define(['dojo/_base/declare',
         return def;
       },
 
-      _showDuplicateReview: function (v) {
-        if (v) {
-          if (domClass.contains(this.reviewTableG, 'display-none')) {
-            domClass.remove(this.reviewTableG, 'display-none');
-          }
-        } else {
-          domClass.add(this.reviewTableG, 'display-none');
+      _showView: function () {
+        domClass.remove(this.featureTable, 'display-none');
+        domClass.remove(this.featureToggleTable, 'display-none');
+        domClass.remove(this.locationSyncTable, 'display-none');
+        domClass.remove(this.locationControlTable, 'display-none');
+        domClass.remove(this.locationControlToggleTable, 'display-none');
+        domClass.remove(this.featureToolbarTable, 'display-none');
+        if (this.isDuplicate) {
+          domClass.remove(this.reviewText, 'display-none');
         }
+        this._updateInfoRows();
       },
 
       _getFeature: function () {
@@ -237,15 +235,10 @@ define(['dojo/_base/declare',
         this._useValuesFromLayer = false;
       },
 
-      _showStandardReview: function () {
-        domClass.remove(this.featureTable, 'display-none');
-        domClass.remove(this.locationSyncTable, 'display-none');
-        domClass.remove(this.locationControlTable, 'display-none');
-      },
-
       _initDuplicateReview: function (fields) {
         this._initDuplicateSelect();
         this._initDuplicateReviewRows(fields);
+        domClass.add(this.featureToolbar, 'display-none');
       },
 
       _initDuplicateSelect: function () {
@@ -256,14 +249,17 @@ define(['dojo/_base/declare',
             height: "28px"
           },
           options: [{
-            label: this.nls.review.isDuplicateNoChange,
+            label: this.nls.review.duplicateAction,
             value: 'no-change',
             selected: true
+          }, {
+            label: this.nls.remove,
+            value: 'skip'
           }, {
             label: this.nls.review.isDuplicateMakeChange,
             value: 'make-change'
           }, {
-            label: this.nls.review.isNotDuplicate,
+            label: this.nls.save,
             value: 'not-duplicate'
           }],
           onChange: lang.hitch(this, this._updateDuplicateUI)
@@ -276,13 +272,14 @@ define(['dojo/_base/declare',
       _updateDuplicateUI: function (v) {
         this._updateDuplicateAttributes(v, null);
         this._featureToolbar._disableEdit();
-        if (v === 'no-change') {
-          //reset UI as it would be at the start
-          this._toggleDuplicateReview(false);
-        } else if (v === 'make-change') {
-          //show the standard duplicate page
-          this._toggleDuplicateReview(true);
-        } else if (v === 'not-duplicate') {
+
+        if (v === 'make-change') {
+          domClass.remove(this.featureToolbar, 'display-none');
+        } else {
+          domClass.add(this.featureToolbar, 'display-none');
+        }
+
+        if (v === 'not-duplicate') {
           //locate and move to the match list row
           this._showShouldLocateFeaturePopup().then(lang.hitch(this, function (shouldLocate) {
             if (shouldLocate) {
@@ -324,41 +321,6 @@ define(['dojo/_base/declare',
 
         this._feature.attributes.hasDuplicateUpdates = hasDuplicateUpdates !== null ? hasDuplicateUpdates :
           this._feature.attributes.hasDuplicateUpdates;
-      },
-
-      _toggleDuplicateReview: function (v) {
-        var rows = this.reviewTableG.rows;
-        if (v) {
-          if (domClass.contains(this.featureTable, 'display-none')) {
-            domClass.remove(this.featureTable, 'display-none');
-          }
-          if (domClass.contains(this.locationSyncTable, 'display-none')) {
-            domClass.remove(this.locationSyncTable, 'display-none');
-          }
-          if (domClass.contains(this.locationControlTable, 'display-none')) {
-            domClass.remove(this.locationControlTable, 'display-none');
-          }
-          //hide review Fields
-          array.forEach(rows, lang.hitch(this, function (r) {
-            if (r.isLabelRow || r.isControlRow || r.isHeaderRow) {
-              domClass.add(r, 'display-none');
-            }
-          }));
-
-        } else {
-          domClass.add(this.featureTable, 'display-none');
-          domClass.add(this.locationSyncTable, 'display-none');
-          domClass.add(this.locationControlTable, 'display-none');
-
-          //show review Fields
-          array.forEach(rows, lang.hitch(this, function (r) {
-            if (r.isLabelRow || r.isControlRow || r.isHeaderRow) {
-              if (domClass.contains(r, 'display-none')) {
-                domClass.remove(r, 'display-none');
-              }
-            }
-          }));
-        }
       },
 
       _showShouldLocateFeaturePopup: function () {
@@ -415,7 +377,7 @@ define(['dojo/_base/declare',
         }, tr);
         domConstruct.create('div', {
           className: "duplicate-col-headers main-text float-left",
-          innerHTML: this.nls.review.fromLayer1
+          innerHTML: this.nls.review.fromLayer
         }, tdLabel);
 
         var _tdLabel = domConstruct.create('td', {
@@ -423,7 +385,7 @@ define(['dojo/_base/declare',
         }, tr);
         domConstruct.create('div', {
           className: "duplicate-col-headers main-text float-left",
-          innerHTML: this.nls.review.fromFile1
+          innerHTML: this.nls.review.fromFile
         }, _tdLabel);
 
         array.forEach(fields, lang.hitch(this, function (f) {
@@ -470,14 +432,10 @@ define(['dojo/_base/declare',
         this._featureToolbar.startup();
       },
 
-      _getFields: function (feature) {
-        return feature.fieldInfo;
-      },
-
       _initRows: function (fields, table) {
         if (this.isDuplicate) {
-          this._initSelectRow(this.nls.review.useGeometry, table, this._useGeomChanged);
-          this._initSelectRow(this.nls.review.useValues, table, this._useValuesChanged);
+          this._initSelectRow(this.nls.review.use, this.locationControlTable, this._useGeomChanged, "geom");
+          this._initSelectRow(this.nls.review.use, this.featureControlTable, this._useValuesChanged, "values");
 
           var tr = domConstruct.create('tr', {
             className: "bottom-border",
@@ -491,7 +449,7 @@ define(['dojo/_base/declare',
           }, tr);
           domConstruct.create('div', {
             className: "duplicate-col-headers main-text float-left",
-            innerHTML: this.nls.review.fromLayer1
+            innerHTML: this.nls.review.fromLayer
           }, tdLabel);
 
           var _tdLabel = domConstruct.create('td', {
@@ -499,7 +457,7 @@ define(['dojo/_base/declare',
           }, tr);
           domConstruct.create('div', {
             className: "duplicate-col-headers main-text float-left",
-            innerHTML: this.nls.review.fromFile1
+            innerHTML: this.nls.review.fromFile
           }, _tdLabel);
         }
 
@@ -525,6 +483,7 @@ define(['dojo/_base/declare',
             var tdLabel = domConstruct.create('td', {
               className: "field-control-td text-left field-row-width"
             }, tr);
+
             domConstruct.create('div', {
               className: "main-text float-left",
               innerHTML: f.label
@@ -579,6 +538,10 @@ define(['dojo/_base/declare',
           this._featureToolbar._hasAddressEdit = false;
           this._featureToolbar._updateSync(true);
         }
+      },
+
+      _locate: function () {
+        this._featureToolbar._locate();
       },
 
       getXYFields: function () {
@@ -665,7 +628,9 @@ define(['dojo/_base/declare',
         //use the located address to update whatever fileds we have displayed
         array.forEach(this.locationControlTable.rows, lang.hitch(this, function (row) {
           //var keyField = this.csvStore.useAddr && !this.csvStore.useMultiFields ? this.csvStore.matchFieldPrefix + row.keyField : row.keyField;
-          this._address[this.csvStore.matchFieldPrefix + row.keyField] = row.addressValueTextBox.value;
+          if (row.addressValueTextBox) {
+            this._address[this.csvStore.matchFieldPrefix + row.keyField] = row.addressValueTextBox.value;
+          }
         }));
 
         return this._address;
@@ -675,7 +640,9 @@ define(['dojo/_base/declare',
         //get the address or coordinates from the textbox controls
         var address = {};
         array.forEach(this.locationControlTable.rows, function (row) {
-          address[row.keyField] = row.addressValueTextBox.value;
+          if (row.addressValueTextBox) {
+            address[row.keyField] = row.addressValueTextBox.value;
+          }
         });
         return address;
       },
@@ -719,7 +686,8 @@ define(['dojo/_base/declare',
 
       _initValidationBox: function (tr, value, isFile, isAddress) {
         var tdControl = domConstruct.create('td', {
-          className: 'field-control-td'
+          className: 'field-control-td',
+          colspan: this.isDuplicate ? 1 : 2
         }, tr);
         var valueTextBox = new ValidationTextBox({
           style: {
@@ -728,7 +696,7 @@ define(['dojo/_base/declare',
           },
           title: value
         });
-        valueTextBox.set("value", value);
+        valueTextBox.set("value", this.isDuplicate && isAddress ? '' : value);
         valueTextBox.placeAt(tdControl);
         valueTextBox.startup();
         valueTextBox.isFile = isFile;
@@ -829,18 +797,18 @@ define(['dojo/_base/declare',
         }
       },
 
-      _initSelectRow: function (useString, table, func) {
+      _initSelectRow: function (useString, table, func, type) {
         var tr = domConstruct.create('tr', {
           className: "task-instruction-row bottom-border",
           isRadioRow: true, //TODO update all uses of this...leaving for now
           isEditRow: false
         }, table);
         tr.radioButtons = [];
-        tr.useType = useString === this.nls.review.useGeometry ? "geom" : "values";
+        tr.useType = type;
 
         var tdUseLabel = domConstruct.create('td', {}, tr);
         domConstruct.create('div', {
-          className: "main-text float-left",
+          className: "main-text float-left pad-left-10",
           innerHTML: useString
         }, tdUseLabel);
 
@@ -879,7 +847,10 @@ define(['dojo/_base/declare',
         this._useGeomFromFile = v;
         this._useGeomFromLayer = !v;
         if (v) {
+          this._featureToolbar._enableEdit(true);
           this.resetAddressValues(this._featureToolbar._originalValues);
+        } else {
+          this._featureToolbar._enableEdit(false);
         }
         if (v && !this._hasBeenLocatedForFile) {
           if (!this._hasBeenLocatedForFile) {
@@ -890,7 +861,14 @@ define(['dojo/_base/declare',
               if ((result.feature.geometry.x !== this._editFeature.geometry.x) ||
                 (result.feature.geometry.y !== this._editFeature.geometry.y)) {
                 //zoom to extent of both features and highlight both
-                this.csvStore._zoomToData(features);
+                if (this.map && this.map.extent && this.map.extent.contains) {
+                  if (!this.map.extent.contains(result.feature.geometry) ||
+                    !this.map.extent.contains(this._editFeature.geometry)) {
+                    this.csvStore._zoomToData(features);
+                  }
+                }else {
+                  this.csvStore._zoomToData(features);
+                }
               }
               this._featureToolbar._flashFeatures(features);
               this._validateGeoms();
@@ -914,15 +892,60 @@ define(['dojo/_base/declare',
         }
       },
 
+      _toggleFeature: function () {
+        this._featureExpanded = !this._featureExpanded;
+        if (this._featureExpanded) {
+          this._locationExpanded = false;
+        }
+        this._updateInfoRows();
+      },
+
+      _toggleLocation: function () {
+        this._locationExpanded = !this._locationExpanded;
+        if (this._locationExpanded) {
+          this._featureExpanded = false;
+        }
+        this._updateInfoRows();
+      },
+
+      _updateInfoRows: function () {
+        //toggle feature row
+        this._updateRow(this._featureExpanded, this.featureInformation, this.toggleFeature);
+
+        //toggle location row
+        this._updateRow(this._locationExpanded, this.locationInformation, this.toggleLocation);
+      },
+
+      _updateRow: function (v, displayNode, imageNode) {
+        var upImages = ['bg-toggle-up-img', 'bg-toggle-up-img-white'];
+        var downImages = ['bg-toggle-down-img', 'bg-toggle-down-img-white'];
+        if (v) {
+          domClass.remove(displayNode, 'display-none');
+        } else {
+          domClass.add(displayNode, 'display-none');
+        }
+        this._updateImageNode(v ? upImages : downImages, v ? downImages : upImages, imageNode);
+      },
+
+      _updateImageNode: function (addImages, removeImages, node) {
+        //add/remove the apporpriate images
+        var isDark = this._featureToolbar._darkThemes.indexOf(this.theme) > -1;
+        domClass.remove(node, isDark ? removeImages[1] : removeImages[0]);
+        domClass.add(node, isDark ? addImages[1] : addImages[0]);
+      },
+
       _toggleLocationControls: function (disabled) {
         //address rows
         //when using geom from layer geocode and reverse geocode are disabled
-        disabled = (this.isDuplicate && this._useGeomFromLayer) ? true : disabled;
+        var _disabled = (this.isDuplicate && this._useGeomFromLayer) ? true : disabled;
         if (this.locationControlTable) {
           array.forEach(this.locationControlTable.rows, function (row) {
+            if (row.fromSelect) {
+              row.fromSelect.set('disabled', disabled);
+            }
             if (row.isAddressRow) {
               if (row.addressValueTextBox) {
-                row.addressValueTextBox.set('disabled', disabled);
+                row.addressValueTextBox.set('disabled', _disabled);
               }
             }
           });
@@ -1034,7 +1057,17 @@ define(['dojo/_base/declare',
           if (!this._featureToolbar._fileValuesModified) {
             this._useValuesFromLayer = true;
           }
+
           array.forEach(this.featureControlTable.rows, lang.hitch(this, function (r) {
+            if (r.fromSelect) {
+              if ((r.useType === 'geom' && this._useGeomFromLayer) ||
+                (r.useType === 'values' && this._useValuesFromLayer)) {
+                r.fromSelect.set('value', 'layer');
+              }
+            }
+          }));
+
+          array.forEach(this.locationControlTable.rows, lang.hitch(this, function (r) {
             if (r.fromSelect) {
               if ((r.useType === 'geom' && this._useGeomFromLayer) ||
                 (r.useType === 'values' && this._useValuesFromLayer)) {

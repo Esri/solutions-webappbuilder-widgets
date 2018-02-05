@@ -1,15 +1,11 @@
 <div class="float-right">
-  <table class="control-table" cellpading="0">
+  <table class="control-table table-layout" cellpading="0">
     <tbody>
       <tr class="feature-toolbar-row">
-        <td nowrap class="pad-right-15" title="${nls.featureToolbar.edit}">
-          <div style="display:flex;" data-dojo-attach-point="toggleEditButton"></div>
+        <td title="${nls.featureToolbar.edit}">
+          <div class="float-left bg-ft-img bg-edit feature-toolbar-btn" data-dojo-attach-event="onclick:_toggleEdit"></div>
         </td>
-        <td class="pad-right-15" title="${nls.featureToolbar.locate}">
-          <div class="bg-ft-img bg-locate feature-toolbar-btn" data-dojo-attach-event="onclick:_locate">
-          </div>
-        </td>
-        <td class="pad-right-15" title="${nls.featureToolbar.cancel}">
+        <td title="${nls.featureToolbar.cancel}">
           <div class="bg-ft-img bg-cancel feature-toolbar-btn" data-dojo-attach-event="onclick:_cancel"></div>
         </td>
         <td title="${nls.featureToolbar.save}">

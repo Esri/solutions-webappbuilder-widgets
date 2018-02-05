@@ -112,7 +112,11 @@ define(['dojo/_base/declare',
         if (nextResult.currentView.label === this.label) {
           var results = this._getResults();
           var hasResult = false;
-          var resultArray = Object.values(results.results);
+          //Object.values fails in IE
+          //var resultArray = Object.values(results.results);
+          var resultArray = Object.keys(results.results).map(function (key) {
+            return results.results[key];
+          });
           array.forEach(resultArray, function (v) {
             if (typeof (v) !== 'undefined' && v !== null && v !== '') {
               hasResult = true;

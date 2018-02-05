@@ -42,7 +42,6 @@ define({
       download: "Download"
     },
     review: {
-      matchScore: "Match Score: ${score}",
       matched: "Matched",
       reviewMatched: "Review Matched",
       reviewMatchedHint: "Review Matched",
@@ -55,18 +54,13 @@ define({
       reviewDuplicate: "Review Duplicate",
       reviewDuplicateHint: "Review Duplicate",
       reviewDuplicatePageHint: "Review Duplicate",
-      useGeometry: "Use:", //only need one of these and should check jimu
-      useValues: "Use:",
-      fromLayer: "original information",
-      fromFile: "source information",
-      fromLayer1: "Destination Information",
-      fromFile1: "Source Information",
+      use: "Use:",
+      fromLayer: "Destination Information",
+      fromFile: "Source Information",
       locationControlHint: "Review address information",
       isDuplicate: "Is Duplicate",
-      isDuplicateNoChange: "Remove", //this is jimu common //Skip seems better...as we are really not removing it from anything...
       isDuplicateMakeChange: "Modify",
-      isNotDuplicate: "Save", //this is in jimu common nls
-      duplicateAction: "<Choose an action>",
+      duplicateAction: "Choose an action",
       item: "Record:",
       locateFeature: "Locate Feature",
       removeFeature: "Remove Feature",
@@ -75,7 +69,7 @@ define({
       sync: "Sync address information with field information",
       noFeaturesSaved: "No features saved successfully",
       someFeaturesSaved: "${num} feature(s) saved successfully.",
-      someFeaturesNoSaved: "${num} feature(s) were not saved successfully.",
+      someFeaturesNotSaved: "${num} feature(s) were not saved successfully.",
       feature: "Feature",
       locationInfo: "Location Information"
     },
@@ -95,12 +89,12 @@ define({
       cannotLocate: "Unable to locate item. Please verify the location information."
     },
     featureToolbar: {
-      edit: "Edit location information",
+      edit: "Edit record",
       locate: "Locate",
-      save: "Save location",
-      cancel: "Cancel location edits",
+      save: "Save record",
+      cancel: "Cancel edits",
       cancelTitle: "Cancel Edits",
-      cancelMessage: "Cancel edits to location information?"
+      cancelMessage: "Cancel edits to the current record?"
     }
   }),
   "ar": 0,

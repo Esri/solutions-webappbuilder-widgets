@@ -246,7 +246,8 @@ define(['dojo/_base/declare',
         var tdLabel = domConstruct.create('td', {
           className: "pad-10"
         }, tr);
-        domConstruct.create('div', {
+
+        tr.featureView.featureListLabel = domConstruct.create('div', {
           className: "main-text float-left text-left",
           innerHTML: f.label
         }, tdLabel);

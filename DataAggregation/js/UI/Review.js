@@ -202,6 +202,9 @@ define(['dojo/_base/declare',
             this.pageContainer.removeView(this._unMatchedListView);
           }
         })));
+        if (this.matchedList.length > 0) {
+          domClass.add(this.unMatchedHintTd, 'pad-top-10');
+        }
       },
 
       _addDuplicateFeatureList: function () {
@@ -215,6 +218,9 @@ define(['dojo/_base/declare',
             this.pageContainer.removeView(this._duplicateListView);
           }
         })));
+        if (this.matchedList.length > 0 || this.unMatchedList.length > 0) {
+          domClass.add(this.duplicateHintTd, 'pad-top-10');
+        }
       },
 
       _initFeatureList: function (features, layer, label, hint, isDuplicate) {
@@ -365,9 +371,12 @@ define(['dojo/_base/declare',
             if (success.length === 0) {
               msg = this.nls.review.noFeaturesSaved;
             } else {
+              //msg = esriLang.substitute({
+              //  num: success.length
+              //}, this.nls.review.someFeaturesSaved);
               msg = esriLang.substitute({
-                num: success.length
-              }, this.nls.review.someFeaturesSaved);
+                num: errors.length
+              }, this.nls.review.someFeaturesNotSaved);
             }
             new Message({
               message: msg

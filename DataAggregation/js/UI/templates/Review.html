@@ -1,12 +1,12 @@
 ﻿<div class="pad-left-10" style="height: 100%">
   <table class="page-table" cellpading="0">
     <tbody>
-      <tr class="task-instruction-row" data-dojo-attach-point="matchedHintRow">
+      <tr class="pad-bottom-10 task-instruction-row" data-dojo-attach-point="matchedHintRow">
         <td colspan="3">
           <div class="instruction">${nls.review.reviewMatchedPageHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row" data-dojo-attach-point="matchedControlRow" data-dojo-attach-event="onclick:_reviewMatched">
+      <tr class="pad-bottom-10 bottom-border task-row" data-dojo-attach-point="matchedControlRow" data-dojo-attach-event="onclick:_reviewMatched">
         <td class="field-control-td">
           <div class="task-text">${nls.review.reviewMatched}</div>
         </td>
@@ -20,12 +20,12 @@
         </td>
       </tr>
 
-      <tr class="pad-top-10 task-instruction-row" data-dojo-attach-point="unMatchedHintRow">
-        <td colspan="3">
-          <div class="instruction pad-top-10">${nls.review.reviewUnMatchedPageHint}</div>
+      <tr class="pad-bottom-10 task-instruction-row" data-dojo-attach-point="unMatchedHintRow">
+        <td colspan="3" data-dojo-attach-point="unMatchedHintTd">
+          <div class="instruction">${nls.review.reviewUnMatchedPageHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row" data-dojo-attach-point="unMatchedControlRow" data-dojo-attach-event="onclick:_reviewUnMatched">
+      <tr class="pad-bottom-10 bottom-border task-row" data-dojo-attach-point="unMatchedControlRow" data-dojo-attach-event="onclick:_reviewUnMatched">
         <td class="field-control-td">
           <div class="task-text">${nls.review.reviewUnMatched}</div>
         </td>
@@ -38,12 +38,12 @@
         </td>
       </tr>
 
-      <tr class="pad-top-10 task-instruction-row" data-dojo-attach-point="duplicateHintRow">
-        <td colspan="3">
-          <div class="instruction pad-top-10">${nls.review.reviewDuplicatePageHint}</div>
+      <tr class="pad-bottom-10 task-instruction-row" data-dojo-attach-point="duplicateHintRow">
+        <td colspan="3" data-dojo-attach-point="duplicateHintTd">
+          <div class="instruction">${nls.review.reviewDuplicatePageHint}</div>
         </td>
       </tr>
-      <tr class="bottom-border task-row" data-dojo-attach-point="duplicateControlRow" data-dojo-attach-event="onclick:_reviewDuplicate">
+      <tr class="pad-bottom-10 bottom-border task-row" data-dojo-attach-point="duplicateControlRow" data-dojo-attach-event="onclick:_reviewDuplicate">
         <td class="field-control-td">
           <div class="task-text">${nls.review.reviewDuplicate}</div>
         </td>

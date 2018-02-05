@@ -29,6 +29,10 @@
   width: 100%;
 }
 
+.jimu-widget-critical-facilities-ui .table-layout {
+  table-layout: fixed;
+}
+
 .jimu-widget-critical-facilities-ui .feature-toolbar-btn {
   padding: 10px;
   display: block;
@@ -122,7 +126,73 @@
 }
 /*end home*/
 
-/*------------------------------Feature Toolbar Buttons----------------------------------------------*/
+/*------------------------------Review Row toggle buttons--------------------------------------------*/
+.jimu-widget-critical-facilities-ui .toggle-expand-row {
+  cursor: pointer;
+}
+
+.jimu-widget-critical-facilities-ui .bg-img-toggle {
+  width: 16px;
+  height: 12px;
+  position: relative;
+  background-size: contain;
+  background-repeat: no-repeat;
+  cursor: pointer;
+}
+
+.jimu-widget-critical-facilities-ui .page-item-td-nav {
+  cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.jimu-widget-critical-facilities-ui .bg-toggle-down-img {
+  background-image: url('../images/nav_down_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .toggle-expand-row:hover .bg-toggle-down-img {
+  background-image: url('../images/nav_down_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-toggle-down-img-white {
+  background-image: url('../images/nav_down_white.png');
+}
+
+.jimu-widget-critical-facilities-ui .toggle-expand-row:hover .bg-toggle-down-img-white {
+  background-image: url('../images/nav_down_hover.png');
+}
+
+/*sas*/
+
+.jimu-widget-critical-facilities-ui .bg-toggle-up-img {
+  background-image: url('../images/nav_up_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .toggle-expand-row:hover .bg-toggle-up-img {
+  background-image: url('../images/nav_up_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-toggle-up-img-white {
+  background-image: url('../images/nav_up_white.png');
+}
+
+.jimu-widget-critical-facilities-ui .toggle-expand-row:hover .bg-toggle-up-img-white {
+  background-image: url('../images/nav_up_hover.png');
+}
+
+/*------------------------------End Review Row toggle buttons--------------------------------------------*/
+
+/*------------------------------Feature Toolbar----------------------------------------------*/
+.jimu-widget-critical-facilities-ui .feature-toolbar-td {
+  width: 80px;
+}
+
+.jimu-widget-critical-facilities-ui .duplicate-flag {
+  padding-bottom: 9px;
+  float: left;
+  display: inline-table;
+}
+
 .jimu-widget-critical-facilities-ui .bg-ft-img {
   width: 15px;
   height: 15px;
@@ -132,6 +202,33 @@
   cursor: pointer;
   margin: auto;
 }
+
+/*edit*/
+.jimu-widget-critical-facilities-ui .bg-edit {
+  background-image: url('../images/edit_black.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-edit:hover {
+  background-image: url('../images/edit_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-edit-white {
+  background-image: url('../images/edit_white.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-edit-white:hover {
+  background-image: url('../images/edit_hover.png');
+}
+
+.jimu-widget-critical-facilities-ui .bg-edit-disabled {
+  background-image: url('../images/edit_disabled.png');
+  cursor: default;
+}
+
+.jimu-widget-critical-facilities-ui .bg-edit-disabled:hover {
+  background-image: url('../images/edit_hover.png');
+}
+/*end edit*/
 
 /*locate*/
 .jimu-widget-critical-facilities-ui .bg-locate {
