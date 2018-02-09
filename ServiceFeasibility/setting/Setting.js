@@ -1605,7 +1605,7 @@ define([
         }
         getSymbolvalues = this._getSymbols();
         highlighterDetails = this._getHighlighterForm();
-        businessLayerCheck = this.saveBusinessCheck && this.saveBusinessCheck.getValue() ? this.saveBusinessCheck.setValue(true) : false;
+        businessLayerCheck = this.saveBusinessCheck && this.saveBusinessCheck.getValue() ? this.saveBusinessCheck.getValue() : false;
         // check whether business layer check box is checked
         if (businessLayerCheck) {
           businessLayer = (this.selectSaveBusinessLayer && this.selectSaveBusinessLayer
