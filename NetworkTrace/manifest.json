@@ -1,5 +1,6 @@
 {
   "name": "NetworkTrace",
+  "label": "Network Trace",
   "platform": "HTML",
   "version": "January 2018",
   "wabVersion": "2.7",

@@ -116,15 +116,14 @@ define([
       // Cloning the feld map array for storing it in field to map value
       cloneFieldMapArray = lang.clone(fieldMapArray);
       overviewParam = {
-        "visibility": this.visible.checked ? true : false,
+        "visibility": this.visible.getValue() ? true : false,
         "type": "Overview",
         "BufferDistance": this.overviewBufferDistance.value,
         "BufferType": this.overviewBufferType.value,
         "Unit": this.esriUnits.value,
         "MinScale": this.outputMinScaleData.value,
         "MaxScale": this.outputMaxScaleData.value,
-        "saveToLayer": this.outputLayer.checked ? this.outputLayerType
-          .value : "",
+        "saveToLayer": this.outputLayer.getValue() ? this.outputLayerType.value : "",
         "symbol": this.symbolJson,
         "fieldMap": cloneFieldMapArray
       };
@@ -136,8 +135,9 @@ define([
       // if output config object is not null
       if (this.overviewConfig) {
         if (this.overviewConfig.visibility) {
-          this.visible.checked = true;
-          domClass.add(this.visible.checkNode, "checked");
+          this.visible.setValue(true);
+          //this.visible.checked = true;
+          //domClass.add(this.visible.checkNode, "checked");
         }
         this.outputMinScaleData.set("value", ((this.overviewConfig &&
             this.overviewConfig.MinScale) ? this.overviewConfig.MinScale :
@@ -163,8 +163,8 @@ define([
         }
         // validate whether save to layer parameter is available in configuration
         if (this.overviewConfig.saveToLayer) {
-          this.outputLayer.checked = this.overviewConfig.saveToLayer;
-          domClass.add(this.outputLayer.checkNode, "checked");
+          this.outputLayer.setValue(this.overviewConfig.saveToLayer);
+          //domClass.add(this.outputLayer.checkNode, "checked");
           domClass.remove(this.selectOutputLayerType, "esriCTHidden");
         }
 

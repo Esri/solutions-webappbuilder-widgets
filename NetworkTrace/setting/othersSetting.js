@@ -110,7 +110,7 @@ define([
         "displayTextForRunButton": ((this.displayTextforRun && this
             .displayTextforRun.value) ? this.displayTextforRun.value :
           ""),
-        "autoZoomAfterTrace": this.autoZoomAfterTrace.checked
+        "autoZoomAfterTrace": this.autoZoomAfterTrace.getValue()
       };
       return othersParam;
     },
@@ -126,12 +126,13 @@ define([
         this.spinnerImgTimeout.set("value", this.othersConfig.timeout);
         this.displayTextforRun.set("value", this.displayTextForRunButton);
         if (this.autoZoomAfterTraceCheckedState) {
-          this.autoZoomAfterTrace.checked = this.autoZoomAfterTraceCheckedState;
-          domClass.add(this.autoZoomAfterTrace.checkNode, "checked");
+          //this.autoZoomAfterTrace.checked = this.autoZoomAfterTraceCheckedState;
+          //domClass.add(this.autoZoomAfterTrace.checkNode, "checked");
+          this.autoZoomAfterTrace.setValue(true);
         } else {
-          this.autoZoomAfterTrace.checked = this.autoZoomAfterTraceCheckedState;
-          domClass.remove(this.autoZoomAfterTrace.checkNode,
-            "checked");
+          this.autoZoomAfterTrace.setValue(false);
+          //this.autoZoomAfterTrace.checked = this.autoZoomAfterTraceCheckedState;
+          //domClass.remove(this.autoZoomAfterTrace.checkNode, "checked");
         }
       }
     }

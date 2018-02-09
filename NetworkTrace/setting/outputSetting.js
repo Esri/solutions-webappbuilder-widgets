@@ -97,8 +97,8 @@ define([
     getOutputForm: function () {
       var bypassDetails, outputParam;
       bypassDetails = {
-        "skipable": this.skippable.checked ? true : false,
-        "IDField": this.skippable.checked ? this.inputTypeData.value : ""
+        "skipable": this.skippable.getValue() ? true : false,
+        "IDField": this.skippable.getValue() ? this.inputTypeData.value : ""
       };
       outputParam = {
         "paramName": this.data.name,
@@ -108,8 +108,8 @@ define([
         "displayText": this.outputDisplayText.value,
         "MinScale": this.outputMinScaleData.value,
         "MaxScale": this.outputMaxScaleData.value,
-        "exportToCSV": this.outputExport.checked,
-        "saveToLayer": this.outputLayer.checked ? this.outputLayerType
+        "exportToCSV": this.outputExport.getValue(),
+        "saveToLayer": this.outputLayer.getValue() ? this.outputLayerType
           .value : "",
         "symbol": this.symbolJson
       };
@@ -172,7 +172,7 @@ define([
       this._addSaveToLayerOptions();
       //this._createSymbolInput();
       this._showSymbolChooser();
-      this.outageArea.isChecked = this.outputLayer.checked;
+      this.outageArea.isChecked = this.outputLayer.getValue();
       this.own(on(this.outputLayer.domNode, "click", lang.hitch(this,
         this._onLayerChange)));
       on(this.outputLayer.domNode, "click", lang.hitch(this, function () {
@@ -184,7 +184,7 @@ define([
       this.outputLayerType.on('change', lang.hitch(this, function (evt) {
         this.outageArea.saveToLayer = evt;
         domAttr.set(this.outputLayer, "value", evt);
-        this.outageArea.isChecked = this.outputLayer.checked;
+        this.outageArea.isChecked = this.outputLayer.getValue();
       }));
       setTimeout(lang.hitch(this, function () {
         this._setConfigParameters();
@@ -389,8 +389,8 @@ define([
         // if output config object is not null and bypass deatils available for outage area field mapping
         if (this.outputConfig && this.outputConfig.bypassDetails &&
           this.outputConfig.bypassDetails.skipable) {
-          this.skippable.checked = this.outputConfig.bypassDetails.skipable;
-          domClass.add(this.skippable.checkNode, "checked");
+          this.skippable.setValue(this.outputConfig.bypassDetails.skipable);
+          //domClass.add(this.skippable.checkNode, "checked");
           domClass.remove(this.skippableDropdownDiv, "esriCTHidden");
           this.inputTypeData.set("value", this.outputConfig.bypassDetails
             .IDField);
@@ -406,8 +406,8 @@ define([
           0));
         // if exportToCSV is not null
         if (this.outputConfig.exportToCSV) {
-          this.outputExport.checked = this.outputConfig.exportToCSV;
-          domClass.add(this.outputExport.checkNode, "checked");
+          this.outputExport.setValue(this.outputConfig.exportToCSV);
+          //domClass.add(this.outputExport.checkNode, "checked");
         }
         // loop for setting selected target Layer
         for (i = 0; i < this.outputLayerType.options.length; i++) {
@@ -420,8 +420,8 @@ define([
         }
         // validate whether save to layer parameter is available in configuration
         if (this.outputConfig.saveToLayer) {
-          this.outputLayer.checked = this.outputConfig.saveToLayer;
-          domClass.add(this.outputLayer.checkNode, "checked");
+          this.outputLayer.setValue(this.outputConfig.saveToLayer);
+          //domClass.add(this.outputLayer.checkNode, "checked");
           domClass.remove(this.selectOutputLayerType, "esriCTHidden");
         }
       }
@@ -458,7 +458,7 @@ define([
     **/
     _onLayerChange: function (evt) {
       var targetLayerDiv;
-      this.outageArea.isChecked = this.outputLayer.checked;
+      this.outageArea.isChecked = this.outputLayer.getValue();
       // if evt object and parent exist then toggle hide/show of target layer dropdown
       if (evt && evt.currentTarget && evt.currentTarget.offsetParent &&
         evt.currentTarget.offsetParent.parentNode) {
