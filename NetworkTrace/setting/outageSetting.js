@@ -163,7 +163,7 @@ define([
         }
         // validate whether save to layer parameter is available in configuration
         if (this.overviewConfig.saveToLayer) {
-          this.outputLayer.setValue(this.overviewConfig.saveToLayer);
+          this.outputLayer.setValue(true);
           //domClass.add(this.outputLayer.checkNode, "checked");
           domClass.remove(this.selectOutputLayerType, "esriCTHidden");
         }
