@@ -335,14 +335,6 @@
     width: 100%;
 }
 
-.jimu-widget-frame.jimu-container
-{
-    background-color: white;
-    overflow: auto;
-    padding: 0px;
-    position: relative;
-}
-
 .dijitArrowNode
 {
     float: right;
