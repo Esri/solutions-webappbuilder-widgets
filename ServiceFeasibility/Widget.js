@@ -2998,7 +2998,7 @@ define([
         }, bussinessContainer);
         domAttr.set(this.businessLayerChk.domNode, "title", this.config
           .targetBusinessLayer);
-        this._onBusinessLayerCheck(this.businessLayerChk.domNode);
+        this._onBusinessLayerCheck(this.businessLayerChk);
         domStyle.set(this.businessLayerContainerDiv, "display",
           "block");
       } else {
@@ -3042,38 +3042,37 @@ define([
     * @memberOf widgets/ServiceFeasibility/Widget
     **/
     _onRouteLayerCheck: function (checkbox) {
-      on(checkbox, "click", lang.hitch(this, function (event) {
-        if (domClass.contains(event.target, "checkbox")) {
-          if (checkbox.get('checked')) {
+      on(checkbox, "change", lang.hitch(this, function (isChecked) {
+ 		if (isChecked){
             domClass.remove(this.esriCTSaveBusinessRouteLength,
               "esriCTHidePanel");
-            domClass.add(event.currentTarget,
+            domClass.add(checkbox,
               "esriCTSaveCheckbox");
-            if (array.indexOf(this.checkedLayers, event.currentTarget) ===
+            if (array.indexOf(this.checkedLayers, checkbox.domNode) ===
               -1) {
-              this.checkedLayers.push(event.currentTarget);
+              this.checkedLayers.push(checkbox.domNode);
             }
             this.saveToLayerBtn.disabled = false;
             domClass.remove(this.saveToLayerBtn,
               "jimu-state-disabled");
             this._showFieldsToEdit();
-          } else {
-            domClass.add(this.esriCTSaveBusinessRouteLength,
-              "esriCTHidePanel");
-            domClass.remove(event.currentTarget,
-              "esriCTSaveCheckbox");
-            if (array.indexOf(this.checkedLayers, event.currentTarget) !==
-              -1) {
-              this.checkedLayers.splice(array.indexOf(this.checkedLayers,
-                event.currentTarget), 1);
-            }
-            if (this.checkedLayers.length === 0) {
-              this.saveToLayerBtn.disabled = true;
-              domClass.add(this.saveToLayerBtn,
-                "jimu-state-disabled");
-            }
-          }
-        }
+		} else {
+			domClass.add(this.esriCTSaveBusinessRouteLength,
+				"esriCTHidePanel");
+			domClass.remove(checkbox,
+				"esriCTSaveCheckbox");
+			if (array.indexOf(this.checkedLayers,checkbox.domNode) !==
+			  -1) {
+				this.checkedLayers.splice(array.indexOf(this.checkedLayers,
+				checkbox.domNode), 1);
+			}
+			if (this.checkedLayers.length === 0) {
+			  this.saveToLayerBtn.disabled = true;
+				domClass.add(this.saveToLayerBtn,
+				"jimu-state-disabled");
+		}
+	  }
+       
       }));
     },
 
@@ -3196,25 +3195,25 @@ define([
     * @params{object}checkBox: Checkbox for saving business layer
     * @memberOf widgets/ServiceFeasibility/Widget
     **/
-    _onBusinessLayerCheck: function (checkBox) {
-      on(checkBox, "click", lang.hitch(this, function (event) {
-        if (checkBox.get('checked')) {
-          domClass.add(event.currentTarget,
+    _onBusinessLayerCheck: function (checkbox) {
+      on(checkbox, "change", lang.hitch(this, function (isChecked) {
+        if (isChecked) {
+          domClass.add(checkbox,
             "esriCTSaveCheckbox");
-          if (array.indexOf(this.checkedLayers, event.currentTarget) ===
+          if (array.indexOf(this.checkedLayers, checkbox.domNode) ===
             -1) {
-            this.checkedLayers.push(event.currentTarget);
+            this.checkedLayers.push(checkbox.domNode);
             this.saveToLayerBtn.disabled = false;
             domClass.remove(this.saveToLayerBtn,
               "jimu-state-disabled");
           }
         } else {
-          domClass.remove(event.currentTarget,
+          domClass.remove(checkbox,
             "esriCTSaveCheckbox");
-          if (array.indexOf(this.checkedLayers, event.currentTarget) !==
+          if (array.indexOf(this.checkedLayers, checkbox.domNode) !==
             -1) {
             this.checkedLayers.splice(array.indexOf(this.checkedLayers,
-              event.currentTarget), 1);
+              checkbox.domNode), 1);
           }
           if (this.checkedLayers.length === 0) {
             this.saveToLayerBtn.disabled = true;
@@ -3300,7 +3299,7 @@ define([
       domAttr.set(this.routeLayerChk.domNode, "title", this.config.targetRouteLayer);
       domClass.add(this.esriCTSaveBusinessRouteLength,
         "esriCTHidePanel");
-      this._onRouteLayerCheck(this.routeLayerChk.domNode);
+      this._onRouteLayerCheck(this.routeLayerChk);
     },
 
     /**
