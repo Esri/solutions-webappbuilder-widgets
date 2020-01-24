@@ -346,6 +346,7 @@ define([
               "tab jimu-vcenter-text jimu-state-selected",
               "tab jimu-vcenter-text");
             domStyle.set(this.tabSearch, "display", "block");
+            domStyle.set(this.tabSearch, "opacity", "1");
           } else if (this.tabContainer.controlNodes[j].innerHTML ===
             this.nls.resultsContainerHeading) {
             domClass.replace(this.tabContainer.controlNodes[j],
@@ -354,6 +355,7 @@ define([
             domStyle.set(this.tabContainer.tabs[j].content,
               "display", "none");
             domStyle.set(this.tabResults, "display", "none");
+            domStyle.set(this.tabResults, "opacity", "0");
           }
         }
       }));
@@ -2221,8 +2223,7 @@ define([
       for (j = 0; j < this.tabContainer.controlNodes.length; j++) {
         // when result exists then show the result panel else show search panel
         if (this.isResultExist) {
-          if (this.tabContainer.controlNodes[j].innerHTML === this.nls
-            .resultsContainerHeading) {
+          if (this.tabContainer.controlNodes[j].innerHTML === this.nls.resultsContainerHeading) {
             domClass.remove(this.tabContainer.controlNodes[j],
               "jimu-tab>.control>.tab.jimu-state-selected+.tab");
             domClass.replace(this.tabContainer.controlNodes[j],
@@ -2257,6 +2258,7 @@ define([
                 "block");
 
             }
+            domStyle.set(this.tabResults, "opacity", "1");
           } else if (this.tabContainer.controlNodes[j].innerHTML ===
             this.nls.searchContainerHeading) {
             domClass.replace(this.tabContainer.controlNodes[j],
@@ -3072,7 +3074,7 @@ define([
 				"jimu-state-disabled");
 		}
 	  }
-       
+
       }));
     },
 
