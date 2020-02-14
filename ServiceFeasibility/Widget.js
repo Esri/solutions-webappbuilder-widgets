@@ -2149,8 +2149,9 @@ define([
         this._businessPassed = queryResult.length;
         this.isResultExist = true;
         if (this.config.businessesLayerName !== this.config.targetBusinessLayer) {
+          var validId = this.businessLayer.layerObject.objectIdField;
           this.businessLayer.layerObject.setDefinitionExpression(
-            "OBJECTID IN (" + queryResult + ")");
+            validId + " IN (" + queryResult + ")");
         }
         this.businessLayer.layerObject.show();
         this._changeInField = false;
